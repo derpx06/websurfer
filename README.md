@@ -5,34 +5,34 @@
 
 <div align="center">
 
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/nanobrowser)
-[![Twitter](https://img.shields.io/badge/Twitter-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/nanobrowser_ai)
+[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/WebSurfer)
+[![Twitter](https://img.shields.io/badge/Twitter-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/WebSurfer_ai)
 [![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/NN3ABHggMK)
-[<img src="https://deepwiki.com/badge.svg" height="28" alt="Ask DeepWiki">](https://deepwiki.com/nanobrowser/nanobrowser)
+[<img src="https://deepwiki.com/badge.svg" height="28" alt="Ask DeepWiki">](https://deepwiki.com/WebSurfer/WebSurfer)
 [![Sponsor](https://img.shields.io/badge/Sponsor-ff69b4?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/alexchenzl)
 
 </div>
 
-## 🌐 Nanobrowser
+## 🌐 WebSurfer
 
-Nanobrowser is an open-source AI web automation tool that runs in your browser. A free alternative to OpenAI Operator with flexible LLM options and multi-agent system.
+WebSurfer is an open-source AI web automation tool that runs in your browser. A free alternative to OpenAI Operator with flexible LLM options and multi-agent system.
 
-⬇️ Get [Nanobrowser from Chrome Web Store](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal) for free
+⬇️ Get [WebSurfer from Chrome Web Store](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal) for free
 
-👏 Join the community in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/nanobrowser_ai)
+👏 Join the community in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/WebSurfer_ai)
 
-🌟 Loving Nanobrowser? Give us a star  and help spread the word!
+🌟 Loving WebSurfer? Give us a star  and help spread the word!
 
-❤️ Support the project by [sponsoring us](https://github.com/sponsors/alexchenzl) - every contribution helps keep Nanobrowser free and open source!
+❤️ Support the project by [sponsoring us](https://github.com/sponsors/alexchenzl) - every contribution helps keep WebSurfer free and open source!
 
 <div align="center">
-<img src="https://github.com/user-attachments/assets/112c4385-7b03-4b81-a352-4f348093351b" width="600" alt="Nanobrowser Demo GIF" />
-<p><em>Nanobrowser's multi-agent system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
+<img src="https://github.com/user-attachments/assets/112c4385-7b03-4b81-a352-4f348093351b" width="600" alt="WebSurfer Demo GIF" />
+<p><em>WebSurfer's multi-agent system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
 </div>
 
-## 🔥Why Nanobrowser?
+## 🔥Why WebSurfer?
 
-Looking for a powerful AI browser agent without the $200/month price tag of OpenAI Operator? **Nanobrowser** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
+Looking for a powerful AI browser agent without the $200/month price tag of OpenAI Operator? **WebSurfer** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
 
 - **100% Free** - No subscription fees or hidden costs. Just install and use your own API keys, and you only pay what you use with your own API keys.
 - **Privacy-Focused** - Everything runs in your local browser. Your credentials stay with you, never shared with any cloud service.
@@ -61,20 +61,20 @@ Looking for a powerful AI browser agent without the $200/month price tag of Open
 **Not Supported:**
 - Firefox, Safari, and other Chromium variants (Opera, Arc, etc.)
 
-> **Note**: While Nanobrowser may function on other Chromium-based browsers, we recommend using Chrome or Edge for the best experience and guaranteed compatibility.
+> **Note**: While WebSurfer may function on other Chromium-based browsers, we recommend using Chrome or Edge for the best experience and guaranteed compatibility.
 
 
 ## 🚀 Quick Start
 
 1. **Install from Chrome Web Store** (Stable Version):
-   * Visit the [Nanobrowser Chrome Web Store page](https://chromewebstore.google.com/detail/nanobrowser/imbddededgmcgfhfpcjmijokokekbkal)
+   * Visit the [WebSurfer Chrome Web Store page](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal)
    * Click "Add to Chrome" button
    * Confirm the installation when prompted
 
 > **Important Note**: For latest features, install from ["Manually Install Latest Version"](#-manually-install-latest-version) below, as Chrome Web Store version may be delayed due to review process.
 
 2. **Configure Agent Models**:
-   * Click the Nanobrowser icon in your toolbar to open the sidebar
+   * Click the WebSurfer icon in your toolbar to open the sidebar
    * Click the `Settings` icon (top right)
    * Add your LLM API keys
    * Choose which model to use for different agents (Navigator, Planner)
@@ -84,29 +84,29 @@ Looking for a powerful AI browser agent without the $200/month price tag of Open
 To get the most recent version with all the latest features:
 
 1. **Download**
-    * Download the latest `nanobrowser.zip` file from the official Github [release page](https://github.com/nanobrowser/nanobrowser/releases).
+    * Download the latest `WebSurfer.zip` file from the official Github [release page](https://github.com/WebSurfer/WebSurfer/releases).
 
 2. **Install**:
-    * Unzip `nanobrowser.zip`.
+    * Unzip `WebSurfer.zip`.
     * Open `chrome://extensions/` in Chrome
     * Enable `Developer mode` (top right)
     * Click `Load unpacked` (top left)
-    * Select the unzipped `nanobrowser` folder.
+    * Select the unzipped `WebSurfer` folder.
 
 3. **Configure Agent Models**
-    * Click the Nanobrowser icon in your toolbar to open the sidebar
+    * Click the WebSurfer icon in your toolbar to open the sidebar
     * Click the `Settings` icon (top right).
     * Add your LLM API keys.
     * Choose which model to use for different agents (Navigator, Planner)
 
 4. **Upgrading**:
-    * Download the latest `nanobrowser.zip` file from the release page.
-    * Unzip and replace your existing Nanobrowser files with the new ones.
-    * Go to `chrome://extensions/` in Chrome and click the refresh icon on the Nanobrowser card.
+    * Download the latest `WebSurfer.zip` file from the release page.
+    * Unzip and replace your existing WebSurfer files with the new ones.
+    * Go to `chrome://extensions/` in Chrome and click the refresh icon on the WebSurfer card.
 
 ## 🛠️ Build from Source
 
-If you prefer to build Nanobrowser yourself, follow these steps:
+If you prefer to build WebSurfer yourself, follow these steps:
 
 1. **Prerequisites**:
    * [Node.js](https://nodejs.org/) (v22.12.0 or higher)
@@ -114,8 +114,8 @@ If you prefer to build Nanobrowser yourself, follow these steps:
 
 2. **Clone the Repository**:
    ```bash
-   git clone https://github.com/nanobrowser/nanobrowser.git
-   cd nanobrowser
+   git clone https://github.com/WebSurfer/WebSurfer.git
+   cd WebSurfer
    ```
 
 3. **Install Dependencies**:
@@ -139,7 +139,7 @@ If you prefer to build Nanobrowser yourself, follow these steps:
 
 ## 🤖 Choosing Your Models
 
-Nanobrowser allows you to configure different LLM models for each agent to balance performance and cost. Here are recommended configurations:
+WebSurfer allows you to configure different LLM models for each agent to balance performance and cost. Here are recommended configurations:
 
 ### Better Performance
 - **Planner**: Claude Sonnet 4
@@ -194,19 +194,19 @@ Here are some powerful tasks you can accomplish with just a sentence:
 
 ## 🛠️ Roadmap
 
-We're actively developing Nanobrowser with exciting features on the horizon, welcome to join us! 
+We're actively developing WebSurfer with exciting features on the horizon, welcome to join us! 
 
-Check out our detailed roadmap and upcoming features in our [GitHub Discussions](https://github.com/nanobrowser/nanobrowser/discussions/85). 
+Check out our detailed roadmap and upcoming features in our [GitHub Discussions](https://github.com/WebSurfer/WebSurfer/discussions/85). 
 
 ## 🤝 Contributing
 
-**We need your help to make Nanobrowser even better!**  Contributions of all kinds are welcome:
+**We need your help to make WebSurfer even better!**  Contributions of all kinds are welcome:
 
 *  **Share Prompts & Use Cases** 
    * Join our [Discord server](https://discord.gg/NN3ABHggMK).
-   * share how you're using Nanobrowser.  Help us build a library of useful prompts and real-world use cases.
+   * share how you're using WebSurfer.  Help us build a library of useful prompts and real-world use cases.
 *  **Provide Feedback** 
-   * Try Nanobrowser and give us feedback on its performance or suggest improvements in our [Discord server](https://discord.gg/NN3ABHggMK).
+   * Try WebSurfer and give us feedback on its performance or suggest improvements in our [Discord server](https://discord.gg/NN3ABHggMK).
 * **Contribute Code**
    * Check out our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute code to the project.
    * Submit pull requests for bug fixes, features, or documentation improvements.
@@ -219,21 +219,21 @@ We believe in the power of open source and community collaboration.  Join us in 
 
 If you discover a security vulnerability, please **DO NOT** disclose it publicly through issues, pull requests, or discussions.
 
-Instead, please create a [GitHub Security Advisory](https://github.com/nanobrowser/nanobrowser/security/advisories/new) to report the vulnerability responsibly. This allows us to address the issue before it's publicly disclosed.
+Instead, please create a [GitHub Security Advisory](https://github.com/WebSurfer/WebSurfer/security/advisories/new) to report the vulnerability responsibly. This allows us to address the issue before it's publicly disclosed.
 
-We appreciate your help in keeping Nanobrowser and its users safe!
+We appreciate your help in keeping WebSurfer and its users safe!
 
 ## 💬 Community
 
 Join our growing community of developers and users:
 
 - [Discord](https://discord.gg/NN3ABHggMK) - Chat with team and community
-- [Twitter](https://x.com/nanobrowser_ai) - Follow for updates and announcements
-- [GitHub Discussions](https://github.com/nanobrowser/nanobrowser/discussions) - Share ideas and ask questions
+- [Twitter](https://x.com/WebSurfer_ai) - Follow for updates and announcements
+- [GitHub Discussions](https://github.com/WebSurfer/WebSurfer/discussions) - Share ideas and ask questions
 
 ## 👏 Acknowledgments
 
-Nanobrowser builds on top of other awesome open-source projects:
+WebSurfer builds on top of other awesome open-source projects:
 
 - [Browser Use](https://github.com/browser-use/browser-use)
 - [Puppeteer](https://github.com/EmergenceAI/Agent-E)
@@ -246,15 +246,15 @@ Huge thanks to their creators and contributors!
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
-Made with ❤️ by the Nanobrowser Team. 
+Made with ❤️ by the WebSurfer Team. 
 
-Like Nanobrowser? Give us a star 🌟 and join us in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/nanobrowser_ai)
+Like WebSurfer? Give us a star 🌟 and join us in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/WebSurfer_ai)
 
 ## ⚠️ DISCLAIMER ON DERIVATIVE PROJECTS
 
 **We explicitly *DO NOT* endorse, support, or participate in any** projects involving cryptocurrencies, tokens, NFTs, or other blockchain-related applications **based on this codebase.**
 
-**Any such derivative projects are NOT Affiliated with, or maintained by, or in any way connected to the official Nanobrowser project or its core team.**
+**Any such derivative projects are NOT Affiliated with, or maintained by, or in any way connected to the official WebSurfer project or its core team.**
 
 **We assume NO LIABILITY for any losses, damages, or issues arising from the use of third-party derivative projects. Users interact with these projects at their own risk.**
 

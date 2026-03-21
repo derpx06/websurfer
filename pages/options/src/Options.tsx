@@ -38,7 +38,7 @@ const Options = () => {
 
   const handleTabClick = (tabId: TabTypes) => {
     if (tabId === 'help') {
-      window.open('https://nanobrowser.ai/docs', '_blank');
+      window.open('https://WebSurfer.ai/docs', '_blank');
     } else {
       setActiveTab(tabId);
     }
@@ -75,10 +75,9 @@ const Options = () => {
                 <Button
                   onClick={() => handleTabClick(item.id)}
                   className={`flex w-full items-center space-x-2 rounded-lg px-4 py-2 text-left text-base 
-                    ${
-                      activeTab !== item.id
-                        ? `${isDarkMode ? 'bg-slate-700/70 text-gray-300 hover:text-white' : 'bg-[#0EA5E9]/15 font-medium text-gray-700 hover:text-white'} backdrop-blur-sm`
-                        : `${isDarkMode ? 'bg-sky-800/50' : ''} text-white backdrop-blur-sm`
+                    ${activeTab !== item.id
+                      ? `${isDarkMode ? 'bg-slate-700/70 text-gray-300 hover:text-white' : 'bg-[#0EA5E9]/15 font-medium text-gray-700 hover:text-white'} backdrop-blur-sm`
+                      : `${isDarkMode ? 'bg-sky-800/50' : ''} text-white backdrop-blur-sm`
                     }`}>
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>

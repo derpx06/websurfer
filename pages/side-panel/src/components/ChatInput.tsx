@@ -183,150 +183,135 @@ export default function ChatInput({
   }, []);
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className={`overflow-hidden rounded-lg border transition-colors ${disabled ? 'cursor-not-allowed' : 'focus-within:border-sky-400 hover:border-sky-400'} ${isDarkMode ? 'border-slate-700' : ''}`}
-      aria-label={t('chat_input_form')}>
-      <div className="flex flex-col">
-        {/* File attachments display */}
-        {attachedFiles.length > 0 && (
-          <div
-            className={`flex flex-wrap gap-2 border-b p-2 ${
-              isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-gray-200 bg-gray-50'
-            }`}>
+    <div className="ws-input-zone">
+      <form onSubmit={handleSubmit} aria-label={t('chat_input_form')}>
+        <div className={`ws-inp-wrap ${disabled ? 'pointer-events-none' : ''}`}>
+
+          {/* File attachments strip */}
+          <div className={`ws-file-strip ${attachedFiles.length > 0 ? 'has-files' : ''}`}>
             {attachedFiles.map((file, index) => (
-              <div
-                key={index}
-                className={`flex items-center gap-1 rounded-md px-2 py-1 text-xs ${
-                  isDarkMode ? 'bg-slate-700 text-gray-300' : 'bg-gray-200 text-gray-700'
-                }`}>
-                <span className="text-xs">📎</span>
-                <span className="max-w-[150px] truncate">{file.name}</span>
+              <div key={index} className="ws-file-chip">
+                <span className="ws-file-chip-name">{file.name}</span>
                 <button
                   type="button"
                   onClick={() => handleRemoveFile(index)}
-                  className={`ml-1 rounded-sm transition-colors ${
-                    isDarkMode ? 'hover:bg-slate-600' : 'hover:bg-gray-300'
-                  }`}
+                  className="ws-file-chip-remove"
                   aria-label={`Remove ${file.name}`}>
-                  <span className="text-xs">✕</span>
+                  ✕
                 </button>
               </div>
             ))}
           </div>
-        )}
 
-        <textarea
-          ref={textareaRef}
-          value={text}
-          onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
-          disabled={disabled}
-          aria-disabled={disabled}
-          rows={5}
-          className={`w-full resize-none border-none p-2 focus:outline-none ${
-            disabled
-              ? isDarkMode
-                ? 'cursor-not-allowed bg-slate-800 text-gray-400'
-                : 'cursor-not-allowed bg-gray-100 text-gray-500'
-              : isDarkMode
-                ? 'bg-slate-800 text-gray-200'
-                : 'bg-white'
-          }`}
-          placeholder={attachedFiles.length > 0 ? 'Add a message (optional)...' : t('chat_input_placeholder')}
-          aria-label={t('chat_input_editor')}
-        />
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={handleTextChange}
+            onKeyDown={handleKeyDown}
+            disabled={disabled}
+            aria-disabled={disabled}
+            className="ws-inp-ta"
+            placeholder={attachedFiles.length > 0 ? 'Add a message (optional)...' : t('chat_input_placeholder')}
+            aria-label={t('chat_input_editor')}
+          />
 
-        <div
-          className={`flex items-center justify-between px-2 py-1.5 ${
-            disabled ? (isDarkMode ? 'bg-slate-800' : 'bg-gray-100') : isDarkMode ? 'bg-slate-800' : 'bg-white'
-          }`}>
-          <div className="flex gap-2 text-gray-500">
-            {/* File attachment button */}
-            <button
-              type="button"
-              onClick={handleFileSelect}
-              disabled={disabled}
-              aria-label="Attach files"
-              title="Attach text files (txt, md, json, csv, etc.)"
-              className={`rounded-md p-1.5 transition-colors ${
-                disabled
-                  ? 'cursor-not-allowed opacity-50'
-                  : isDarkMode
-                    ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-              }`}>
-              <span className="text-lg">📎</span>
-            </button>
-
-            {/* Hidden file input */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept=".txt,.md,.markdown,.json,.csv,.log,.xml,.yaml,.yml"
-              onChange={handleFileChange}
-              className="hidden"
-              aria-hidden="true"
-            />
-
-            {onMicClick && (
+          <div className="ws-inp-bar">
+            <div className="ws-inp-tools">
               <button
                 type="button"
-                onClick={onMicClick}
-                disabled={disabled || isProcessingSpeech}
-                aria-label={
-                  isProcessingSpeech
-                    ? t('chat_stt_processing')
-                    : isRecording
-                      ? t('chat_stt_recording_stop')
-                      : t('chat_stt_input_start')
-                }
-                className={`rounded-md p-1.5 transition-colors ${
-                  disabled || isProcessingSpeech
-                    ? 'cursor-not-allowed opacity-50'
-                    : isRecording
-                      ? 'bg-red-500 text-white hover:bg-red-600'
-                      : isDarkMode
-                        ? 'text-gray-400 hover:bg-slate-700 hover:text-gray-200'
-                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                }`}>
-                {isProcessingSpeech ? (
-                  <AiOutlineLoading3Quarters className="size-4 animate-spin" />
-                ) : (
-                  <FaMicrophone className={`size-4 ${isRecording ? 'animate-pulse' : ''}`} />
-                )}
+                onClick={handleFileSelect}
+                disabled={disabled}
+                className="ws-tool-btn"
+                title="Attach files (txt, md, json, csv, etc.)"
+                aria-label="Attach files">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept=".txt,.md,.markdown,.json,.csv,.log,.xml,.yaml,.yml"
+                onChange={handleFileChange}
+                className="hidden"
+                aria-hidden="true"
+                style={{ display: 'none' }}
+              />
+
+              {onMicClick && (
+                <button
+                  type="button"
+                  onClick={onMicClick}
+                  disabled={disabled || isProcessingSpeech}
+                  className={`ws-tool-btn ${isRecording ? 'recording' : ''}`}
+                  title={
+                    isProcessingSpeech
+                      ? t('chat_stt_processing')
+                      : isRecording
+                        ? t('chat_stt_recording_stop')
+                        : t('chat_stt_input_start')
+                  }>
+                  {isProcessingSpeech ? (
+                    <svg className="ws-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={isRecording ? 'ws-spin' : ''}>
+                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                      <line x1="12" x2="12" y1="19" y2="22" />
+                    </svg>
+                  )}
+                </button>
+              )}
+            </div>
+
+            {showStopButton ? (
+              <button
+                type="button"
+                onClick={onStopTask}
+                className="ws-stop-btn">
+                <span>{t('chat_buttons_stop')}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                </svg>
+              </button>
+            ) : historicalSessionId ? (
+              <button
+                type="button"
+                onClick={handleReplay}
+                disabled={!historicalSessionId}
+                aria-disabled={!historicalSessionId}
+                className="ws-replay-btn">
+                <span>{t('chat_buttons_replay')}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="submit"
+                disabled={isSendButtonDisabled}
+                aria-disabled={isSendButtonDisabled}
+                className="ws-send-btn">
+                <span>{t('chat_buttons_send')}</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="22" x2="11" y1="2" y2="13" />
+                  <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                </svg>
               </button>
             )}
           </div>
-
-          {showStopButton ? (
-            <button
-              type="button"
-              onClick={onStopTask}
-              className="rounded-md bg-red-500 px-3 py-1 text-white transition-colors hover:bg-red-600">
-              {t('chat_buttons_stop')}
-            </button>
-          ) : historicalSessionId ? (
-            <button
-              type="button"
-              onClick={handleReplay}
-              disabled={!historicalSessionId}
-              aria-disabled={!historicalSessionId}
-              className={`rounded-md bg-green-500 px-3 py-1 text-white transition-colors hover:enabled:bg-green-600 ${!historicalSessionId ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('chat_buttons_replay')}
-            </button>
-          ) : (
-            <button
-              type="submit"
-              disabled={isSendButtonDisabled}
-              aria-disabled={isSendButtonDisabled}
-              className={`rounded-md bg-[#19C2FF] px-3 py-1 text-white transition-colors hover:enabled:bg-[#0073DC] ${isSendButtonDisabled ? 'cursor-not-allowed opacity-50' : ''}`}>
-              {t('chat_buttons_send')}
-            </button>
-          )}
         </div>
+      </form>
+      <div className="ws-hint-row">
+        <span className="ws-hk">⌘</span>
+        <span className="ws-hk">⏎</span>
+        <span className="ws-ht">to send</span>
       </div>
-    </form>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
-# Contributing to NanoBrowser
+# Contributing to WebSurfer
 
-We deeply appreciate your interest in contributing to NanoBrowser! Every contribution helps make Nanobrowser more powerful and accessible for everyone.
+We deeply appreciate your interest in contributing to WebSurfer! Every contribution helps make WebSurfer more powerful and accessible for everyone.
 
 ## Quick Start
 

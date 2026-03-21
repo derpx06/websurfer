@@ -11,6 +11,8 @@ import MessageList from './components/MessageList';
 import ChatInput from './components/ChatInput';
 import ChatHistoryList from './components/ChatHistoryList';
 import BookmarkList from './components/BookmarkList';
+import WelcomeScreen from './components/WelcomeScreen';
+import EmptyChat from './components/EmptyChat';
 import { EventType, type AgentEvent, ExecutionState } from './types/event';
 import './SidePanel.css';
 
@@ -1001,42 +1003,147 @@ const SidePanel = () => {
 
   return (
     <div>
-      <div
-        className={`flex h-screen flex-col ${isDarkMode ? 'bg-slate-900' : "bg-[url('/bg.jpg')] bg-cover bg-no-repeat"} overflow-hidden border ${isDarkMode ? 'border-sky-800' : 'border-[rgb(186,230,253)]'} rounded-2xl`}>
-        <header className="header relative">
-          <div className="header-logo">
+      <div className={`flex flex-col h-screen overflow-hidden relative ${isDarkMode ? 'theme-dark' : 'theme-light'}`}>
+        <header className="ws-topbar">
+          <div className="ws-brand">
+            <div className="ws-brand-logo">
+              {isDarkMode ? (
+                /* Inline SVG brand mark — dark mode */
+                <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="logoGlow" cx="40%" cy="35%" r="65%">
+                      <stop offset="0%" stopColor="#7ee8ff" />
+                      <stop offset="100%" stopColor="#38bdf8" />
+                    </radialGradient>
+                    <radialGradient id="logoBg" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#0e2040" />
+                      <stop offset="100%" stopColor="#060b16" />
+                    </radialGradient>
+                    <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#38bdf8" />
+                      <stop offset="100%" stopColor="#818cf8" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="15" cy="15" r="14" fill="url(#logoBg)" stroke="rgba(56,189,248,0.25)" strokeWidth="1" />
+                  <circle cx="15" cy="15" r="8.5" stroke="url(#logoGlow)" strokeWidth="1.2" fill="none" />
+                  <path
+                    d="M15 6.5c-2 2.5-3 5.3-3 8.5s1 6 3 8.5M15 6.5c2 2.5 3 5.3 3 8.5s-1 6-3 8.5"
+                    stroke="url(#logoGlow)"
+                    strokeWidth="1"
+                    fill="none"
+                    strokeOpacity="0.7"
+                  />
+                  <line x1="6.5" y1="15" x2="23.5" y2="15" stroke="url(#logoGlow)" strokeWidth="1" strokeOpacity="0.7" />
+                  <ellipse
+                    cx="15"
+                    cy="15"
+                    rx="13"
+                    ry="5"
+                    stroke="url(#orbitGrad)"
+                    strokeWidth="1"
+                    fill="none"
+                    transform="rotate(-25 15 15)"
+                    strokeOpacity="0.5"
+                  />
+                  <circle cx="24.5" cy="12" r="1.8" fill="#38bdf8" opacity="0.9" />
+                </svg>
+              ) : (
+                /* Inline SVG logo — light mode */
+                <svg width="30" height="30" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <radialGradient id="lLogoBg" cx="50%" cy="50%" r="50%">
+                      <stop offset="0%" stopColor="#EEF2FF" />
+                      <stop offset="100%" stopColor="#E0E7FF" />
+                    </radialGradient>
+                    <linearGradient id="lOrbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#4F46E5" />
+                      <stop offset="100%" stopColor="#8B5CF6" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="15" cy="15" r="14" fill="url(#lLogoBg)" stroke="rgba(79,70,229,0.20)" strokeWidth="1" />
+                  <circle cx="15" cy="15" r="8.5" stroke="#4F46E5" strokeWidth="1.2" fill="none" strokeOpacity="0.7" />
+                  <path
+                    d="M15 6.5c-2 2.5-3 5.3-3 8.5s1 6 3 8.5M15 6.5c2 2.5 3 5.3 3 8.5s-1 6-3 8.5"
+                    stroke="#4F46E5"
+                    strokeWidth="1"
+                    fill="none"
+                    strokeOpacity="0.5"
+                  />
+                  <line x1="6.5" y1="15" x2="23.5" y2="15" stroke="#4F46E5" strokeWidth="1" strokeOpacity="0.5" />
+                  <ellipse
+                    cx="15"
+                    cy="15"
+                    rx="13"
+                    ry="5"
+                    stroke="url(#lOrbitGrad)"
+                    strokeWidth="1"
+                    fill="none"
+                    transform="rotate(-25 15 15)"
+                    strokeOpacity="0.45"
+                  />
+                  <circle cx="24.5" cy="12" r="1.8" fill="#4F46E5" opacity="0.85" />
+                </svg>
+              )}
+            </div>
+            <span
+              className="ws-brand-name cursor-pointer"
+              onClick={showHistory ? () => handleBackToChat(false) : undefined}>
+              WebSurfer
+            </span>
+          </div>
+          <div className="ws-nav-icons">
             {showHistory ? (
               <button
                 type="button"
                 onClick={() => handleBackToChat(false)}
-                className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
-                aria-label={t('nav_back_a11y')}>
-                {t('nav_back')}
+                className="ws-nav-btn"
+                aria-label={t('nav_back_a11y')}
+                title={t('nav_back')}>
+                <svg
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  viewBox="0 0 24 24">
+                  <line x1="19" y1="12" x2="5" y2="12" />
+                  <polyline points="12 19 5 12 12 5" />
+                </svg>
               </button>
             ) : (
-              <img src="/icon-128.png" alt="Extension Logo" className="size-6" />
-            )}
-          </div>
-          <div className="header-icons">
-            {!showHistory && (
               <>
                 <button
                   type="button"
                   onClick={handleNewChat}
-                  onKeyDown={e => e.key === 'Enter' && handleNewChat()}
-                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                  className="ws-nav-btn"
                   aria-label={t('nav_newChat_a11y')}
-                  tabIndex={0}>
-                  <PiPlusBold size={20} />
+                  title={t('nav_newChat_a11y')}>
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
                 </button>
                 <button
                   type="button"
                   onClick={handleLoadHistory}
-                  onKeyDown={e => e.key === 'Enter' && handleLoadHistory()}
-                  className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+                  className="ws-nav-btn"
                   aria-label={t('nav_loadHistory_a11y')}
-                  tabIndex={0}>
-                  <GrHistory size={20} />
+                  title={t('nav_loadHistory_a11y')}>
+                  <svg
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    viewBox="0 0 24 24">
+                    <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </button>
               </>
             )}
@@ -1044,17 +1151,28 @@ const SidePanel = () => {
               href="https://discord.gg/NN3ABHggMK"
               target="_blank"
               rel="noopener noreferrer"
-              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'}`}>
-              <RxDiscordLogo size={20} />
+              className="ws-nav-btn"
+              title="Discord">
+              <svg fill="currentColor" viewBox="0 0 24 24">
+                <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.1.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z" />
+              </svg>
             </a>
             <button
               type="button"
               onClick={() => chrome.runtime.openOptionsPage()}
-              onKeyDown={e => e.key === 'Enter' && chrome.runtime.openOptionsPage()}
-              className={`header-icon ${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-400 hover:text-sky-500'} cursor-pointer`}
+              className="ws-nav-btn"
               aria-label={t('nav_settings_a11y')}
-              tabIndex={0}>
-              <FiSettings size={20} />
+              title={t('nav_settings_a11y')}>
+              <svg
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                viewBox="0 0 24 24">
+                <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
             </button>
           </div>
         </header>
@@ -1084,105 +1202,51 @@ const SidePanel = () => {
 
             {/* Show setup message when no models are configured */}
             {hasConfiguredModels === false && (
-              <div
-                className={`flex flex-1 items-center justify-center p-8 ${isDarkMode ? 'text-sky-300' : 'text-sky-600'}`}>
-                <div className="max-w-md text-center">
-                  <img src="/icon-128.png" alt="Nanobrowser Logo" className="mx-auto mb-4 size-12" />
-                  <h3 className={`mb-2 text-lg font-semibold ${isDarkMode ? 'text-sky-200' : 'text-sky-700'}`}>
-                    {t('welcome_title')}
-                  </h3>
-                  <p className="mb-4">{t('welcome_instruction')}</p>
-                  <button
-                    onClick={() => chrome.runtime.openOptionsPage()}
-                    className={`my-4 rounded-lg px-4 py-2 font-medium transition-colors ${
-                      isDarkMode ? 'bg-sky-600 text-white hover:bg-sky-700' : 'bg-sky-500 text-white hover:bg-sky-600'
-                    }`}>
-                    {t('welcome_openSettings')}
-                  </button>
-                  <div className="mt-4 text-sm opacity-75">
-                    <a
-                      href="https://github.com/nanobrowser/nanobrowser?tab=readme-ov-file#-quick-start"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('welcome_quickStart')}
-                    </a>
-                    <span className="mx-2">•</span>
-                    <a
-                      href="https://discord.gg/NN3ABHggMK"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`${isDarkMode ? 'text-sky-400 hover:text-sky-300' : 'text-sky-700 hover:text-sky-600'}`}>
-                      {t('welcome_joinCommunity')}
-                    </a>
-                  </div>
-                </div>
-              </div>
+              <WelcomeScreen
+                isDarkMode={isDarkMode}
+                onOpenSettings={() => chrome.runtime.openOptionsPage()}
+              />
             )}
 
             {/* Show normal chat interface when models are configured */}
             {hasConfiguredModels === true && (
-              <>
+              <div className="flex flex-1 flex-col overflow-hidden relative">
                 {messages.length === 0 && (
-                  <>
-                    <div
-                      className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} mb-2 p-2 shadow-sm backdrop-blur-sm`}>
-                      <ChatInput
-                        onSendMessage={handleSendMessage}
-                        onStopTask={handleStopTask}
-                        onMicClick={handleMicClick}
-                        isRecording={isRecording}
-                        isProcessingSpeech={isProcessingSpeech}
-                        disabled={!inputEnabled || isHistoricalSession}
-                        showStopButton={showStopButton}
-                        setContent={setter => {
-                          setInputTextRef.current = setter;
-                        }}
-                        isDarkMode={isDarkMode}
-                        historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
-                        onReplay={handleReplay}
-                      />
-                    </div>
-                    <div className="flex-1 overflow-y-auto">
-                      <BookmarkList
-                        bookmarks={favoritePrompts}
-                        onBookmarkSelect={handleBookmarkSelect}
-                        onBookmarkUpdateTitle={handleBookmarkUpdateTitle}
-                        onBookmarkDelete={handleBookmarkDelete}
-                        onBookmarkReorder={handleBookmarkReorder}
-                        isDarkMode={isDarkMode}
-                      />
-                    </div>
-                  </>
+                  <EmptyChat
+                    isDarkMode={isDarkMode}
+                    onSelectPrompt={text => {
+                      if (setInputTextRef.current) {
+                        setInputTextRef.current(text);
+                      }
+                    }}
+                  />
                 )}
                 {messages.length > 0 && (
                   <div
-                    className={`scrollbar-gutter-stable flex-1 overflow-x-hidden overflow-y-scroll scroll-smooth p-2 ${isDarkMode ? 'bg-slate-900/80' : ''}`}>
+                    className="ws-body">
                     <MessageList messages={messages} isDarkMode={isDarkMode} />
                     <div ref={messagesEndRef} />
                   </div>
                 )}
-                {messages.length > 0 && (
-                  <div
-                    className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm`}>
-                    <ChatInput
-                      onSendMessage={handleSendMessage}
-                      onStopTask={handleStopTask}
-                      onMicClick={handleMicClick}
-                      isRecording={isRecording}
-                      isProcessingSpeech={isProcessingSpeech}
-                      disabled={!inputEnabled || isHistoricalSession}
-                      showStopButton={showStopButton}
-                      setContent={setter => {
-                        setInputTextRef.current = setter;
-                      }}
-                      isDarkMode={isDarkMode}
-                      historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
-                      onReplay={handleReplay}
-                    />
-                  </div>
-                )}
-              </>
+                <div
+                  className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm z-10`}>
+                  <ChatInput
+                    onSendMessage={handleSendMessage}
+                    onStopTask={handleStopTask}
+                    onMicClick={handleMicClick}
+                    isRecording={isRecording}
+                    isProcessingSpeech={isProcessingSpeech}
+                    disabled={!inputEnabled || isHistoricalSession}
+                    showStopButton={showStopButton}
+                    setContent={setter => {
+                      setInputTextRef.current = setter;
+                    }}
+                    isDarkMode={isDarkMode}
+                    historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
+                    onReplay={handleReplay}
+                  />
+                </div>
+              </div>
             )}
           </>
         )}
