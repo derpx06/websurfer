@@ -21,6 +21,8 @@ import {
   ResponseParseError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
+  ChatModelRateLimitError,
+  isRateLimitError,
 } from './errors';
 import { calcBranchPathHashSet } from '@src/background/browser/dom/views';
 import { type BrowserState, BrowserStateHistory, URLNotAllowedError } from '@src/background/browser/views';
@@ -233,6 +235,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         throw new ExtensionConflictError(EXTENSION_CONFLICT_ERROR_MESSAGE, error);
       } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
+      } else if (isRateLimitError(error)) {
+        throw new ChatModelRateLimitError('API Rate Limit Exceeded (429). Please try again in a few moments.', error);
       } else if (error instanceof URLNotAllowedError) {
         throw error;
       }

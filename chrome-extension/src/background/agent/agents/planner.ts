@@ -12,8 +12,10 @@ import {
   isAuthenticationError,
   isBadRequestError,
   isForbiddenError,
+  isRateLimitError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
+  ChatModelRateLimitError,
 } from './errors';
 import { filterExternalContent } from '../messages/utils';
 const logger = createLogger('PlannerAgent');
@@ -118,6 +120,8 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
         throw new RequestCancelledError(errorMessage);
       } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
+      } else if (isRateLimitError(error)) {
+        throw new ChatModelRateLimitError('API Rate Limit Exceeded (429). Please try again in a few moments.', error);
       }
 
       logger.error(`Planning failed: ${errorMessage}`);

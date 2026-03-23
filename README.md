@@ -15,7 +15,7 @@
 
 ## 🌐 WebSurfer
 
-WebSurfer is an open-source AI web automation tool that runs in your browser. A free alternative to OpenAI Operator with flexible LLM options and multi-agent system.
+WebSurfer is an open-source AI web automation tool that runs in your browser. A free alternative to OpenAI Operator with flexible LLM options and multi-websurfer system.
 
 ⬇️ Get [WebSurfer from Chrome Web Store](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal) for free
 
@@ -27,16 +27,16 @@ WebSurfer is an open-source AI web automation tool that runs in your browser. A 
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/112c4385-7b03-4b81-a352-4f348093351b" width="600" alt="WebSurfer Demo GIF" />
-<p><em>WebSurfer's multi-agent system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
+<p><em>WebSurfer's multi-websurfer system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
 </div>
 
 ## 🔥Why WebSurfer?
 
-Looking for a powerful AI browser agent without the $200/month price tag of OpenAI Operator? **WebSurfer** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
+Looking for a powerful AI browser websurfer without the $200/month price tag of OpenAI Operator? **WebSurfer** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
 
 - **100% Free** - No subscription fees or hidden costs. Just install and use your own API keys, and you only pay what you use with your own API keys.
 - **Privacy-Focused** - Everything runs in your local browser. Your credentials stay with you, never shared with any cloud service.
-- **Flexible LLM Options** - Connect to your preferred LLM providers with the freedom to choose different models for different agents.
+- **Flexible LLM Options** - Connect to your preferred LLM providers with the freedom to choose different models for different websurfers.
 - **Fully Open Source** - Complete transparency in how your browser is automated. No black boxes or hidden processes.
 
 > **Note:** We currently support OpenAI, Anthropic, Gemini, Ollama, Groq, Cerebras, Llama and custom OpenAI-Compatible providers, more providers will be supported.
@@ -44,12 +44,12 @@ Looking for a powerful AI browser agent without the $200/month price tag of Open
 
 ## 📊 Key Features
 
-- **Multi-agent System**: Specialized AI agents collaborate to accomplish complex web workflows
+- **Multi-websurfer System**: Specialized AI websurfers collaborate to accomplish complex web workflows
 - **Interactive Side Panel**: Intuitive chat interface with real-time status updates
 - **Task Automation**: Seamlessly automate repetitive web automation tasks across websites
 - **Follow-up Questions**: Ask contextual follow-up questions about completed tasks
-- **Conversation History**: Easily access and manage your AI agent interaction history
-- **Multiple LLM Support**: Connect your preferred LLM providers and assign different models to different agents
+- **Conversation History**: Easily access and manage your AI websurfer interaction history
+- **Multiple LLM Support**: Connect your preferred LLM providers and assign different models to different websurfers
 
 
 ## 🌐 Browser Support
@@ -73,11 +73,11 @@ Looking for a powerful AI browser agent without the $200/month price tag of Open
 
 > **Important Note**: For latest features, install from ["Manually Install Latest Version"](#-manually-install-latest-version) below, as Chrome Web Store version may be delayed due to review process.
 
-2. **Configure Agent Models**:
+2. **Configure WebSurfer Models**:
    * Click the WebSurfer icon in your toolbar to open the sidebar
    * Click the `Settings` icon (top right)
    * Add your LLM API keys
-   * Choose which model to use for different agents (Navigator, Planner)
+   * Choose which model to use for different websurfers (Navigator, Planner)
 
 ## 🔧 Manually Install Latest Version
 
@@ -93,11 +93,11 @@ To get the most recent version with all the latest features:
     * Click `Load unpacked` (top left)
     * Select the unzipped `WebSurfer` folder.
 
-3. **Configure Agent Models**
+3. **Configure WebSurfer Models**
     * Click the WebSurfer icon in your toolbar to open the sidebar
     * Click the `Settings` icon (top right).
     * Add your LLM API keys.
-    * Choose which model to use for different agents (Navigator, Planner)
+    * Choose which model to use for different websurfers (Navigator, Planner)
 
 4. **Upgrading**:
     * Download the latest `WebSurfer.zip` file from the release page.
@@ -139,7 +139,7 @@ If you prefer to build WebSurfer yourself, follow these steps:
 
 ## 🤖 Choosing Your Models
 
-WebSurfer allows you to configure different LLM models for each agent to balance performance and cost. Here are recommended configurations:
+WebSurfer allows you to configure different LLM models for each websurfer to balance performance and cost. Here are recommended configurations:
 
 ### Better Performance
 - **Planner**: Claude Sonnet 4

@@ -15,6 +15,7 @@ import {
   ChatModelAuthError,
   ChatModelBadRequestError,
   ChatModelForbiddenError,
+  ChatModelRateLimitError,
   ExtensionConflictError,
   RequestCancelledError,
   MaxStepsReachedError,
@@ -256,6 +257,7 @@ export class Executor {
         error instanceof ChatModelAuthError ||
         error instanceof ChatModelBadRequestError ||
         error instanceof ChatModelForbiddenError ||
+        error instanceof ChatModelRateLimitError ||
         error instanceof URLNotAllowedError ||
         error instanceof RequestCancelledError ||
         error instanceof ExtensionConflictError
@@ -298,6 +300,7 @@ export class Executor {
         error instanceof ChatModelAuthError ||
         error instanceof ChatModelBadRequestError ||
         error instanceof ChatModelForbiddenError ||
+        error instanceof ChatModelRateLimitError ||
         error instanceof URLNotAllowedError ||
         error instanceof RequestCancelledError ||
         error instanceof ExtensionConflictError

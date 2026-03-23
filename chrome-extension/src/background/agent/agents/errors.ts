@@ -178,6 +178,25 @@ export function isAbortedError(error: unknown): boolean {
   return error.name === 'AbortError' || error.message.includes('Aborted');
 }
 
+export class ChatModelRateLimitError extends Error {
+  constructor(message: string, public readonly cause?: unknown) {
+    super(message);
+    this.name = 'ChatModelRateLimitError';
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ChatModelRateLimitError);
+    }
+  }
+  toString(): string {
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+  }
+}
+
+export function isRateLimitError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const msg = error.message.toLowerCase();
+  return msg.includes('429') || msg.includes('too many requests') || msg.includes('rate limit') || msg.includes('quota');
+}
+
 /**
  * Checks if an error is related to extension conflicts
  *
