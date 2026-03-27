@@ -1,0 +1,86 @@
+#nanobrowser-agent-border {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 2147483646;
+    /* Just below the highlight container */
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    box-sizing: border-box;
+}
+
+#nanobrowser-agent-border.active {
+    opacity: 1;
+}
+
+#nanobrowser-agent-border::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    /* Use a conic-gradient for the circulating energy effect */
+    background: conic-gradient(from 0deg,
+            transparent 0%,
+            #00f2ff 10%,
+            /* neon blue */
+            #7000ff 25%,
+            /* purple */
+            #ff00f7 40%,
+            /* pink */
+            #00f2ff 50%,
+            /* cyan/blue */
+            transparent 60%);
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: source-out;
+    padding: 4px;
+    /* The thickness of the border */
+    animation: rotate-border 4s linear infinite;
+    filter: blur(2px) drop-shadow(0 0 10px #00f2ff);
+}
+
+/* Add a secondary glow layer for more depth */
+#nanobrowser-agent-border::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: conic-gradient(from 180deg,
+            transparent 0%,
+            #7000ff 15%,
+            #00f2ff 30%,
+            transparent 45%);
+    mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    -webkit-mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: source-out;
+    padding: 3px;
+    animation: rotate-border 6s linear reverse infinite;
+    filter: blur(4px) opacity(0.7);
+}
+
+@keyframes rotate-border {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

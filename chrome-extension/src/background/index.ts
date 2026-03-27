@@ -29,9 +29,48 @@ const SIDE_PANEL_URL = chrome.runtime.getURL('side-panel/index.html');
 // Setup side panel behavior
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
 
+/**
+ * Notify a specific tab or the active tab about the agent's active status.
+ */
+async function notifyAgentStatus(active: boolean, targetTabId?: number) {
+  try {
+    let tabId = targetTabId;
+    if (!tabId) {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      tabId = tab?.id;
+    }
+
+    if (tabId) {
+      await chrome.tabs.sendMessage(tabId, { type: 'AGENT_STATUS', active }).catch(() => {
+        // Ignore errors if the content script is not injected yet
+      });
+    }
+  } catch (error) {
+    logger.error('Failed to notify agent status:', error);
+  }
+}
+
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (tabId && changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
     await injectBuildDomTreeScripts(tabId);
+    // If an agent is running ON THIS TAB, notify it
+    // @ts-expect-error - context is private
+    const agentTabId = currentExecutor?.context?.browserContext?._currentTabId;
+    if (agentTabId === tabId) {
+      await notifyAgentStatus(true, tabId);
+    }
+  }
+});
+
+// Listen for tab activation to show/hide border
+chrome.tabs.onActivated.addListener(async activeInfo => {
+  // @ts-expect-error - context is private
+  const agentTabId = currentExecutor?.context?.browserContext?._currentTabId;
+  if (agentTabId === activeInfo.tabId) {
+    await notifyAgentStatus(true, activeInfo.tabId);
+  } else {
+    // Hide border on other tabs if they were previously active for the agent
+    await notifyAgentStatus(false, activeInfo.tabId);
   }
 });
 
@@ -350,11 +389,20 @@ async function subscribeToExecutorEvents(executor: Executor) {
       logger.error('Failed to send message to side panel:', error);
     }
 
+    // Get the tab ID from the executor's context if possible
+    // @ts-expect-error - context is private but accessible in this file for background logic
+    const tabId = executor.context?.browserContext?._currentTabId ?? undefined;
+
+    if (event.state === ExecutionState.TASK_START || event.state === ExecutionState.STEP_START) {
+      await notifyAgentStatus(true, tabId);
+    }
+
     if (
       event.state === ExecutionState.TASK_OK ||
       event.state === ExecutionState.TASK_FAIL ||
       event.state === ExecutionState.TASK_CANCEL
     ) {
+      await notifyAgentStatus(false, tabId);
       await currentExecutor?.cleanup();
     }
   });
