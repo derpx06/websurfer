@@ -90,6 +90,37 @@ export class ChatModelBadRequestError extends Error {
 }
 
 /**
+ * Custom error class for chat model payment required errors (402)
+ */
+export class ChatModelPaymentRequiredError extends Error {
+  /**
+   * Creates a new ChatModelPaymentRequiredError
+   *
+   * @param message - The error message
+   * @param cause - The original error that caused this error
+   */
+  constructor(
+    message: string,
+    public readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'ChatModelPaymentRequiredError';
+
+    // Maintains proper stack trace for where our error was thrown
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ChatModelPaymentRequiredError);
+    }
+  }
+
+  /**
+   * Returns a string representation of the error
+   */
+  toString(): string {
+    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
+  }
+}
+
+/**
  * Checks if an error is related to API authentication
  *
  * @param error - The error to check
@@ -133,6 +164,19 @@ export function isAuthenticationError(error: unknown): boolean {
 export function isForbiddenError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return error.message.includes(' 403') && error.message.includes('Forbidden');
+}
+
+/**
+ * Checks if an error is related to 402 Payment Required
+ *
+ * @param error - The error to check
+ * @returns boolean indicating if it's a 402 Payment Required error
+ */
+export function isPaymentRequiredError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+
+  const errorMessage = error.message || '';
+  return errorMessage.includes(' 402') || errorMessage.toLowerCase().includes('payment required');
 }
 
 /**

@@ -710,162 +710,140 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     }
   };
 
-  const renderModelSelect = (agentName: AgentNameEnum) => (
-    <div
-      className={`rounded-lg border ${isDarkMode ? 'border-gray-700 bg-slate-800' : 'border-gray-200 bg-gray-50'} p-4`}>
-      <h3 className={`mb-2 text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-        {agentName.charAt(0).toUpperCase() + agentName.slice(1)}
-      </h3>
-      <p className={`mb-4 text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-        {getAgentDescription(agentName)}
-      </p>
+  const renderModelSelect = (agentName: AgentNameEnum) => {
+    const isPlanner = agentName === AgentNameEnum.Planner;
+    const pillClass = isPlanner ? 'planner' : 'navigator';
 
-      <div className="space-y-4">
-        {/* Model Selection */}
-        <div className="flex items-center">
-          <label
-            htmlFor={`${agentName}-model`}
-            className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-            {t('options_models_labels_model')}
-          </label>
-          <select
-            id={`${agentName}-model`}
-            className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
-            disabled={availableModels.length === 0}
-            value={selectedModels[agentName] || ''} // Use the stored provider>model value directly
-            onChange={e => handleModelChange(agentName, e.target.value)}>
-            <option key="default" value="">
-              {t('options_models_chooseModel')}
-            </option>
-            {availableModels.map(({ provider, providerName, model }) => (
-              <option key={`${provider}>${model}`} value={`${provider}>${model}`}>
-                {`${providerName} > ${model}`}
-              </option>
-            ))}
-          </select>
+    return (
+      <div className="agent-card">
+        <div className="agent-head">
+          <div className={`agent-pill ${pillClass}`}>
+            <div className="agent-pill-dot"></div>
+            {isPlanner ? 'Planner' : 'Navigator'}
+          </div>
+          <div className="agent-role">{getAgentDescription(agentName)}</div>
         </div>
 
-        {/* Temperature Slider - Only show for non-reasoning models */}
-        {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
-          <div className="flex items-center">
-            <label
-              htmlFor={`${agentName}-temperature`}
-              className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {t('options_models_labels_temperature')}
-            </label>
-            <div className="flex flex-1 items-center space-x-2">
+        <div className="agent-body">
+          {/* Model Row */}
+          <div className="model-row">
+            <div className="model-label">Model</div>
+            <div className="sel-wrap">
+              <select
+                className="model-sel"
+                disabled={availableModels.length === 0}
+                value={selectedModels[agentName] || ''}
+                onChange={e => handleModelChange(agentName, e.target.value)}>
+                <option value="">{t('options_models_chooseModel')}</option>
+                {availableModels.map(({ provider, providerName, model }) => (
+                  <option key={`${provider}>${model}`} value={`${provider}>${model}`}>
+                    {`${providerName} > ${model}`}
+                  </option>
+                ))}
+              </select>
+              <div className="sel-arrow">
+                <svg fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
+            <div className="slider-row">
+              <div className="model-label">{t('options_models_labels_temperature')}</div>
               <input
-                id={`${agentName}-temperature`}
                 type="range"
                 min="0"
                 max="2"
                 step="0.01"
                 value={modelParameters[agentName].temperature}
-                onChange={e => handleParameterChange(agentName, 'temperature', Number.parseFloat(e.target.value))}
                 style={{
-                  background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${(modelParameters[agentName].temperature / 2) * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
+                  background: `linear-gradient(90deg, #38bdf8 ${(modelParameters[agentName].temperature / 2) * 100}%, rgba(13,26,46,1) ${(modelParameters[agentName].temperature / 2) * 100}%)`,
                 }}
-                className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
+                onChange={e => handleParameterChange(agentName, 'temperature', Number.parseFloat(e.target.value))}
               />
-              <div className="flex items-center space-x-2">
-                <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                  {modelParameters[agentName].temperature.toFixed(2)}
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  max="2"
-                  step="0.01"
-                  value={modelParameters[agentName].temperature}
-                  onChange={e => {
-                    const value = Number.parseFloat(e.target.value);
-                    if (!Number.isNaN(value) && value >= 0 && value <= 2) {
-                      handleParameterChange(agentName, 'temperature', value);
-                    }
-                  }}
-                  className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
-                  aria-label={`${agentName} temperature number input`}
-                />
-              </div>
+              <div className="slider-val">{modelParameters[agentName].temperature.toFixed(2)}</div>
+              <input
+                type="number"
+                min="0"
+                max="2"
+                step="0.01"
+                value={modelParameters[agentName].temperature}
+                onChange={e => {
+                  const value = Number.parseFloat(e.target.value);
+                  if (!Number.isNaN(value) && value >= 0 && value <= 2) {
+                    handleParameterChange(agentName, 'temperature', value);
+                  }
+                }}
+                className="slider-input"
+              />
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Top P Slider - Only show for non-reasoning models */}
-        {selectedModels[agentName] &&
-          !isOpenAIReasoningModel(selectedModels[agentName]) &&
-          !isAnthropicModel(selectedModels[agentName]) && (
-            <div className="flex items-center">
-              <label
-                htmlFor={`${agentName}-topP`}
-                className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_models_labels_topP')}
-              </label>
-              <div className="flex flex-1 items-center space-x-2">
+          {selectedModels[agentName] &&
+            !isOpenAIReasoningModel(selectedModels[agentName]) &&
+            !isAnthropicModel(selectedModels[agentName]) && (
+              <div className="slider-row">
+                <div className="model-label">{t('options_models_labels_topP')}</div>
                 <input
-                  id={`${agentName}-topP`}
                   type="range"
                   min="0"
                   max="1"
                   step="0.001"
                   value={modelParameters[agentName].topP}
-                  onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
                   style={{
-                    background: `linear-gradient(to right, ${isDarkMode ? '#3b82f6' : '#60a5fa'} 0%, ${isDarkMode ? '#3b82f6' : '#60a5fa'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} ${modelParameters[agentName].topP * 100}%, ${isDarkMode ? '#475569' : '#cbd5e1'} 100%)`,
+                    background: `linear-gradient(90deg, #38bdf8 ${modelParameters[agentName].topP * 100}%, rgba(13,26,46,1) ${modelParameters[agentName].topP * 100}%)`,
                   }}
-                  className={`flex-1 ${isDarkMode ? 'accent-blue-500' : 'accent-blue-400'} h-1 appearance-none rounded-full`}
+                  onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
                 />
-                <div className="flex items-center space-x-2">
-                  <span className={`w-12 text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                    {modelParameters[agentName].topP.toFixed(3)}
-                  </span>
-                  <input
-                    type="number"
-                    min="0"
-                    max="1"
-                    step="0.001"
-                    value={modelParameters[agentName].topP}
-                    onChange={e => {
-                      const value = Number.parseFloat(e.target.value);
-                      if (!Number.isNaN(value) && value >= 0 && value <= 1) {
-                        handleParameterChange(agentName, 'topP', value);
-                      }
-                    }}
-                    className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} px-2 py-1 text-sm`}
-                    aria-label={`${agentName} top P number input`}
-                  />
+                <div className="slider-val">{modelParameters[agentName].topP.toFixed(3)}</div>
+                <input
+                  type="number"
+                  min="0"
+                  max="1"
+                  step="0.001"
+                  value={modelParameters[agentName].topP}
+                  onChange={e => {
+                    const value = Number.parseFloat(e.target.value);
+                    if (!Number.isNaN(value) && value >= 0 && value <= 1) {
+                      handleParameterChange(agentName, 'topP', value);
+                    }
+                  }}
+                  className="slider-input"
+                />
+              </div>
+            )}
+
+          {/* Reasoning Effort (O-series models) */}
+          {selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName]) && (
+            <div className="model-row">
+              <div className="model-label">{t('options_models_labels_reasoning')}</div>
+              <div className="sel-wrap">
+                <select
+                  value={reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')}
+                  onChange={e =>
+                    handleReasoningEffortChange(agentName, e.target.value as 'minimal' | 'low' | 'medium' | 'high')
+                  }
+                  className="model-sel">
+                  <option value="minimal">Minimal</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+                <div className="sel-arrow">
+                  <svg fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </div>
               </div>
             </div>
           )}
-
-        {/* Reasoning Effort Selector (only for O-series models) */}
-        {selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName]) && (
-          <div className="flex items-center">
-            <label
-              htmlFor={`${agentName}-reasoning-effort`}
-              className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {t('options_models_labels_reasoning')}
-            </label>
-            <div className="flex flex-1 items-center space-x-2">
-              <select
-                id={`${agentName}-reasoning-effort`}
-                value={reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')}
-                onChange={e =>
-                  handleReasoningEffortChange(agentName, e.target.value as 'minimal' | 'low' | 'medium' | 'high')
-                }
-                className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}>
-                <option value="minimal/none">Minimal</option>
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
+
 
   const getAgentDescription = (agentName: AgentNameEnum) => {
     switch (agentName) {
@@ -1125,545 +1103,308 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   };
 
   return (
-    <section className="space-y-6">
+    <div className="page" id="tab-models">
+      <div className="page-header">
+        <div>
+          <div className="page-title">Models & Providers</div>
+          <div className="page-sub">Configure LLM endpoints and agent roles</div>
+        </div>
+      </div>
+
       {/* LLM Providers Section */}
-      <div
-        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
-        <h2 className={`mb-4 text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          {t('options_models_providers_header')}
-        </h2>
-        <div className="space-y-6">
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title-group">
+            <div className="card-icon cyan">
+              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                <line x1="6" y1="6" x2="6.01" y2="6" />
+                <line x1="6" y1="18" x2="6.01" y2="18" />
+              </svg>
+            </div>
+            <div>
+              <div className="card-title">LLM Providers</div>
+              <div className="card-desc">API keys and endpoint configurations</div>
+            </div>
+          </div>
+        </div>
+        <div className="card-body" style={{ padding: '0' }}>
           {getSortedProviders().length === 0 ? (
-            <div className="py-8 text-center text-gray-500">
-              <p className="mb-4">{t('options_models_providers_notConfigured')}</p>
+            <div className="p-8 text-center" style={{ color: 'var(--text-dim)' }}>
+              {t('options_models_providers_notConfigured')}
             </div>
           ) : (
             getSortedProviders().map(([providerId, providerConfig]) => {
-              // Add type guard to satisfy TypeScript
-              if (!providerConfig || !providerConfig.type) {
-                console.warn(`Skipping rendering for providerId ${providerId} due to missing config or type`);
-                return null; // Skip rendering this item if config/type is somehow missing
-              }
+              if (!providerConfig || !providerConfig.type) return null;
+              const isModified = modifiedProviders.has(providerId);
+              const isInStorage = providersFromStorage.has(providerId);
 
               return (
-                <div
-                  key={providerId}
-                  id={`provider-${providerId}`}
-                  className={`space-y-4 ${modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) ? `rounded-lg border p-4 ${isDarkMode ? 'border-blue-700 bg-slate-700' : 'border-blue-200 bg-blue-50/70'}` : ''}`}>
-                  <div className="flex items-center justify-between">
-                    <h3 className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {providerConfig.name || providerId}
-                    </h3>
-                    <div className="flex space-x-2">
-                      {/* Show Cancel button for newly added providers */}
-                      {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
-                        <Button variant="secondary" onClick={() => handleCancelProvider(providerId)}>
-                          {t('options_models_providers_btnCancel')}
-                        </Button>
+                <div key={providerId} className="provider-item" id={`provider-${providerId}`}>
+                  <div className="provider-head">
+                    <div className="provider-info">
+                      <div className="provider-name">{providerConfig.name || providerId}</div>
+                      {isModified && !isInStorage && <div className="p-tag">New</div>}
+                    </div>
+                    <div className="provider-actions">
+                      {isModified && !isInStorage && (
+                        <button className="btn btn-sec" onClick={() => handleCancelProvider(providerId)}>
+                          Cancel
+                        </button>
                       )}
-                      <Button
-                        variant={getButtonProps(providerId).variant}
+                      <button
+                        className={`btn ${getButtonProps(providerId).variant === 'danger' ? 'btn-danger' : 'btn-prim'}`}
                         disabled={getButtonProps(providerId).disabled}
                         onClick={() =>
-                          providersFromStorage.has(providerId) && !modifiedProviders.has(providerId)
-                            ? handleDelete(providerId)
-                            : handleSave(providerId)
+                          isInStorage && !isModified ? handleDelete(providerId) : handleSave(providerId)
                         }>
                         {getButtonProps(providerId).children}
-                      </Button>
+                      </button>
                     </div>
                   </div>
 
-                  {/* Show message for newly added providers */}
-                  {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
-                    <div className={`mb-2 text-sm ${isDarkMode ? 'text-teal-300' : 'text-teal-700'}`}>
-                      <p>{t('options_models_providers_setupInstructions')}</p>
-                    </div>
-                  )}
+                  <div className="provider-form">
+                    {/* Setup instructions for new providers */}
+                    {isModified && !isInStorage && (
+                      <div className="mb-4 text-sm" style={{ color: 'var(--cyan)' }}>
+                        {t('options_models_providers_setupInstructions')}
+                      </div>
+                    )}
 
-                  <div className="space-y-3">
-                    {/* Name input (only for custom_openai) - moved to top for prominence */}
+                    {/* Name input for Custom Providers */}
                     {providerConfig.type === ProviderTypeEnum.CustomOpenAI && (
-                      <div className="flex flex-col">
-                        <div className="flex items-center">
-                          <label
-                            htmlFor={`${providerId}-name`}
-                            className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {t('options_models_providers_custom_name')}
-                          </label>
-                          <input
-                            id={`${providerId}-name`}
-                            type="text"
-                            placeholder={t('options_models_providers_custom_name_placeholder')}
-                            value={providerConfig.name || ''}
-                            onChange={e => {
-                              console.log('Name input changed:', e.target.value);
-                              handleNameChange(providerId, e.target.value);
-                            }}
-                            className={`flex-1 rounded-md border p-2 text-sm ${
-                              nameErrors[providerId]
-                                ? isDarkMode
-                                  ? 'border-red-700 bg-slate-700 text-gray-200 focus:border-red-600 focus:ring-2 focus:ring-red-900'
-                                  : 'border-red-300 bg-gray-50 focus:border-red-400 focus:ring-2 focus:ring-red-200'
-                                : isDarkMode
-                                  ? 'border-blue-700 bg-slate-700 text-gray-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-900'
-                                  : 'border-blue-300 bg-gray-50 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'
-                            } outline-none`}
-                          />
-                        </div>
-                        {nameErrors[providerId] ? (
-                          <p className={`ml-20 mt-1 text-xs ${isDarkMode ? 'text-red-400' : 'text-red-500'}`}>
-                            {nameErrors[providerId]}
-                          </p>
-                        ) : (
-                          <p className={`ml-20 mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {t('options_models_providers_custom_name_desc')}
-                          </p>
+                      <div className="field">
+                        <label className="field-label">Provider Name</label>
+                        <input
+                          type="text"
+                          className="inp w-full"
+                          placeholder="My Provider"
+                          value={providerConfig.name || ''}
+                          onChange={e => handleNameChange(providerId, e.target.value)}
+                        />
+                        {nameErrors[providerId] && (
+                          <div className="text-xs mt-1" style={{ color: 'var(--red)' }}>{nameErrors[providerId]}</div>
                         )}
                       </div>
                     )}
 
-                    {/* API Key input with label */}
-                    <div className="flex items-center">
-                      <label
-                        htmlFor={`${providerId}-api-key`}
-                        className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                        {t('options_models_providers_apiKey')}
-                        {/* Show asterisk only if required */}
-                        {providerConfig.type !== ProviderTypeEnum.CustomOpenAI &&
-                        providerConfig.type !== ProviderTypeEnum.Ollama
-                          ? '*'
-                          : ''}
-                      </label>
-                      <div className="relative flex-1">
+                    {/* API Key */}
+                    <div className="field">
+                      <label className="field-label">API Key</label>
+                      <div className="relative">
                         <input
-                          id={`${providerId}-api-key`}
-                          type="password"
-                          placeholder={
-                            providerConfig.type === ProviderTypeEnum.CustomOpenAI
-                              ? t('options_models_providers_apiKey_placeholder_optional')
-                              : providerConfig.type === ProviderTypeEnum.Ollama
-                                ? t('options_models_providers_apiKey_placeholder_ollama')
-                                : t('options_models_providers_apiKey_placeholder_required')
-                          }
+                          type={visibleApiKeys[providerId] ? 'text' : 'password'}
+                          className="inp w-full"
+                          placeholder="sk-..."
                           value={providerConfig.apiKey || ''}
                           onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
-                          className={`w-full rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
                         />
-                        {/* Show eye button only for newly added providers */}
-                        {modifiedProviders.has(providerId) && !providersFromStorage.has(providerId) && (
-                          <button
-                            type="button"
-                            className={`absolute right-2 top-1/2 -translate-y-1/2 ${
-                              isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                            }`}
-                            onClick={() => toggleApiKeyVisibility(providerId)}
-                            aria-label={
-                              visibleApiKeys[providerId]
-                                ? t('options_models_providers_apiKey_hide')
-                                : t('options_models_providers_apiKey_show')
-                            }>
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              className="size-5"
-                              aria-hidden="true">
-                              <title>
-                                {visibleApiKeys[providerId]
-                                  ? t('options_models_providers_apiKey_hide')
-                                  : t('options_models_providers_apiKey_show')}
-                              </title>
-                              {visibleApiKeys[providerId] ? (
-                                <>
-                                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                                  <circle cx="12" cy="12" r="3" />
-                                  <line x1="2" y1="22" x2="22" y2="2" />
-                                </>
-                              ) : (
-                                <>
-                                  <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                                  <circle cx="12" cy="12" r="3" />
-                                </>
-                              )}
+                        <button
+                          className="absolute right-3 top-1/2 -translate-y-1/2"
+                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+                          onClick={() => toggleApiKeyVisibility(providerId)}>
+                          {visibleApiKeys[providerId] ? (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
                             </svg>
-                          </button>
-                        )}
+                          ) : (
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </button>
                       </div>
                     </div>
 
-                    {/* Display API key for newly added providers only when visible */}
-                    {modifiedProviders.has(providerId) &&
-                      !providersFromStorage.has(providerId) &&
-                      visibleApiKeys[providerId] &&
-                      providerConfig.apiKey && (
-                        <div className="ml-20 mt-1">
-                          <p
-                            className={`break-words font-mono text-sm ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
-                            {providerConfig.apiKey}
-                          </p>
-                        </div>
-                      )}
-
-                    {/* Base URL input (for custom_openai, ollama, azure_openai, openrouter, and llama) */}
+                    {/* Base URL / Endpoint */}
                     {(providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
                       providerConfig.type === ProviderTypeEnum.Ollama ||
                       providerConfig.type === ProviderTypeEnum.AzureOpenAI ||
                       providerConfig.type === ProviderTypeEnum.OpenRouter ||
                       providerConfig.type === ProviderTypeEnum.Llama) && (
-                      <div className="flex flex-col">
-                        <div className="flex items-center">
-                          <label
-                            htmlFor={`${providerId}-base-url`}
-                            className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                            {/* Adjust Label based on provider */}
-                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI
-                              ? t('options_models_providers_endpoint')
-                              : t('options_models_providers_baseUrl')}
-                            {/* Show asterisk only if required */}
-                            {/* OpenRouter has a default, so not strictly required, but needed for save button */}
-                            {providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
-                            providerConfig.type === ProviderTypeEnum.AzureOpenAI
-                              ? '*'
-                              : ''}
+                        <div className="field">
+                          <label className="field-label">
+                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI ? 'Azure Endpoint' : 'Base URL'}
                           </label>
                           <input
-                            id={`${providerId}-base-url`}
                             type="text"
-                            placeholder={
-                              providerConfig.type === ProviderTypeEnum.CustomOpenAI
-                                ? t('options_models_providers_placeholders_baseUrl_custom')
-                                : providerConfig.type === ProviderTypeEnum.AzureOpenAI
-                                  ? t('options_models_providers_placeholders_baseUrl_azure')
-                                  : providerConfig.type === ProviderTypeEnum.OpenRouter
-                                    ? t('options_models_providers_placeholders_baseUrl_openrouter')
-                                    : providerConfig.type === ProviderTypeEnum.Llama
-                                      ? t('options_models_providers_placeholders_baseUrl_llama')
-                                      : t('options_models_providers_placeholders_baseUrl_ollama')
-                            }
+                            className="inp w-full"
+                            placeholder="https://api.openai.com/v1"
                             value={providerConfig.baseUrl || ''}
                             onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
-                            className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
                           />
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Azure Deployment Name input as tags/chips like OpenRouter models */}
-                    {(providerConfig.type as ProviderTypeEnum) === ProviderTypeEnum.AzureOpenAI && (
-                      <div className="flex items-start">
-                        <label
-                          htmlFor={`${providerId}-azure-deployment`}
-                          className={`w-20 pt-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {t('options_models_providers_deployment')}*
-                        </label>
-                        <div className="flex-1 space-y-2">
-                          <div
-                            className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
-                            {/* Show azure deployments */}
-                            {(providerConfig.azureDeploymentNames || []).length > 0
-                              ? (providerConfig.azureDeploymentNames || []).map((deploymentName: string) => (
-                                  <div
-                                    key={deploymentName}
-                                    className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
-                                    <span>{deploymentName}</span>
-                                    <button
-                                      type="button"
-                                      onClick={() => removeAzureDeployment(providerId, deploymentName)}
-                                      className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
-                                      aria-label={`Remove ${deploymentName}`}>
-                                      ×
-                                    </button>
-                                  </div>
-                                ))
-                              : null}
-                            <input
-                              id={`${providerId}-azure-deployment-input`}
-                              type="text"
-                              placeholder={t('options_models_providers_placeholders_azureDeployment')}
-                              value={newModelInputs[providerId] || ''}
-                              onChange={e => handleModelsChange(providerId, e.target.value)}
-                              onKeyDown={e => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                  e.preventDefault();
-                                  const value = newModelInputs[providerId] || '';
-                                  if (value.trim()) {
-                                    addAzureDeployment(providerId, value.trim());
-                                    // Clear the input
-                                    setNewModelInputs(prev => ({
-                                      ...prev,
-                                      [providerId]: '',
-                                    }));
-                                  }
-                                }
-                              }}
-                              className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
-                            />
-                          </div>
-                          <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                            {t('options_models_providers_deployment_desc')}
-                          </p>
+                    {/* Azure Specifics */}
+                    {providerConfig.type === ProviderTypeEnum.AzureOpenAI && (
+                      <>
+                        <div className="field">
+                          <label className="field-label">API Version</label>
+                          <input
+                            type="text"
+                            className="inp w-full"
+                            placeholder="2023-05-15"
+                            value={providerConfig.azureApiVersion || ''}
+                            onChange={e => handleAzureApiVersionChange(providerId, e.target.value)}
+                          />
                         </div>
-                      </div>
+                        <div className="field">
+                          <label className="field-label">Deployments (comma separated or enter)</label>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {(providerConfig.azureDeploymentNames || []).map(name => (
+                              <div key={name} className="p-tag badge">
+                                {name}
+                                <span onClick={() => removeAzureDeployment(providerId, name)} style={{ marginLeft: '4px', cursor: 'pointer' }}>×</span>
+                              </div>
+                            ))}
+                          </div>
+                          <input
+                            type="text"
+                            className="inp w-full"
+                            placeholder="gpt-4, gpt-35-turbo"
+                            value={newModelInputs[providerId] || ''}
+                            onChange={e => handleModelsChange(providerId, e.target.value)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                addAzureDeployment(providerId, (newModelInputs[providerId] || '').trim());
+                              }
+                            }}
+                          />
+                        </div>
+                      </>
                     )}
 
-                    {/* NEW: Azure API Version input */}
-                    {(providerConfig.type as ProviderTypeEnum) === ProviderTypeEnum.AzureOpenAI && (
-                      <div className="flex items-center">
-                        <label
-                          htmlFor={`${providerId}-azure-version`}
-                          className={`w-20 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {t('options_models_providers_apiVersion')}*
-                        </label>
+                    {/* Model IDs / Tags */}
+                    {providerConfig.type !== ProviderTypeEnum.AzureOpenAI && (
+                      <div className="field">
+                        <label className="field-label">Models (press Enter to add)</label>
+                        <div className="flex flex-wrap gap-2 mb-2">
+                          {(providerConfig.modelNames || llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || []).map(model => (
+                            <div key={model} className="p-tag badge">
+                              {model}
+                              <span onClick={() => removeModel(providerId, model)} style={{ marginLeft: '4px', cursor: 'pointer' }}>×</span>
+                            </div>
+                          ))}
+                        </div>
                         <input
-                          id={`${providerId}-azure-version`}
                           type="text"
-                          placeholder={t('options_models_providers_placeholders_azureApiVersion')}
-                          value={providerConfig.azureApiVersion || ''}
-                          onChange={e => handleAzureApiVersionChange(providerId, e.target.value)}
-                          className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-800' : 'border-gray-300 bg-white text-gray-700 focus:border-blue-400 focus:ring-2 focus:ring-blue-200'} p-2 outline-none`}
+                          className="inp w-full"
+                          placeholder="gpt-4o, llama3..."
+                          value={newModelInputs[providerId] || ''}
+                          onChange={e => handleModelsChange(providerId, e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addModel(providerId, (newModelInputs[providerId] || '').trim());
+                            }
+                          }}
                         />
                       </div>
                     )}
 
-                    {/* Models input section (for non-Azure providers) */}
-                    {(providerConfig.type as ProviderTypeEnum) !== ProviderTypeEnum.AzureOpenAI && (
-                      <div className="flex items-start">
-                        <label
-                          htmlFor={`${providerId}-models-label`}
-                          className={`w-20 pt-2 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                          {t('options_models_providers_models')}
-                        </label>
-                        <div className="flex-1 space-y-2">
-                          {/* Conditional UI for OpenRouter */}
-                          {(providerConfig.type as ProviderTypeEnum) === ProviderTypeEnum.OpenRouter ? (
-                            <>
-                              <div
-                                className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
-                                {providerConfig.modelNames && providerConfig.modelNames.length > 0 ? (
-                                  providerConfig.modelNames.map(model => (
-                                    <div
-                                      key={model}
-                                      className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
-                                      <span>{model}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => removeModel(providerId, model)}
-                                        className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
-                                        aria-label={`Remove ${model}`}>
-                                        ×
-                                      </button>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                    {t('options_models_providers_models_openrouter_empty')}
-                                  </span>
-                                )}
-                                <input
-                                  id={`${providerId}-models-input`}
-                                  type="text"
-                                  placeholder=""
-                                  value={newModelInputs[providerId] || ''}
-                                  onChange={e => handleModelsChange(providerId, e.target.value)}
-                                  onKeyDown={e => handleKeyDown(e, providerId)}
-                                  className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
-                                />
-                              </div>
-                              <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {t('options_models_providers_models_instructions')}
-                              </p>
-                            </>
-                          ) : (
-                            /* Default Tag Input for other providers */
-                            <>
-                              <div
-                                className={`flex min-h-[42px] flex-wrap items-center gap-2 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} p-2`}>
-                                {(() => {
-                                  const models =
-                                    providerConfig.modelNames !== undefined
-                                      ? providerConfig.modelNames
-                                      : llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || [];
-                                  return models.map(model => (
-                                    <div
-                                      key={model}
-                                      className={`flex items-center rounded-full ${isDarkMode ? 'bg-blue-900 text-blue-100' : 'bg-blue-100 text-blue-800'} px-2 py-1 text-sm`}>
-                                      <span>{model}</span>
-                                      <button
-                                        type="button"
-                                        onClick={() => removeModel(providerId, model)}
-                                        className={`ml-1 font-bold ${isDarkMode ? 'text-blue-300 hover:text-blue-100' : 'text-blue-600 hover:text-blue-800'}`}
-                                        aria-label={`Remove ${model}`}>
-                                        ×
-                                      </button>
-                                    </div>
-                                  ));
-                                })()}
-                                <input
-                                  id={`${providerId}-models-input`}
-                                  type="text"
-                                  placeholder=""
-                                  value={newModelInputs[providerId] || ''}
-                                  onChange={e => handleModelsChange(providerId, e.target.value)}
-                                  onKeyDown={e => handleKeyDown(e, providerId)}
-                                  className={`min-w-[150px] flex-1 border-none text-sm ${isDarkMode ? 'bg-transparent text-gray-200' : 'bg-transparent text-gray-700'} p-1 outline-none`}
-                                />
-                              </div>
-                              <p className={`mt-1 text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                                {t('options_models_providers_models_instructions')}
-                              </p>
-                            </>
-                          )}
-                          {/* === END: Conditional UI === */}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Ollama reminder at the bottom of the section */}
+                    {/* Ollama Alert */}
                     {providerConfig.type === ProviderTypeEnum.Ollama && (
-                      <div
-                        className={`mt-4 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700' : 'border-blue-100 bg-blue-50'} p-3`}>
-                        <p className={`text-sm ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>
-                          <strong>
-                            {' '}
-                            <code
-                              className={`rounded italic ${isDarkMode ? 'bg-slate-600 px-1 py-0.5' : 'bg-blue-100 px-1 py-0.5'}`}>
-                              OLLAMA_ORIGINS=chrome-extension://*
-                            </code>{' '}
-                          </strong>
-                          {t('options_models_providers_ollama_reminder')}
-                          <a
-                            href="https://github.com/ollama/ollama/blob/main/docs/faq.md#how-can-i-allow-additional-web-origins-to-access-ollama"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`ml-1 ${isDarkMode ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
-                            {t('options_models_providers_ollama_learnMore')}
-                          </a>
-                        </p>
+                      <div className="p-alert info" style={{ marginTop: '12px' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
+                        <span>Set <code>OLLAMA_ORIGINS=chrome-extension://*</code> in your environment.</span>
                       </div>
                     )}
                   </div>
-
-                  {/* Add divider except for the last item */}
-                  {Object.keys(providers).indexOf(providerId) < Object.keys(providers).length - 1 && (
-                    <div className={`mt-4 border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`} />
-                  )}
                 </div>
               );
             })
           )}
 
-          {/* Add Provider button and dropdown */}
-          <div className="provider-selector-container relative pt-4">
-            <Button
-              variant="secondary"
-              onClick={() => setIsProviderSelectorOpen(prev => !prev)}
-              className={`flex w-full items-center justify-center font-medium ${
-                isDarkMode
-                  ? 'border-blue-700 bg-blue-600 text-white hover:bg-blue-500'
-                  : 'border-blue-200 bg-blue-100 text-blue-800 hover:bg-blue-200'
-              }`}>
-              <span className="mr-2 text-sm">+</span>{' '}
-              <span className="text-sm">{t('options_models_addNewProvider')}</span>
-            </Button>
-
-            {isProviderSelectorOpen && (
-              <div
-                className={`absolute z-10 mt-2 w-full overflow-hidden rounded-md border ${
-                  isDarkMode
-                    ? 'border-blue-600 bg-slate-700 shadow-lg shadow-slate-900/50'
-                    : 'border-blue-200 bg-white shadow-xl shadow-blue-100/50'
-                }`}>
-                <div className="py-1">
-                  {/* Map through provider types to create buttons */}
-                  {Object.values(ProviderTypeEnum)
-                    // Allow Azure to appear multiple times, but filter out other already added providers
-                    .filter(
-                      type =>
-                        type === ProviderTypeEnum.AzureOpenAI || // Always show Azure
-                        (type !== ProviderTypeEnum.CustomOpenAI &&
-                          !providersFromStorage.has(type) &&
-                          !modifiedProviders.has(type)),
-                    )
-                    .map(type => (
-                      <button
-                        key={type}
-                        type="button"
-                        className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                          isDarkMode
-                            ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                            : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                        } transition-colors duration-150`}
-                        onClick={() => handleProviderSelection(type)}>
-                        <span className="font-medium">{getDefaultDisplayNameFromProviderId(type)}</span>
-                      </button>
-                    ))}
-
-                  {/* Custom provider button (always shown) */}
-                  <button
-                    type="button"
-                    className={`flex w-full items-center px-4 py-3 text-left text-sm ${
-                      isDarkMode
-                        ? 'text-blue-200 hover:bg-blue-600/30 hover:text-white'
-                        : 'text-blue-700 hover:bg-blue-100 hover:text-blue-800'
-                    } transition-colors duration-150`}
-                    onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}>
-                    <span className="font-medium">{t('options_models_providers_openaiCompatible')}</span>
-                  </button>
-                </div>
+          {/* Add Provider — native select avoids overflow:hidden clipping */}
+          <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)' }}>
+            <div className="sel-wrap">
+              <select
+                className="model-sel"
+                value=""
+                onChange={e => {
+                  if (e.target.value) handleProviderSelection(e.target.value);
+                }}
+                style={{ width: '100%', fontWeight: '500' }}>
+                <option value="" disabled>+ Add New Provider…</option>
+                {Object.values(ProviderTypeEnum)
+                  .filter(
+                    type =>
+                      type === ProviderTypeEnum.AzureOpenAI ||
+                      (!providersFromStorage.has(type) && !modifiedProviders.has(type)),
+                  )
+                  .map(type => (
+                    <option key={type} value={type}>
+                      {getDefaultDisplayNameFromProviderId(type)}
+                    </option>
+                  ))}
+                <option value={ProviderTypeEnum.CustomOpenAI}>OpenAI Compatible (Custom)</option>
+              </select>
+              <div className="sel-arrow">
+                <svg fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                  <polyline points="6 9 12 15 18 9" />
+                </svg>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Updated Agent Models Section */}
-      <div
-        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
-        <h2 className={`mb-4 text-left text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          {t('options_models_selection_header')}
-        </h2>
-        <div className="space-y-4">
-          {[AgentNameEnum.Planner, AgentNameEnum.Navigator].map(agentName => (
-            <div key={agentName}>{renderModelSelect(agentName)}</div>
-          ))}
+      {/* Model Selection Card */}
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="card-header">
+          <div className="card-title-group">
+            <div className="card-icon violet">
+              <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M12 2c-2.5 3-4 6.4-4 10s1.5 7 4 10M12 2c2.5 3 4 6.4 4 10s-1.5 7-4 10" />
+                <line x1="2" y1="12" x2="22" y2="12" />
+              </svg>
+            </div>
+            <div>
+              <div className="card-title">Model Selection</div>
+              <div className="card-desc">Assign models and tune parameters for each agent</div>
+            </div>
+          </div>
+        </div>
+        <div className="card-body">
+          {renderModelSelect(AgentNameEnum.Planner)}
+          {renderModelSelect(AgentNameEnum.Navigator)}
         </div>
       </div>
 
-      {/* Speech-to-Text Model Selection */}
-      <div
-        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-gray-50'} p-6 text-left shadow-sm`}>
-        <h2 className={`mb-4 text-left text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          {t('options_models_speechToText_header')}
-        </h2>
-        <p className={`mb-4 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-          {t('options_models_stt_desc')}
-        </p>
-
-        <div
-          className={`rounded-lg border ${isDarkMode ? 'border-gray-700 bg-slate-800' : 'border-gray-200 bg-gray-50'} p-4`}>
-          <div className="flex items-center">
-            <label
-              htmlFor="speech-to-text-model"
-              className={`w-24 text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-              {t('options_models_labels_model')}
-            </label>
+      {/* STT Section */}
+      <div className="card" style={{ marginTop: '20px' }}>
+        <div className="card-header">
+          <div className="card-title-group">
+            <div className="card-icon vio">
+              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <line x1="12" y1="19" x2="12" y2="23" />
+                <line x1="8" y1="23" x2="16" y2="23" />
+              </svg>
+            </div>
+            <div>
+              <div className="card-title">Speech-to-Text</div>
+              <div className="card-desc">Transcribe voice commands using Gemini</div>
+            </div>
+          </div>
+        </div>
+        <div className="card-body">
+          <div className="field">
+            <label className="field-label">Transcription Model</label>
             <select
-              id="speech-to-text-model"
-              className={`flex-1 rounded-md border text-sm ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+              className="model-sel"
               value={selectedSpeechToTextModel}
               onChange={e => handleSpeechToTextModelChange(e.target.value)}>
               <option value="">{t('options_models_chooseModel')}</option>
-              {/* Filter available models to show only Gemini models */}
               {availableModels
-                .filter(({ provider }) => {
-                  const providerConfig = providers[provider];
-                  return providerConfig?.type === ProviderTypeEnum.Gemini;
-                })
+                .filter(({ provider }) => providers[provider]?.type === ProviderTypeEnum.Gemini)
                 .map(({ provider, providerName, model }) => (
                   <option key={`${provider}>${model}`} value={`${provider}>${model}`}>
                     {`${providerName} > ${model}`}
@@ -1673,6 +1414,6 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };

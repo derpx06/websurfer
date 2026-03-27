@@ -28,208 +28,171 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
   };
 
   return (
-    <section className="space-y-6">
-      <div
-        className={`rounded-lg border ${isDarkMode ? 'border-slate-700 bg-slate-800' : 'border-blue-100 bg-white'} p-6 text-left shadow-sm`}>
-        <h2 className={`mb-4 text-left text-xl font-semibold ${isDarkMode ? 'text-gray-200' : 'text-gray-800'}`}>
-          {t('options_general_header')}
-        </h2>
+    <div className="page" id="tab-general">
+      <div className="page-header">
+        <div>
+          <div className="page-title">General</div>
+          <div className="page-sub">Appearance, behaviour and extension preferences</div>
+        </div>
+      </div>
 
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_maxSteps')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_maxSteps_desc')}
-              </p>
+      <div className="card">
+        <div className="card-header">
+          <div className="card-title-group">
+            <div className="card-icon amber">
+              <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+              </svg>
             </div>
-            <label htmlFor="maxSteps" className="sr-only">
-              {t('options_general_maxSteps')}
-            </label>
+            <div>
+              <div className="card-title">Preferences</div>
+              <div className="card-desc">Extension behaviour and UI settings</div>
+            </div>
+          </div>
+        </div>
+        <div className="card-body">
+          {/* Max Steps */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_maxSteps')}</div>
+              <div className="toggle-desc">{t('options_general_maxSteps_desc')}</div>
+            </div>
             <input
-              id="maxSteps"
               type="number"
               min={1}
               max={50}
               value={settings.maxSteps}
               onChange={e => updateSetting('maxSteps', Number.parseInt(e.target.value, 10))}
-              className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+              className="inp"
+              style={{ width: '80px' }}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_maxActions')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_maxActions_desc')}
-              </p>
+          {/* Max Actions Per Step */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_maxActions')}</div>
+              <div className="toggle-desc">{t('options_general_maxActions_desc')}</div>
             </div>
-            <label htmlFor="maxActionsPerStep" className="sr-only">
-              {t('options_general_maxActions')}
-            </label>
             <input
-              id="maxActionsPerStep"
               type="number"
               min={1}
               max={50}
               value={settings.maxActionsPerStep}
               onChange={e => updateSetting('maxActionsPerStep', Number.parseInt(e.target.value, 10))}
-              className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+              className="inp"
+              style={{ width: '80px' }}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_maxFailures')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_maxFailures_desc')}
-              </p>
+          {/* Max Failures */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_maxFailures')}</div>
+              <div className="toggle-desc">{t('options_general_maxFailures_desc')}</div>
             </div>
-            <label htmlFor="maxFailures" className="sr-only">
-              {t('options_general_maxFailures')}
-            </label>
             <input
-              id="maxFailures"
               type="number"
               min={1}
               max={10}
               value={settings.maxFailures}
               onChange={e => updateSetting('maxFailures', Number.parseInt(e.target.value, 10))}
-              className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+              className="inp"
+              style={{ width: '80px' }}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_enableVision')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_enableVision_desc')}
-              </p>
+          {/* Enable Vision */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_enableVision')}</div>
+              <div className="toggle-desc">{t('options_general_enableVision_desc')}</div>
             </div>
-            <div className="relative inline-flex cursor-pointer items-center">
+            <label className="toggle">
               <input
-                id="useVision"
                 type="checkbox"
                 checked={settings.useVision}
                 onChange={e => updateSetting('useVision', e.target.checked)}
-                className="peer sr-only"
               />
-              <label
-                htmlFor="useVision"
-                className={`peer h-6 w-11 rounded-full ${isDarkMode ? 'bg-slate-600' : 'bg-gray-200'} after:absolute after:left-[2px] after:top-[2px] after:size-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300`}>
-                <span className="sr-only">{t('options_general_enableVision')}</span>
-              </label>
-            </div>
+              <div className="toggle-track">
+                <div className="toggle-thumb"></div>
+              </div>
+            </label>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_displayHighlights')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_displayHighlights_desc')}
-              </p>
+          {/* Display Highlights */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_displayHighlights')}</div>
+              <div className="toggle-desc">{t('options_general_displayHighlights_desc')}</div>
             </div>
-            <div className="relative inline-flex cursor-pointer items-center">
+            <label className="toggle">
               <input
-                id="displayHighlights"
                 type="checkbox"
                 checked={settings.displayHighlights}
                 onChange={e => updateSetting('displayHighlights', e.target.checked)}
-                className="peer sr-only"
               />
-              <label
-                htmlFor="displayHighlights"
-                className={`peer h-6 w-11 rounded-full ${isDarkMode ? 'bg-slate-600' : 'bg-gray-200'} after:absolute after:left-[2px] after:top-[2px] after:size-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300`}>
-                <span className="sr-only">{t('options_general_displayHighlights')}</span>
-              </label>
-            </div>
+              <div className="toggle-track">
+                <div className="toggle-thumb"></div>
+              </div>
+            </label>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_planningInterval')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_planningInterval_desc')}
-              </p>
+          {/* Planning Interval */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_planningInterval')}</div>
+              <div className="toggle-desc">{t('options_general_planningInterval_desc')}</div>
             </div>
-            <label htmlFor="planningInterval" className="sr-only">
-              {t('options_general_planningInterval')}
-            </label>
             <input
-              id="planningInterval"
               type="number"
               min={1}
               max={20}
               value={settings.planningInterval}
               onChange={e => updateSetting('planningInterval', Number.parseInt(e.target.value, 10))}
-              className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
+              className="inp"
+              style={{ width: '80px' }}
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_minWaitPageLoad')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_minWaitPageLoad_desc')}
-              </p>
+          {/* Min Wait Page Load */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_minWaitPageLoad')}</div>
+              <div className="toggle-desc">{t('options_general_minWaitPageLoad_desc')}</div>
             </div>
-            <div className="flex items-center space-x-2">
-              <label htmlFor="minWaitPageLoad" className="sr-only">
-                {t('options_general_minWaitPageLoad')}
-              </label>
-              <input
-                id="minWaitPageLoad"
-                type="number"
-                min={250}
-                max={5000}
-                step={50}
-                value={settings.minWaitPageLoad}
-                onChange={e => updateSetting('minWaitPageLoad', Number.parseInt(e.target.value, 10))}
-                className={`w-20 rounded-md border ${isDarkMode ? 'border-slate-600 bg-slate-700 text-gray-200' : 'border-gray-300 bg-white text-gray-700'} px-3 py-2`}
-              />
-            </div>
+            <input
+              type="number"
+              min={250}
+              max={5000}
+              step={50}
+              value={settings.minWaitPageLoad}
+              onChange={e => updateSetting('minWaitPageLoad', Number.parseInt(e.target.value, 10))}
+              className="inp"
+              style={{ width: '80px' }}
+            />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className={`text-base font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                {t('options_general_replayHistoricalTasks')}
-              </h3>
-              <p className={`text-sm font-normal ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                {t('options_general_replayHistoricalTasks_desc')}
-              </p>
+          {/* Replay Historical Tasks */}
+          <div className="toggle-row">
+            <div className="toggle-info">
+              <div className="toggle-title">{t('options_general_replayHistoricalTasks')}</div>
+              <div className="toggle-desc">{t('options_general_replayHistoricalTasks_desc')}</div>
             </div>
-            <div className="relative inline-flex cursor-pointer items-center">
+            <label className="toggle">
               <input
-                id="replayHistoricalTasks"
                 type="checkbox"
                 checked={settings.replayHistoricalTasks}
                 onChange={e => updateSetting('replayHistoricalTasks', e.target.checked)}
-                className="peer sr-only"
               />
-              <label
-                htmlFor="replayHistoricalTasks"
-                className={`peer h-6 w-11 rounded-full ${isDarkMode ? 'bg-slate-600' : 'bg-gray-200'} after:absolute after:left-[2px] after:top-[2px] after:size-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:bg-blue-600 peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300`}>
-                <span className="sr-only">{t('options_general_replayHistoricalTasks')}</span>
-              </label>
-            </div>
+              <div className="toggle-track">
+                <div className="toggle-thumb"></div>
+              </div>
+            </label>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };

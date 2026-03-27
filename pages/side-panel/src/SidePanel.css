@@ -218,6 +218,9 @@ code {
   --ws-orb-core-1: rgba(79, 70, 229, 0.15);
   --ws-orb-core-2: rgba(139, 92, 246, 0.10);
   --ws-orb-core-border: rgba(79, 70, 229, 0.30);
+  --ws-orb-outer: rgba(79, 70, 229, 0.40);
+  --ws-orb-mid: rgba(139, 92, 246, 0.35);
+  --ws-glow-cyan: rgba(79, 70, 229, 0.25);
   --ws-blob-1: rgba(79, 70, 229, 0.06);
   --ws-blob-2: rgba(139, 92, 246, 0.05);
 
@@ -255,6 +258,9 @@ code {
   --ws-orb-core-1: rgba(56, 189, 248, 0.20);
   --ws-orb-core-2: rgba(129, 140, 248, 0.15);
   --ws-orb-core-border: rgba(56, 189, 248, 0.40);
+  --ws-orb-outer: rgba(56, 189, 248, 0.35);
+  --ws-orb-mid: rgba(129, 140, 248, 0.30);
+  --ws-glow-cyan: rgba(56, 189, 248, 0.28);
   --ws-blob-1: rgba(56, 189, 248, 0.07);
   --ws-blob-2: rgba(129, 140, 248, 0.07);
 

@@ -20,6 +20,7 @@ import {
   RequestCancelledError,
   MaxStepsReachedError,
   MaxFailuresReachedError,
+  ChatModelPaymentRequiredError,
 } from './agents/errors';
 import { URLNotAllowedError } from '../browser/views';
 import { chatHistoryStore } from '@extension/storage/lib/chat';
@@ -163,6 +164,11 @@ export class Executor {
           if (this.checkTaskCompletion(latestPlanOutput)) {
             break;
           }
+
+          // If planner returned an error, stop execution
+          if (latestPlanOutput?.error) {
+            throw new Error(latestPlanOutput.error);
+          }
         }
 
         // Execute navigator
@@ -260,7 +266,8 @@ export class Executor {
         error instanceof ChatModelRateLimitError ||
         error instanceof URLNotAllowedError ||
         error instanceof RequestCancelledError ||
-        error instanceof ExtensionConflictError
+        error instanceof ExtensionConflictError ||
+        error instanceof ChatModelPaymentRequiredError
       ) {
         throw error;
       }
@@ -303,7 +310,8 @@ export class Executor {
         error instanceof ChatModelRateLimitError ||
         error instanceof URLNotAllowedError ||
         error instanceof RequestCancelledError ||
-        error instanceof ExtensionConflictError
+        error instanceof ExtensionConflictError ||
+        error instanceof ChatModelPaymentRequiredError
       ) {
         throw error;
       }
