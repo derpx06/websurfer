@@ -15,6 +15,7 @@ const SidePanelHeader = ({
   onNewChat,
   onLoadHistory,
 }: SidePanelHeaderProps) => {
+  
   return (
     <header className="ws-topbar">
       <div className="ws-brand">
