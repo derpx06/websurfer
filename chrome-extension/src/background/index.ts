@@ -32,7 +32,7 @@ chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error 
 /**
  * Notify a specific tab or the active tab about the agent's active status.
  */
-async function notifyAgentStatus(active: boolean, targetTabId?: number) {
+async function notifyAgentStatus(active: boolean, status?: string, targetTabId?: number) {
   try {
     let tabId = targetTabId;
     if (!tabId) {
@@ -41,7 +41,7 @@ async function notifyAgentStatus(active: boolean, targetTabId?: number) {
     }
 
     if (tabId) {
-      await chrome.tabs.sendMessage(tabId, { type: 'AGENT_STATUS', active }).catch(() => {
+      await chrome.tabs.sendMessage(tabId, { type: 'AGENT_STATUS', active, status }).catch(() => {
         // Ignore errors if the content script is not injected yet
       });
     }
@@ -57,7 +57,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     // @ts-expect-error - context is private
     const agentTabId = currentExecutor?.context?.browserContext?._currentTabId;
     if (agentTabId === tabId) {
-      await notifyAgentStatus(true, tabId);
+      await notifyAgentStatus(true, undefined, tabId);
     }
   }
 });
@@ -67,10 +67,10 @@ chrome.tabs.onActivated.addListener(async activeInfo => {
   // @ts-expect-error - context is private
   const agentTabId = currentExecutor?.context?.browserContext?._currentTabId;
   if (agentTabId === activeInfo.tabId) {
-    await notifyAgentStatus(true, activeInfo.tabId);
+    await notifyAgentStatus(true, undefined, activeInfo.tabId);
   } else {
     // Hide border on other tabs if they were previously active for the agent
-    await notifyAgentStatus(false, activeInfo.tabId);
+    await notifyAgentStatus(false, undefined, activeInfo.tabId);
   }
 });
 
@@ -393,8 +393,23 @@ async function subscribeToExecutorEvents(executor: Executor) {
     // @ts-expect-error - context is private but accessible in this file for background logic
     const tabId = executor.context?.browserContext?._currentTabId ?? undefined;
 
-    if (event.state === ExecutionState.TASK_START || event.state === ExecutionState.STEP_START) {
-      await notifyAgentStatus(true, tabId);
+    if (event.state === ExecutionState.TASK_START || event.state === ExecutionState.STEP_START || event.state === ExecutionState.ACT_START) {
+      // Extract a user-friendly status message
+      let statusText: string | undefined;
+      if (event.state === ExecutionState.ACT_START) {
+        const toolName = event.data.details;
+        if (toolName === 'click_browser_pixel') statusText = 'Clicking element';
+        else if (toolName === 'type_text_browser_pixel' || toolName === 'input_text_browser_pixel') statusText = 'Typing text';
+        else if (toolName === 'scroll_browser_pixel') statusText = 'Scrolling page';
+        else if (toolName === 'wait_browser_pixel') statusText = 'Waiting for page';
+        else if (toolName === 'navigate_browser_pixel') statusText = 'Navigating';
+        else statusText = toolName;
+      } else if (event.state === ExecutionState.STEP_START) {
+        statusText = 'Planning next move...';
+      } else if (event.state === ExecutionState.TASK_START) {
+        statusText = 'Starting task...';
+      }
+      await notifyAgentStatus(true, statusText, tabId);
     }
 
     if (
@@ -402,7 +417,7 @@ async function subscribeToExecutorEvents(executor: Executor) {
       event.state === ExecutionState.TASK_FAIL ||
       event.state === ExecutionState.TASK_CANCEL
     ) {
-      await notifyAgentStatus(false, tabId);
+      await notifyAgentStatus(false, undefined, tabId);
       await currentExecutor?.cleanup();
     }
   });

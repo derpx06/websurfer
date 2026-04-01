@@ -174,6 +174,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
       const messageManager = this.context.messageManager;
       // add the browser state message
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, 'Getting DOM');
       await this.addStateMessageToMemory();
       const currentState = await this.context.browserContext.getCachedState();
       browserStateHistory = new BrowserStateHistory(currentState);
@@ -377,6 +378,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     logger.info('Actions', actions);
 
     const browserContext = this.context.browserContext;
+    this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, 'Getting DOM');
     const browserState = await browserContext.getState(this.context.options.useVision);
     const cachedPathHashes = await calcBranchPathHashSet(browserState);
 
@@ -386,6 +388,9 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       const actionName = Object.keys(action)[0];
       const actionArgs = action[actionName];
       try {
+        // emit start event
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, actionName);
+
         // check if the task is paused or stopped
         if (this.context.paused || this.context.stopped) {
           return results;

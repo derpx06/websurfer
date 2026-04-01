@@ -150,7 +150,8 @@ window.buildDomTree = (
         container.style.zIndex = '2147483647';
         container.style.backgroundColor = 'transparent';
         // Show or hide the container based on the showHighlightElements flag
-        container.style.display = showHighlightElements ? 'block' : 'none';
+        // container.style.display = showHighlightElements ? 'block' : 'none';
+        container.style.display = 'none';
         document.body.appendChild(container);
       }
 
@@ -1503,3 +1504,89 @@ window.buildDomTree = (
 
   return { rootId, map: DOM_HASH_MAP };
 };
+
+// --- Nanobrowser Visual Cursor ---
+(function () {
+  const CURSOR_ID = 'nanobrowser-agent-cursor';
+  const STYLE_ID = 'nanobrowser-cursor-style';
+
+  if (!document.getElementById(STYLE_ID)) {
+    const style = document.createElement('style');
+    style.id = STYLE_ID;
+    style.textContent = `
+      #${CURSOR_ID} {
+        position: fixed;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: radial-gradient(circle, #00f2ff 0%, #0062ff 100%);
+        box-shadow: 0 0 10px #00f2ff, 0 0 20px #0062ff;
+        pointer-events: none;
+        z-index: 2147483647;
+        transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
+      #${CURSOR_ID}.visible {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+      #${CURSOR_ID}.clicking {
+        transform: translate(-50%, -50%) scale(0.8) !important;
+      }
+      .nanobrowser-ripple {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 2px solid #00f2ff;
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0;
+        pointer-events: none;
+      }
+      @keyframes nanobrowser-ripple-animation {
+        0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  let cursor = document.getElementById(CURSOR_ID);
+  if (!cursor) {
+    cursor = document.createElement('div');
+    cursor.id = CURSOR_ID;
+    document.body.appendChild(cursor);
+  }
+
+  window._nanobrowserCursor = {
+    move: function (x, y) {
+      cursor.style.left = x + 'px';
+      cursor.style.top = y + 'px';
+      cursor.classList.add('visible');
+    },
+    click: function (x, y) {
+      this.move(x, y);
+      cursor.classList.add('clicking');
+
+      const ripple = document.createElement('div');
+      ripple.className = 'nanobrowser-ripple';
+      ripple.style.animation = 'nanobrowser-ripple-animation 0.6s ease-out forwards';
+      cursor.appendChild(ripple);
+
+      setTimeout(() => {
+        cursor.classList.remove('clicking');
+        ripple.remove();
+      }, 600);
+
+      setTimeout(() => {
+        this.hide();
+      }, 1500);
+    },
+    hide: function () {
+      cursor.classList.remove('visible');
+    },
+  };
+})();

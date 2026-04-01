@@ -1129,6 +1129,19 @@ export default class Page {
         logger.debug(`Non-critical error preparing element: ${e}`);
       }
 
+      // Trigger visual cursor feedback
+      await element.evaluate(el => {
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        // @ts-ignore
+        if (window._nanobrowserCursor) {
+          // @ts-ignore
+          window._nanobrowserCursor.move(x, y);
+        }
+      });
+      await new Promise(resolve => setTimeout(resolve, 300));
+
       // Get element properties to determine input method
       const tagName = await element.evaluate(el => el.tagName.toLowerCase());
       const isContentEditable = await element.evaluate(el => {
@@ -1300,6 +1313,20 @@ export default class Page {
 
       // Scroll element into view if needed
       await this._scrollIntoViewIfNeeded(element);
+
+      // Trigger visual cursor feedback
+      await element.evaluate(el => {
+        const rect = el.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        // @ts-ignore
+        if (window._nanobrowserCursor) {
+          // @ts-ignore
+          window._nanobrowserCursor.click(x, y);
+        }
+      });
+      // Brief wait for animation to be seen
+      await new Promise(resolve => setTimeout(resolve, 400));
 
       try {
         // First attempt: Use Puppeteer's click method with timeout
