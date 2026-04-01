@@ -1,4 +1,4 @@
-#nanobrowser-agent-border {
+#websurfer-agent-border {
     position: fixed;
     top: 0;
     left: 0;
@@ -12,11 +12,11 @@
     box-sizing: border-box;
 }
 
-#nanobrowser-agent-border.active {
+#websurfer-agent-border.active {
     opacity: 1;
 }
 
-#nanobrowser-agent-border::before {
+#websurfer-agent-border::before {
     content: "";
     position: absolute;
     top: 0;
@@ -50,7 +50,7 @@
 }
 
 /* Add a secondary glow layer for more depth */
-#nanobrowser-agent-border::after {
+#websurfer-agent-border::after {
     content: "";
     position: absolute;
     top: 0;

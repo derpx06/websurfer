@@ -210,7 +210,8 @@ export default function ChatInput({
             onKeyDown={handleKeyDown}
             disabled={disabled}
             aria-disabled={disabled}
-            className="ws-inp-ta"
+            className="ws-inp-ta font-outfit"
+            style={{ fontFamily: "'Outfit', sans-serif" }}
             placeholder={attachedFiles.length > 0 ? 'Add a message (optional)...' : t('chat_input_placeholder')}
             aria-label={t('chat_input_editor')}
           />

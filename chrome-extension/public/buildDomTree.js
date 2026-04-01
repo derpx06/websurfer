@@ -1505,10 +1505,10 @@ window.buildDomTree = (
   return { rootId, map: DOM_HASH_MAP };
 };
 
-// --- Nanobrowser Visual Cursor ---
+// --- WebSurfer Visual Cursor ---
 (function () {
-  const CURSOR_ID = 'nanobrowser-agent-cursor';
-  const STYLE_ID = 'nanobrowser-cursor-style';
+  const CURSOR_ID = 'websurfer-agent-cursor';
+  const STYLE_ID = 'websurfer-cursor-style';
 
   if (!document.getElementById(STYLE_ID)) {
     const style = document.createElement('style');
@@ -1534,7 +1534,7 @@ window.buildDomTree = (
       #${CURSOR_ID}.clicking {
         transform: translate(-50%, -50%) scale(0.8) !important;
       }
-      .nanobrowser-ripple {
+      .websurfer-ripple {
         position: absolute;
         top: 50%;
         left: 50%;
@@ -1546,7 +1546,7 @@ window.buildDomTree = (
         opacity: 0;
         pointer-events: none;
       }
-      @keyframes nanobrowser-ripple-animation {
+      @keyframes websurfer-ripple-animation {
         0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
         100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
       }
@@ -1561,7 +1561,7 @@ window.buildDomTree = (
     document.body.appendChild(cursor);
   }
 
-  window._nanobrowserCursor = {
+  window._websurferCursor = {
     move: function (x, y) {
       cursor.style.left = x + 'px';
       cursor.style.top = y + 'px';
@@ -1572,8 +1572,8 @@ window.buildDomTree = (
       cursor.classList.add('clicking');
 
       const ripple = document.createElement('div');
-      ripple.className = 'nanobrowser-ripple';
-      ripple.style.animation = 'nanobrowser-ripple-animation 0.6s ease-out forwards';
+      ripple.className = 'websurfer-ripple';
+      ripple.style.animation = 'websurfer-ripple-animation 0.6s ease-out forwards';
       cursor.appendChild(ripple);
 
       setTimeout(() => {

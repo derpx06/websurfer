@@ -27,6 +27,8 @@ import { chatHistoryStore } from '@extension/storage/lib/chat';
 import type { AgentStepHistory } from './history';
 import type { GeneralSettingsConfig } from '@extension/storage';
 import { analytics } from '../services/analytics';
+import { PlanningStrategy } from './strategies/planner';
+import { NavigationStrategy } from './strategies/navigator';
 
 const logger = createLogger('Executor');
 
@@ -44,6 +46,8 @@ export class Executor {
   private readonly plannerPrompt: PlannerPrompt;
   private readonly navigatorPrompt: NavigatorPrompt;
   private readonly generalSettings: GeneralSettingsConfig | undefined;
+  private readonly planningStrategy: PlanningStrategy;
+  private readonly navigationStrategy: NavigationStrategy;
   private tasks: string[] = [];
   constructor(
     task: string,
@@ -86,6 +90,9 @@ export class Executor {
       prompt: this.plannerPrompt,
     });
 
+    this.planningStrategy = new PlanningStrategy(this.planner);
+    this.navigationStrategy = new NavigationStrategy(this.navigator);
+
     this.context = context;
     // Initialize message history
     this.context.messageManager.initTaskMessages(this.navigatorPrompt.getSystemMessage(), task);
@@ -108,19 +115,7 @@ export class Executor {
     this.context.actionResults = this.context.actionResults.filter(result => result.includeInMemory);
   }
 
-  /**
-   * Check if task is complete based on planner output and handle completion
-   */
-  private checkTaskCompletion(planOutput: AgentOutput<PlannerOutput> | null): boolean {
-    if (planOutput?.result?.done) {
-      logger.info('✅ Planner confirms task completion');
-      if (planOutput.result.final_answer) {
-        this.context.finalAnswer = planOutput.result.final_answer;
-      }
-      return true;
-    }
-    return false;
-  }
+
 
   /**
    * Execute the task
@@ -156,12 +151,18 @@ export class Executor {
         }
 
         // Run planner periodically for guidance
-        if (this.planner && (context.nSteps % context.options.planningInterval === 0 || navigatorDone)) {
+        if (this.planningStrategy && (context.nSteps % context.options.planningInterval === 0 || navigatorDone)) {
           navigatorDone = false;
-          latestPlanOutput = await this.runPlanner();
+
+          // Add current browser state to memory if needed
+          if (this.tasks.length > 1 || context.nSteps > 0) {
+            await this.navigator.addStateMessageToMemory();
+          }
+
+          latestPlanOutput = await this.planningStrategy.execute(context);
 
           // Check if task is complete after planner run
-          if (this.checkTaskCompletion(latestPlanOutput)) {
+          if (latestPlanOutput?.result?.done) {
             break;
           }
 
@@ -171,8 +172,9 @@ export class Executor {
           }
         }
 
-        // Execute navigator
-        navigatorDone = await this.navigate();
+        // Execute navigator via navigation strategy
+        const navOutput = await this.navigationStrategy.execute(context);
+        navigatorDone = navOutput?.result?.done ?? false;
 
         // If navigator indicates completion, the next periodic planner run will validate it
         if (navigatorDone) {
@@ -236,93 +238,7 @@ export class Executor {
     }
   }
 
-  /**
-   * Helper method to run planner and store its output
-   */
-  private async runPlanner(): Promise<AgentOutput<PlannerOutput> | null> {
-    const context = this.context;
-    try {
-      // Add current browser state to memory
-      let positionForPlan = 0;
-      if (this.tasks.length > 1 || this.context.nSteps > 0) {
-        await this.navigator.addStateMessageToMemory();
-        positionForPlan = this.context.messageManager.length() - 1;
-      } else {
-        positionForPlan = this.context.messageManager.length();
-      }
 
-      // Execute planner
-      const planOutput = await this.planner.execute();
-      if (planOutput.result) {
-        this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan);
-      }
-      return planOutput;
-    } catch (error) {
-      logger.error(`Failed to execute planner: ${error}`);
-      if (
-        error instanceof ChatModelAuthError ||
-        error instanceof ChatModelBadRequestError ||
-        error instanceof ChatModelForbiddenError ||
-        error instanceof ChatModelRateLimitError ||
-        error instanceof URLNotAllowedError ||
-        error instanceof RequestCancelledError ||
-        error instanceof ExtensionConflictError ||
-        error instanceof ChatModelPaymentRequiredError
-      ) {
-        throw error;
-      }
-      context.consecutiveFailures++;
-      logger.error(`Failed to execute planner: ${error}`);
-      if (context.consecutiveFailures >= context.options.maxFailures) {
-        throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
-      }
-      return null;
-    }
-  }
-
-  private async navigate(): Promise<boolean> {
-    const context = this.context;
-    try {
-      // Get and execute navigation action
-      // check if the task is paused or stopped
-      if (context.paused || context.stopped) {
-        return false;
-      }
-      const navOutput = await this.navigator.execute();
-      // check if the task is paused or stopped
-      if (context.paused || context.stopped) {
-        return false;
-      }
-      context.nSteps++;
-      if (navOutput.error) {
-        throw new Error(navOutput.error);
-      }
-      context.consecutiveFailures = 0;
-      if (navOutput.result?.done) {
-        return true;
-      }
-    } catch (error) {
-      logger.error(`Failed to execute step: ${error}`);
-      if (
-        error instanceof ChatModelAuthError ||
-        error instanceof ChatModelBadRequestError ||
-        error instanceof ChatModelForbiddenError ||
-        error instanceof ChatModelRateLimitError ||
-        error instanceof URLNotAllowedError ||
-        error instanceof RequestCancelledError ||
-        error instanceof ExtensionConflictError ||
-        error instanceof ChatModelPaymentRequiredError
-      ) {
-        throw error;
-      }
-      context.consecutiveFailures++;
-      logger.error(`Failed to execute step: ${error}`);
-      if (context.consecutiveFailures >= context.options.maxFailures) {
-        throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
-      }
-    }
-    return false;
-  }
 
   private async shouldStop(): Promise<boolean> {
     if (this.context.stopped) {

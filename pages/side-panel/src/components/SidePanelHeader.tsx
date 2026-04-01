@@ -15,7 +15,7 @@ const SidePanelHeader = ({
   onNewChat,
   onLoadHistory,
 }: SidePanelHeaderProps) => {
-  
+
   return (
     <header className="ws-topbar">
       <div className="ws-brand">
@@ -96,7 +96,11 @@ const SidePanelHeader = ({
             </svg>
           )}
         </div>
-        <span className="ws-brand-name cursor-pointer" onClick={showHistory ? onBackToChat : undefined}>
+        <span
+          className="ws-brand-name cursor-pointer font-outfit"
+          onClick={showHistory ? onBackToChat : undefined}
+          style={{ fontFamily: "'Outfit', sans-serif" }}
+        >
           WebSurfer
         </span>
       </div>

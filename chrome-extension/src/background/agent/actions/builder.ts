@@ -48,7 +48,7 @@ export class Action {
     public readonly schema: ActionSchema,
     // Whether this action has an index argument
     public readonly hasIndex: boolean = false,
-  ) {}
+  ) { }
 
   async call(input: unknown): Promise<ActionResult> {
     // Validate input before calling the handler
@@ -234,7 +234,7 @@ export class ActionBuilder {
         }
 
         // Check if element is a file uploader
-        if (page.isFileUploader(elementNode)) {
+        if (await page.isFileUploader(elementNode)) {
           const msg = t('act_click_fileUploader', [input.index.toString()]);
           logger.info(msg);
           return new ActionResult({

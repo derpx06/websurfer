@@ -76,6 +76,12 @@ export interface BrowserContextConfig {
    * @default true
    */
   displayHighlights: boolean;
+
+  /**
+   * Use vision capabilities
+   * @default false
+   */
+  useVision: boolean;
 }
 
 export const DEFAULT_BROWSER_CONTEXT_CONFIG: BrowserContextConfig = {
@@ -90,6 +96,7 @@ export const DEFAULT_BROWSER_CONTEXT_CONFIG: BrowserContextConfig = {
   includeDynamicAttributes: true,
   homePageUrl: 'about:blank',
   displayHighlights: true,
+  useVision: false,
 };
 
 export interface PageState extends DOMState {

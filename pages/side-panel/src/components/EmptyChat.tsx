@@ -28,8 +28,8 @@ const EmptyChat: React.FC<EmptyChatProps> = ({ onSelectPrompt, isDarkMode }) => 
                         </svg>
                     </div>
                 </div>
-                <div className="ws-hero-title">Your AI <span>Browser Agent</span></div>
-                <p className="ws-hero-sub">Describe what you need — I'll navigate, click, fill forms and extract data autonomously.</p>
+                <div className="ws-hero-title font-outfit" style={{ fontFamily: "'Outfit', sans-serif" }}>Your AI <span>Browser Agent</span></div>
+                <p className="ws-hero-sub font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>Describe what you need — I'll navigate, click, fill forms and extract data autonomously.</p>
             </div>
 
             {/* QUICK ACTIONS */}
@@ -42,8 +42,8 @@ const EmptyChat: React.FC<EmptyChatProps> = ({ onSelectPrompt, isDarkMode }) => 
                         </svg>
                     </div>
                     <div>
-                        <div className="ws-ac-name">Search & Summarize</div>
-                        <div className="ws-ac-hint">Find and distill web content</div>
+                        <div className="ws-ac-name font-outfit" style={{ fontFamily: "'Outfit', sans-serif" }}>Search & Summarize</div>
+                        <div className="ws-ac-hint font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>Find and distill web content</div>
                     </div>
                 </div>
 
@@ -54,8 +54,8 @@ const EmptyChat: React.FC<EmptyChatProps> = ({ onSelectPrompt, isDarkMode }) => 
                         </svg>
                     </div>
                     <div>
-                        <div className="ws-ac-name">Fill Forms</div>
-                        <div className="ws-ac-hint">Auto-complete any web form</div>
+                        <div className="ws-ac-name font-outfit" style={{ fontFamily: "'Outfit', sans-serif" }}>Fill Forms</div>
+                        <div className="ws-ac-hint font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>Auto-complete any web form</div>
                     </div>
                 </div>
 
@@ -66,8 +66,8 @@ const EmptyChat: React.FC<EmptyChatProps> = ({ onSelectPrompt, isDarkMode }) => 
                         </svg>
                     </div>
                     <div>
-                        <div className="ws-ac-name">Extract Data</div>
-                        <div className="ws-ac-hint">Scrape tables, lists, text</div>
+                        <div className="ws-ac-name font-outfit" style={{ fontFamily: "'Outfit', sans-serif" }}>Extract Data</div>
+                        <div className="ws-ac-hint font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>Scrape tables, lists, text</div>
                     </div>
                 </div>
 
@@ -79,8 +79,8 @@ const EmptyChat: React.FC<EmptyChatProps> = ({ onSelectPrompt, isDarkMode }) => 
                         </svg>
                     </div>
                     <div>
-                        <div className="ws-ac-name">Screenshot</div>
-                        <div className="ws-ac-hint">Capture any page or element</div>
+                        <div className="ws-ac-name font-outfit" style={{ fontFamily: "'Outfit', sans-serif" }}>Screenshot</div>
+                        <div className="ws-ac-hint font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>Capture any page or element</div>
                     </div>
                 </div>
             </div>

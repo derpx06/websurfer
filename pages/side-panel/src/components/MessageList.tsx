@@ -69,9 +69,9 @@ export default memo(function MessageList({ messages, isDarkMode = false }: Messa
           {cycle.userMessage && (
             <>
               <div className="msg-user">
-                <div className="bub">{cycle.userMessage.content}</div>
+                <div className="bub font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>{cycle.userMessage.content}</div>
               </div>
-              <div className="ts">{formatTimeOnly(cycle.userMessage.timestamp)}</div>
+              <div className="ts font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>{formatTimeOnly(cycle.userMessage.timestamp)}</div>
             </>
           )}
 
@@ -180,9 +180,9 @@ function ThinkBlock({ actor, messages, isActive, defaultOpen }: { actor: Actors,
       <div className="tb-head" onClick={toggle}>
         <div className="pill">
           <div className={`pill-dot ${isActive ? 'pulse' : ''}`}></div>
-          <span className="pill-name">{actorName}</span>
+          <span className="pill-name font-outfit" style={{ fontFamily: "'Outfit', sans-serif" }}>{actorName}</span>
         </div>
-        <span className="tb-sum">{summaryText}</span>
+        <span className="tb-sum font-inter" style={{ fontFamily: "'Inter', sans-serif" }}>{summaryText}</span>
         <div className="tb-meta">
           {isActive ? (
             <div className="sdots"><div className="sd"></div><div className="sd"></div><div className="sd"></div></div>

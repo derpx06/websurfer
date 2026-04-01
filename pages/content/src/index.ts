@@ -1,8 +1,8 @@
-const BORDER_ID = 'nanobrowser-agent-border';
-const BORDER_STYLE_ID = 'nanobrowser-agent-border-style';
+const BORDER_ID = 'websurfer-agent-border';
+const BORDER_STYLE_ID = 'websurfer-agent-border-style';
 
 const BORDER_CSS = `
-@property --nanobrowser-gradient-angle {
+@property --websurfer-gradient-angle {
   syntax: "<angle>";
   initial-value: 0deg;
   inherits: false;
@@ -28,7 +28,7 @@ const BORDER_CSS = `
   inset: 0;
   border-radius: 0; /* Full edge hug */
   background: conic-gradient(
-    from var(--nanobrowser-gradient-angle),
+    from var(--websurfer-gradient-angle),
     #00f2ff, 
     #0062ff, 
     #001aff, 
@@ -37,7 +37,7 @@ const BORDER_CSS = `
     #0062ff, 
     #00f2ff
   );
-  animation: nanobrowser-rotate 2.5s linear infinite;
+  animation: websurfer-rotate 2.5s linear infinite;
   
   /* The sharp, high-energy border line */
   mask: 
@@ -53,12 +53,12 @@ const BORDER_CSS = `
   z-index: 2;
 }
 
-@keyframes nanobrowser-rotate {
+@keyframes websurfer-rotate {
   0% {
-    --nanobrowser-gradient-angle: 0deg;
+    --websurfer-gradient-angle: 0deg;
   }
   100% {
-    --nanobrowser-gradient-angle: 360deg;
+    --websurfer-gradient-angle: 360deg;
   }
 }
 `;
@@ -102,8 +102,8 @@ function setBorderActive(active: boolean) {
   }
 }
 
-const CAPSULE_ID = 'nanobrowser-status-capsule';
-const CAPSULE_STYLE_ID = 'nanobrowser-status-capsule-style';
+const CAPSULE_ID = 'websurfer-status-capsule';
+const CAPSULE_STYLE_ID = 'websurfer-status-capsule-style';
 
 const EXTRA_CSS = `
 #${CAPSULE_ID} {
@@ -137,21 +137,21 @@ const EXTRA_CSS = `
   opacity: 1;
 }
 
-.nanobrowser-status-dot {
+.websurfer-status-dot {
   width: 8px;
   height: 8px;
   background: #00f2ff;
   border-radius: 50%;
   box-shadow: 0 0 10px #00f2ff;
-  animation: nanobrowser-status-pulse 2s ease-in-out infinite;
+  animation: websurfer-status-pulse 2s ease-in-out infinite;
 }
 
-.nanobrowser-status-text {
+.websurfer-status-text {
   letter-spacing: 0.02em;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
-@keyframes nanobrowser-status-pulse {
+@keyframes websurfer-status-pulse {
   0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 8px #00f2ff; }
   50% { transform: scale(1.2); opacity: 0.6; box-shadow: 0 0 15px #00f2ff; }
 }
@@ -170,8 +170,8 @@ function injectCapsule() {
   const capsule = document.createElement('div');
   capsule.id = CAPSULE_ID;
   capsule.innerHTML = `
-        <div class="nanobrowser-status-dot"></div>
-        <div class="nanobrowser-status-text" id="${CAPSULE_ID}-text">Initializing Agent...</div>
+        <div class="websurfer-status-dot"></div>
+        <div class="websurfer-status-text" id="${CAPSULE_ID}-text">Initializing Agent...</div>
     `;
   document.body.appendChild(capsule);
 }

@@ -10,6 +10,28 @@ function isNotNull<T>(item: T | null | undefined): item is T {
   return item != null;
 }
 
+// Global cache for script injection status: tabId -> Map<frameId, boolean>
+const INJECTION_CACHE = new Map<number, Map<number, boolean>>();
+
+// Listen for tab removals to clear cache
+chrome.tabs.onRemoved.addListener(tabId => {
+  INJECTION_CACHE.delete(tabId);
+});
+
+// Listen for navigations to clear frame cache within a tab
+chrome.webNavigation.onBeforeNavigate.addListener(details => {
+  if (details.frameId === 0) {
+    // Main frame navigation, clear entire tab cache
+    INJECTION_CACHE.delete(details.tabId);
+  } else {
+    // Sub-frame navigation, clear only that frame
+    const tabCache = INJECTION_CACHE.get(details.tabId);
+    if (tabCache) {
+      tabCache.delete(details.frameId);
+    }
+  }
+});
+
 export interface ReadabilityResult {
   title: string;
   content: string;
@@ -224,77 +246,76 @@ async function constructFrameTree(
   const failedLoadingFrames = allFramesInfo.filter(frameInfo => {
     return _locateMatchingIframeNode(parentIframesFailedLoading, frameInfo) != null;
   });
-  const parentIframesFailedCount = Object.values(parentIframesFailedLoading).length;
-  if (parentIframesFailedCount > failedLoadingFrames.length) {
-    logger.warning(
-      'Failed to locate some iframes that failed to load:',
-      parentIframesFailedCount,
-      'vs',
-      failedLoadingFrames.length,
-    );
+
+  if (failedLoadingFrames.length === 0) {
+    return {
+      maxNodeId: startingNodeId,
+      maxHighlightIndex: startingHighlightIndex,
+      resultPage: parentFramePage,
+    };
   }
 
-  let maxNodeId = startingNodeId;
-  let maxHighlightIndex = startingHighlightIndex;
+  // To maintain unique IDs while parallelizing, we use a large offset for each frame
+  // ELEMENT_ID_OFFSET = 10000 should be enough for most iframes
+  const ELEMENT_ID_OFFSET = 10000;
+  const HIGHLIGHT_OFFSET = 1000;
 
-  for (const subFrame of failedLoadingFrames) {
-    // Processing one frame at a time, to start from the proper highlightIndex and element id.
-    const subFrameResult = await chrome.scripting.executeScript({
-      target: { tabId, frameIds: [subFrame.frameId] },
-      func: args => {
-        // Access buildDomTree from the window context of the target page
-        return window.buildDomTree({ ...args });
-      },
-      args: [
-        {
-          showHighlightElements,
-          focusHighlightIndex: focusElement,
-          viewportExpansion,
-          startId: maxNodeId + 1,
-          startHighlightIndex: maxHighlightIndex + 1,
-          debugMode,
-        },
-      ],
-    });
+  const results = await Promise.all(
+    failedLoadingFrames.map(async (subFrame, index) => {
+      try {
+        const subFrameResult = await chrome.scripting.executeScript({
+          target: { tabId, frameIds: [subFrame.frameId] },
+          func: args => {
+            return window.buildDomTree({ ...args });
+          },
+          args: [
+            {
+              showHighlightElements,
+              focusHighlightIndex: focusElement,
+              viewportExpansion,
+              startId: startingNodeId + 1 + index * ELEMENT_ID_OFFSET,
+              startHighlightIndex: startingHighlightIndex + 1 + index * HIGHLIGHT_OFFSET,
+              debugMode,
+            },
+          ],
+        });
 
-    const subFramePage = subFrameResult[0]?.result as unknown as BuildDomTreeResult;
-    if (!subFramePage || !subFramePage.map || !subFramePage.rootId) {
-      throw new Error('Failed to build DOM tree: No result returned or invalid structure');
-    }
-    if (debugMode && subFramePage.perfMetrics) {
-      logger.debug(
-        'DOM Tree Building Performance Metrics (sub-frame' + subFrameResult[0].frameId + '):',
-        subFramePage.perfMetrics,
-      );
-    }
-    if (!subFramePage.rootId) {
-      continue;
-    }
+        const subFramePage = subFrameResult[0]?.result as unknown as BuildDomTreeResult;
+        return { subFrame, subFramePage, success: true };
+      } catch (err) {
+        logger.error(`Failed to build DOM tree for frame ${subFrame.frameId}:`, err);
+        return { subFrame, subFramePage: null, success: false };
+      }
+    }),
+  );
 
-    maxNodeId = _getMaxID(subFramePage, maxNodeId);
-    maxHighlightIndex = _getMaxHighlighIndex(subFramePage, maxHighlightIndex);
+  let currentMaxNodeId = startingNodeId;
+  let currentMaxHighlightIndex = startingHighlightIndex;
 
-    // Expand lookup map to subframe elements
+  for (const res of results) {
+    if (!res.success || !res.subFramePage || !res.subFramePage.rootId) continue;
+
+    const { subFrame, subFramePage } = res;
+
+    // Merge maps
     parentFramePage.map = {
       ...parentFramePage.map,
       ...subFramePage.map,
     };
 
-    // Question: should we verify by checking subFrame.parentFrameId to ensure it's the correct parent to this subframe?
+    // Stitch
     const iframeNode = _locateMatchingIframeNode(parentIframesFailedLoading, subFrame);
-    if (iframeNode == null) {
-      const subFrameRootElement = subFramePage.map[subFramePage.rootId];
-      console.warn('Cannot locate the iframe node for:', subFrame, 'with root element:', subFrameRootElement);
-    } else {
-      // Stiching together subframe DOM results with the main frame result
-      // while keeping the subset of iframe node trees, that succeded to load their contents.
+    if (iframeNode) {
       iframeNode.children.push(subFramePage.rootId);
     }
 
+    currentMaxNodeId = Math.max(currentMaxNodeId, _getMaxID(subFramePage));
+    currentMaxHighlightIndex = Math.max(currentMaxHighlightIndex, _getMaxHighlighIndex(subFramePage));
+
+    // Handle nested iframes inside this frame
     const childrenIframesFailedLoading = _visibleIFramesFailedLoading(subFramePage);
-    const childrenIframesFailedCount = Object.values(childrenIframesFailedLoading).length;
-    if (childrenIframesFailedCount > 0) {
-      const result = await constructFrameTree(
+    if (Object.keys(childrenIframesFailedLoading).length > 0) {
+      const nestedResult = await constructFrameTree(
         tabId,
         showHighlightElements,
         focusElement,
@@ -302,17 +323,17 @@ async function constructFrameTree(
         debugMode,
         subFramePage,
         allFramesInfo,
-        maxNodeId,
-        maxHighlightIndex,
+        currentMaxNodeId,
+        currentMaxHighlightIndex,
       );
-      maxNodeId = Math.max(maxNodeId, result.maxNodeId);
-      maxHighlightIndex = Math.max(maxHighlightIndex, result.maxHighlightIndex);
+      currentMaxNodeId = nestedResult.maxNodeId;
+      currentMaxHighlightIndex = nestedResult.maxHighlightIndex;
     }
   }
 
   return {
-    maxNodeId,
-    maxHighlightIndex,
+    maxNodeId: currentMaxNodeId,
+    maxHighlightIndex: currentMaxHighlightIndex,
     resultPage: parentFramePage,
   };
 }
@@ -595,30 +616,19 @@ async function scriptInjectedFrames(tabId: number): Promise<Map<number, boolean>
 // Function to inject the buildDomTree script
 export async function injectBuildDomTreeScripts(tabId: number) {
   try {
-    // Check if already injected
+    const tabCache = INJECTION_CACHE.get(tabId) || new Map<number, boolean>();
+    INJECTION_CACHE.set(tabId, tabCache);
+
+    // Check injection status for all frames
     const injectedFrames = await scriptInjectedFrames(tabId);
 
-    // If we couldn't check any frames or all are already injected, try to inject in main frame only
-    if (injectedFrames.size === 0) {
-      // Couldn't check frames, so just try to inject in the main frame
-      try {
-        await chrome.scripting.executeScript({
-          target: { tabId },
-          files: ['buildDomTree.js'],
-        });
-      } catch (injectionErr) {
-        // Silently ignore - script might already be injected or frame might be inaccessible
-      }
-      return;
+    // Update cache
+    for (const [frameId, injected] of injectedFrames) {
+      tabCache.set(frameId, injected);
     }
 
-    // Check if all frames already have the script
-    if (Array.from(injectedFrames.values()).every(injected => injected)) {
-      return;
-    }
-
-    // Inject only in frames that don't have the script
     const frameIdsToInject = Array.from(injectedFrames.keys()).filter(id => !injectedFrames.get(id));
+
     if (frameIdsToInject.length > 0) {
       await chrome.scripting.executeScript({
         target: {
@@ -627,8 +637,11 @@ export async function injectBuildDomTreeScripts(tabId: number) {
         },
         files: ['buildDomTree.js'],
       });
+
+      // Update cache after successful injection
+      frameIdsToInject.forEach(id => tabCache.set(id, true));
     }
   } catch (err) {
-    console.error('Failed to inject scripts:', err);
+    logger.error('Failed to inject scripts:', err);
   }
 }
