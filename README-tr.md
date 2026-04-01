@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="https://github.com/user-attachments/assets/ec60b0c4-87ba-48f4-981a-c55ed0e8497b" height="100" width="375" alt="banner" /><br>
+    <img src="chrome-extension/public/websurfer_banner.png" width="800" alt="WebSurfer Banner" /><br>
 </h1>
 
 <div align="center">
@@ -256,6 +256,16 @@ Tüm yaratıcılarına ve katkıda bulunanlara büyük teşekkürler!
 ## 📄 Lisans
 
 Bu proje Apache License 2.0 ile lisanslanmıştır – detaylar için [LICENSE](LICENSE) dosyasına bakın.
+
+## 🚀 Misyonumuz
+
+**WebSurfer**, basit ama güçlü bir misyonla inşa edildi: gelişmiş web otomasyonunu herkes için erişilebilir kılmak. Yapay zekanın, kullanıcıların gizlilikten veya maliyetten ödün vermeden web'de daha verimli bir şekilde gezinmesini ve etkileşim kurmasını sağlaması gerektiğine inanıyoruz.
+
+### Temel Değerler
+- **Erişilebilirlik**: Üst düzey otomasyon özellikleri herkes için ücretsizdir.
+- **Gizlilik**: Verileriniz, anahtarlarınız, tarayıcınız. Aracı yok.
+- **Esneklik**: Tercih ettiğiniz LLM'leri ihtiyaçlarınıza göre kullanın.
+- **Topluluk**: Açık kaynaklı ve topluluk odaklı gelişim.
 
 Sevgiyle yapıldı ❤️ WebSurfer Ekibi tarafından.
 

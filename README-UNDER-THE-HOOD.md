@@ -1,3 +1,7 @@
+<h1 align="center">
+    <img src="chrome-extension/public/websurfer_banner.png" width="800" alt="WebSurfer Banner" /><br>
+</h1>
+
 # WebSurfer Under-the-Hood (Complete Technical Walkthrough)
 
 This document explains how this repository works internally, from build orchestration to runtime behavior in Chrome, including the multi-agent loop, browser automation stack, security controls, storage schema, UI flows, and package-by-package responsibilities.

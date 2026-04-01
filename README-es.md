@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="https://github.com/user-attachments/assets/ec60b0c4-87ba-48f4-981a-c55ed0e8497b" height="100" width="375" alt="banner" /><br>
+    <img src="chrome-extension/public/websurfer_banner.png" width="800" alt="WebSurfer Banner" /><br>
 </h1>
 
 
@@ -230,6 +230,16 @@ WebSurfer se construye sobre otros increíbles proyectos de código abierto:
 ## 📄 Licencia
 
 Este proyecto está bajo la Licencia Apache 2.0 - consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+## 🚀 Nuestra Misión
+
+**WebSurfer** se ha creado con una misión sencilla pero potente: hacer que la automatización web avanzada sea accesible para todos. Creemos que la IA debe capacitar a los usuarios para navegar e interactuar con la web de forma más eficiente, sin comprometer la privacidad ni el coste.
+
+### Valores Fundamentales
+- **Accesibilidad**: Funciones de automatización de alta gama disponibles para todos, de forma gratuita.
+- **Privacidad**: Tus datos, tus claves, tu navegador. Sin intermediarios.
+- **Flexibilidad**: Usa los LLM que prefieras, adaptados a tus necesidades específicas.
+- **Comunidad**: Desarrollo impulsado por la comunidad y de código abierto.
 
 Hecho con ❤️ por el equipo de WebSurfer.
 

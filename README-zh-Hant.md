@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="https://github.com/user-attachments/assets/ec60b0c4-87ba-48f4-981a-c55ed0e8497b" height="100" width="375" alt="banner" /><br>
+    <img src="chrome-extension/public/websurfer_banner.png" width="800" alt="WebSurfer Banner" /><br>
 </h1>
 
 
@@ -242,6 +242,16 @@ WebSurfer 的開發建立在許多優秀的開放原始碼專案之上：
 ## 📄 授權
 
 本專案採用 Apache License 2.0 授權 - 詳情請參閱 [LICENSE](LICENSE) 檔案。
+
+## 🚀 我們的使命
+
+**WebSurfer** 的創立使命簡單而強大：讓每個人都能輕鬆使用先進的網路自動化工具。我們相信 AI 應該賦予用戶更高效地瀏覽和與網路互動的能力，同時兼顧隱私和成本。
+
+### 核心價值觀
+- **普及性**：每個人都能免費使用高端自動化功能。
+- **隱私性**：您的數據、您的密鑰、您的瀏覽器。沒有中間人。
+- **靈活性**：根據您的特定需求，使用您偏好的 LLM。
+- **社區性**：開源且由社區驅動的開發。
 
 由 WebSurfer 團隊用 ❤️ 打造。
 

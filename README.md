@@ -15,11 +15,11 @@
 
 ## 🌐 WebSurfer
 
-WebSurfer is an open-source AI web automation tool that runs in your browser. A free alternative to OpenAI Operator with flexible LLM options and multi-websurfer system.
+**WebSurfer** is an open-source AI web automation tool that runs directly in your browser. It serves as a powerful, free alternative to OpenAI Operator, featuring flexible LLM options and a sophisticated multi-agent system.
 
-⬇️ Get [WebSurfer from Chrome Web Store](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal) for free
+⬇️ **[Get WebSurfer from Chrome Web Store](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal)** (Free)
 
-👏 Join the community in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/WebSurfer_ai)
+👏 **Join the Community:** [Discord](https://discord.gg/NN3ABHggMK) | [X (Twitter)](https://x.com/WebSurfer_ai)
 
 🌟 Loving WebSurfer? Give us a star  and help spread the word!
 
@@ -30,26 +30,25 @@ WebSurfer is an open-source AI web automation tool that runs in your browser. A 
 <p><em>WebSurfer's multi-websurfer system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
 </div>
 
-## 🔥Why WebSurfer?
+## 🔥 Why WebSurfer?
 
-Looking for a powerful AI browser websurfer without the $200/month price tag of OpenAI Operator? **WebSurfer** , as a chrome extension, delivers premium web automation capabilities while keeping you in complete control:
+Looking for a powerful AI browser agent without the $200/month price tag? **WebSurfer** delivers premium web automation capabilities while keeping you in complete control:
 
-- **100% Free** - No subscription fees or hidden costs. Just install and use your own API keys, and you only pay what you use with your own API keys.
-- **Privacy-Focused** - Everything runs in your local browser. Your credentials stay with you, never shared with any cloud service.
-- **Flexible LLM Options** - Connect to your preferred LLM providers with the freedom to choose different models for different websurfers.
-- **Fully Open Source** - Complete transparency in how your browser is automated. No black boxes or hidden processes.
+- **💰 100% Free** - No subscription fees. Use your own API keys and pay only for what you consume.
+- **🔒 Privacy-First** - Everything runs locally. Your credentials and data stay on your machine, never shared with the cloud.
+- **🧩 Flexible LLM Options** - Connect to OpenAI, Anthropic, Gemini, Ollama, Groq, and more. Mix and match models for different agents.
+- **📖 Fully Open Source** - Complete transparency. Audit the code, contribute, and see exactly how your browser is automated.
 
-> **Note:** We currently support OpenAI, Anthropic, Gemini, Ollama, Groq, Cerebras, Llama and custom OpenAI-Compatible providers, more providers will be supported.
+> **Supported Providers:** OpenAI, Anthropic, Gemini, Ollama, Groq, Cerebras, Llama, and any OpenAI-Compatible API.
 
 
 ## 📊 Key Features
 
-- **Multi-websurfer System**: Specialized AI websurfers collaborate to accomplish complex web workflows
-- **Interactive Side Panel**: Intuitive chat interface with real-time status updates
-- **Task Automation**: Seamlessly automate repetitive web automation tasks across websites
-- **Follow-up Questions**: Ask contextual follow-up questions about completed tasks
-- **Conversation History**: Easily access and manage your AI websurfer interaction history
-- **Multiple LLM Support**: Connect your preferred LLM providers and assign different models to different websurfers
+- **Multi-Agent System**: Specialized AI agents (Planner, Navigator, Validator) collaborate to solve complex tasks.
+- **Interactive Side Panel**: A modern, intuitive chat interface with real-time status updates and micro-animations.
+- **Task Automation**: Seamlessly automate repetitive web workflows across any website.
+- **Contextual Follow-ups**: Ask follow-up questions or give more instructions to your agents.
+- **Conversation History**: Securely access and manage your interaction history locally.
 
 
 ## 🌐 Browser Support
@@ -248,17 +247,21 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## 🚀 Our Mission
 
-**WebSurfer** is built with a simple but powerful mission: to make advanced web automation accessible to everyone. We believe that AI should empower users to navigate and interact with the web more efficiently, without compromising on privacy or cost.
+**WebSurfer** is built with a simple but powerful mission: **to democratize advanced web automation.** We believe AI should empower everyone to interact with the digital world more efficiently, without high costs or privacy trade-offs.
 
 ### Core Values
-- **Accessibility**: High-end automation features available for everyone, for free.
-- **Privacy**: Your data, your keys, your browser. No middleman.
-- **Flexibility**: Use the LLMs you prefer, tailored to your specific needs.
-- **Community**: Open-source and community-driven development.
+- **Accessibility**: Premium features available to all, free of charge.
+- **Privacy**: Your data, your keys, your browser. No intermediaries.
+- **Flexibility**: Total freedom to choose the models that fit your needs.
+- **Community**: Built by the community, for the community.
 
-Made with ❤️ by the WebSurfer Team. 
+---
 
-Like WebSurfer? Give us a star 🌟 and join us in [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/WebSurfer_ai)
+Made with ❤️ by the **WebSurfer Team**.
+
+🌟 Love the project? **[Give us a star on GitHub](https://github.com/WebSurfer/WebSurfer)** and help spread the word!
+
+[Discord](https://discord.gg/NN3ABHggMK) | [X (Twitter)](https://x.com/WebSurfer_ai)
 
 ## ⚠️ DISCLAIMER ON DERIVATIVE PROJECTS
 
