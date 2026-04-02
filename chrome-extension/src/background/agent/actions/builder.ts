@@ -31,6 +31,26 @@ import { wrapUntrustedContent } from '../messages/utils';
 
 const logger = createLogger('Action');
 
+function normalizeNavigationUrl(rawUrl: string): string {
+  const trimmedUrl = rawUrl.trim();
+  if (!trimmedUrl) {
+    throw new InvalidInputError('URL cannot be empty');
+  }
+
+  // Keep explicit schemes untouched (https:, http:, about:, etc.)
+  if (/^[a-zA-Z][a-zA-Z\d+.-]*:/.test(trimmedUrl)) {
+    return trimmedUrl;
+  }
+
+  // Handle scheme-relative URLs like //example.com
+  if (trimmedUrl.startsWith('//')) {
+    return `https:${trimmedUrl}`;
+  }
+
+  // Default to HTTPS for bare domains/hosts.
+  return `https://${trimmedUrl}`;
+}
+
 export class InvalidInputError extends Error {
   constructor(message: string) {
     super(message);
@@ -179,11 +199,12 @@ export class ActionBuilder {
     actions.push(searchGoogle);
 
     const goToUrl = new Action(async (input: z.infer<typeof goToUrlActionSchema.schema>) => {
-      const intent = input.intent || t('act_goToUrl_start', [input.url]);
+      const targetUrl = normalizeNavigationUrl(input.url);
+      const intent = input.intent || t('act_goToUrl_start', [targetUrl]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-      await this.context.browserContext.navigateTo(input.url);
-      const msg2 = t('act_goToUrl_ok', [input.url]);
+      await this.context.browserContext.navigateTo(targetUrl);
+      const msg2 = t('act_goToUrl_ok', [targetUrl]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
       return new ActionResult({
         extractedContent: msg2,
@@ -311,10 +332,11 @@ export class ActionBuilder {
     actions.push(switchTab);
 
     const openTab = new Action(async (input: z.infer<typeof openTabActionSchema.schema>) => {
-      const intent = input.intent || t('act_openTab_start', [input.url]);
+      const targetUrl = normalizeNavigationUrl(input.url);
+      const intent = input.intent || t('act_openTab_start', [targetUrl]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      await this.context.browserContext.openTab(input.url);
-      const msg = t('act_openTab_ok', [input.url]);
+      await this.context.browserContext.openTab(targetUrl);
+      const msg = t('act_openTab_ok', [targetUrl]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, openTabActionSchema);

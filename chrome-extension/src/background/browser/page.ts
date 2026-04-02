@@ -942,12 +942,24 @@ export default class Page {
     if (this._config.waitForNetworkIdlePageLoadTime > 0) {
       await this._waitForStableNetwork();
     }
-    await this.waitForPageLoadState();
+    try {
+      await this.waitForPageLoadState();
+    } catch (error) {
+      if (this._isTimeoutError(error)) {
+        logger.warning('Page load wait timed out, continuing with current DOM state:', error);
+        return;
+      }
+      throw error;
+    }
   }
 
   async waitForPageLoadState(timeout?: number) {
     const timeoutValue = timeout || 8000;
     await this._lifecycle.puppeteerPage?.waitForNavigation({ timeout: timeoutValue });
+  }
+
+  private _isTimeoutError(error: unknown): boolean {
+    return error instanceof Error && error.message.toLowerCase().includes('timeout');
   }
 
   private async _waitForStableNetwork() {

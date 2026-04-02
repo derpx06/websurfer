@@ -150,25 +150,21 @@ export default class BrowserContext {
       timeoutMs?: number;
     } = {},
   ): Promise<void> {
-    const { waitForUpdate = true, waitForActivation = true, timeoutMs = 5000 } = options;
+    const { waitForUpdate = true, waitForActivation = true, timeoutMs = 12000 } = options;
 
     const promises: Promise<void>[] = [];
 
     if (waitForUpdate) {
       const updatePromise = new Promise<void>(resolve => {
-        let hasUrl = false;
-        let hasTitle = false;
         let isComplete = false;
 
         const onUpdatedHandler = (updatedTabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
           if (updatedTabId !== tabId) return;
 
-          if (changeInfo.url) hasUrl = true;
-          if (changeInfo.title) hasTitle = true;
           if (changeInfo.status === 'complete') isComplete = true;
 
-          // Resolve when we have all the information we need
-          if (hasUrl && hasTitle && isComplete) {
+          // Some pages may never emit title changes; completion is enough.
+          if (isComplete) {
             chrome.tabs.onUpdated.removeListener(onUpdatedHandler);
             resolve();
           }
@@ -177,14 +173,15 @@ export default class BrowserContext {
 
         // Check current state
         chrome.tabs.get(tabId).then(tab => {
-          if (tab.url) hasUrl = true;
-          if (tab.title) hasTitle = true;
           if (tab.status === 'complete') isComplete = true;
 
-          if (hasUrl && hasTitle && isComplete) {
+          if (isComplete) {
             chrome.tabs.onUpdated.removeListener(onUpdatedHandler);
             resolve();
           }
+        }).catch(() => {
+          chrome.tabs.onUpdated.removeListener(onUpdatedHandler);
+          resolve();
         });
       });
       promises.push(updatePromise);
@@ -206,13 +203,19 @@ export default class BrowserContext {
             chrome.tabs.onActivated.removeListener(onActivatedHandler);
             resolve();
           }
+        }).catch(() => {
+          chrome.tabs.onActivated.removeListener(onActivatedHandler);
+          resolve();
         });
       });
       promises.push(activatedPromise);
     }
 
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error(`Tab operation timed out after ${timeoutMs} ms`)), timeoutMs),
+    const timeoutPromise = new Promise<void>(resolve =>
+      setTimeout(() => {
+        logger.warning(`Tab operation timed out after ${timeoutMs} ms; continuing with best effort`, { tabId });
+        resolve();
+      }, timeoutMs),
     );
 
     await Promise.race([Promise.all(promises), timeoutPromise]);
