@@ -17,7 +17,7 @@
 🌟 Loving WebSurfer? Give us a star on GitHub and help spread the word!
 
 <div align="center">
-<img src="https://github.com/user-attachments/assets/112c4385-7b03-4b81-a352-4f348093351b" width="600" alt="WebSurfer Demo GIF" />
+<img width="2559" height="1556" alt="image" src="https://github.com/user-attachments/assets/a1401b65-a436-473e-adaa-d223004c3d80" />
 <p><em>WebSurfer's multi-websurfer system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
 </div>
 
