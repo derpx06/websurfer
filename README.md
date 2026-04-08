@@ -1,100 +1,8 @@
-<h1 align="center">
-    <img src="chrome-extension/public/websurfer_banner.png" width="800" alt="WebSurfer Banner" /><br>
-</h1>
-
-
-<div align="center">
-
-[![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/WebSurfer)
-[<img src="https://deepwiki.com/badge.svg" height="28" alt="Ask DeepWiki">](https://deepwiki.com/WebSurfer/WebSurfer)
-
-</div>
+# WebSurfer
 
 **WebSurfer** is an open-source AI web automation tool that runs directly in your browser. It serves as a powerful, free alternative to OpenAI Operator, featuring flexible LLM options and a sophisticated multi-agent system.
 
-⬇️ **[Get WebSurfer from Chrome Web Store](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal)** (Free)
-
-🌟 Loving WebSurfer? Give us a star on GitHub and help spread the word!
-
-<div align="center">
-<img width="2559" height="1556" alt="image" src="https://github.com/user-attachments/assets/a1401b65-a436-473e-adaa-d223004c3d80" />
-<p><em>WebSurfer's multi-websurfer system analyzing HuggingFace in real-time, with the Planner intelligently self-correcting when encountering obstacles and dynamically instructing the Navigator to adjust its approach—all running locally in your browser.</em></p>
-</div>
-
-## 🔥 Why WebSurfer?
-
-Looking for a powerful AI browser agent without the $200/month price tag? **WebSurfer** delivers premium web automation capabilities while keeping you in complete control:
-
-- **💰 100% Free** - No subscription fees. Use your own API keys and pay only for what you consume.
-- **🔒 Privacy-First** - Everything runs locally. Your credentials and data stay on your machine, never shared with the cloud.
-- **🧩 Flexible LLM Options** - Connect to OpenAI, Anthropic, Gemini, Ollama, Groq, and more. Mix and match models for different agents.
-- **📖 Fully Open Source** - Complete transparency. Audit the code, contribute, and see exactly how your browser is automated.
-
-> **Supported Providers:** OpenAI, Anthropic, Gemini, Ollama, Groq, Cerebras, Llama, and any OpenAI-Compatible API.
-
-
-## 📊 Key Features
-
-- **Multi-Agent System**: Specialized AI agents (Planner, Navigator, Validator) collaborate to solve complex tasks.
-- **Interactive Side Panel**: A modern, intuitive chat interface with real-time status updates and micro-animations.
-- **Task Automation**: Seamlessly automate repetitive web workflows across any website.
-- **Contextual Follow-ups**: Ask follow-up questions or give more instructions to your agents.
-- **Conversation History**: Securely access and manage your interaction history locally.
-
-
-## 🌐 Browser Support
-
-**Officially Supported:**
-- **Chrome** - Full support with all features
-- **Edge** - Full support with all features
-
-**Not Supported:**
-- Firefox, Safari, and other Chromium variants (Opera, Arc, etc.)
-
-> **Note**: While WebSurfer may function on other Chromium-based browsers, we recommend using Chrome or Edge for the best experience and guaranteed compatibility.
-
-
-## 🚀 Quick Start
-
-1. **Install from Chrome Web Store** (Stable Version):
-   * Visit the [WebSurfer Chrome Web Store page](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal)
-   * Click "Add to Chrome" button
-   * Confirm the installation when prompted
-
-> **Important Note**: For latest features, install from ["Manually Install Latest Version"](#-manually-install-latest-version) below, as Chrome Web Store version may be delayed due to review process.
-
-2. **Configure WebSurfer Models**:
-   * Click the WebSurfer icon in your toolbar to open the sidebar
-   * Click the `Settings` icon (top right)
-   * Add your LLM API keys
-   * Choose which model to use for different websurfers (Navigator, Planner)
-
-## 🔧 Manually Install Latest Version
-
-To get the most recent version with all the latest features:
-
-1. **Download**
-    * Download the latest `WebSurfer.zip` file from the official Github [release page](https://github.com/WebSurfer/WebSurfer/releases).
-
-2. **Install**:
-    * Unzip `WebSurfer.zip`.
-    * Open `chrome://extensions/` in Chrome
-    * Enable `Developer mode` (top right)
-    * Click `Load unpacked` (top left)
-    * Select the unzipped `WebSurfer` folder.
-
-3. **Configure WebSurfer Models**
-    * Click the WebSurfer icon in your toolbar to open the sidebar
-    * Click the `Settings` icon (top right).
-    * Add your LLM API keys.
-    * Choose which model to use for different websurfers (Navigator, Planner)
-
-4. **Upgrading**:
-    * Download the latest `WebSurfer.zip` file from the release page.
-    * Unzip and replace your existing WebSurfer files with the new ones.
-    * Go to `chrome://extensions/` in Chrome and click the refresh icon on the WebSurfer card.
-
-## 🛠️ Build from Source
+## 🚀 Quick Start (Build from Source)
 
 If you prefer to build WebSurfer yourself, follow these steps:
 
@@ -119,126 +27,27 @@ If you prefer to build WebSurfer yourself, follow these steps:
    ```
 
 5. **Load the Extension**:
-   * The built extension will be in the `dist` directory
-   * Follow the installation steps from the Manually Install section to load the extension into your browser
+   * The built extension will be in the `dist` directory.
+   * Open `chrome://extensions/` in Chrome.
+   * Enable `Developer mode` (top right).
+   * Click `Load unpacked` (top left).
+   * Select the `dist` folder.
 
 6. **Development Mode** (optional):
    ```bash
    pnpm dev
    ```
 
-## 🤖 Choosing Your Models
-
-WebSurfer allows you to configure different LLM models for each websurfer to balance performance and cost. Here are recommended configurations:
-
-### Better Performance
-- **Planner**: Claude Sonnet 4
-  - Better reasoning and planning capabilities
-- **Navigator**: Claude Haiku 3.5
-  - Efficient for web navigation tasks
-  - Good balance of performance and cost
-
-### Cost-Effective Configuration
-- **Planner**: Claude Haiku or GPT-4o
-  - Reasonable performance at lower cost
-  - May require more iterations for complex tasks
-- **Navigator**: Gemini 2.5 Flash or GPT-4o-mini
-  - Lightweight and cost-efficient
-  - Suitable for basic navigation tasks
-
-### Local Models
-- **Setup Options**:
-  - Use Ollama or other custom OpenAI-compatible providers to run models locally
-  - Zero API costs and complete privacy with no data leaving your machine
-
-- **Recommended Models**:
-  - **Qwen3-30B-A3B-Instruct-2507**
-  - **Falcon3 10B**
-  - **Qwen 2.5 Coder 14B**
-  - **Mistral Small 24B**
-  - [Latest test results from community](https://gist.github.com/maximus2600/75d60bf3df62986e2254d5166e2524cb) 
-
-- **Prompt Engineering**:
-  - Local models require more specific and cleaner prompts
-  - Avoid high-level, ambiguous commands
-  - Break complex tasks into clear, detailed steps
-  - Provide explicit context and constraints
-
-> **Note**: The cost-effective configuration may produce less stable outputs and require more iterations for complex tasks.
-
-> **Tip**: Feel free to experiment with your own model configurations!
-
-## 💡 See It In Action
-
-Here are some powerful tasks you can accomplish with just a sentence:
-
-1. **News Summary**:
-   > "Go to TechCrunch and extract top 10 headlines from the last 24 hours"
-
-2. **GitHub Research**:
-   > "Look for the trending Python repositories on GitHub with most stars"
-
-3. **Shopping Research**:
-   > "Find a portable Bluetooth speaker on Amazon with a water-resistant design, under $50. It should have a minimum battery life of 10 hours"
-
-## 🛠️ Roadmap
-
-We're actively developing WebSurfer with exciting features on the horizon, welcome to join us! 
-
-Check out our detailed roadmap and upcoming features in our [GitHub Discussions](https://github.com/WebSurfer/WebSurfer/discussions/85). 
-
-## 🤝 Contributing
-
-We welcome contributions of all kinds! Check out our [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute code to the project. Submit pull requests for bug fixes, features, or documentation improvements.
-
-
-## 🔒 Security
-
-If you discover a security vulnerability, please **DO NOT** disclose it publicly through issues, pull requests, or discussions.
-
-Instead, please create a [GitHub Security Advisory](https://github.com/WebSurfer/WebSurfer/security/advisories/new) to report the vulnerability responsibly. This allows us to address the issue before it's publicly disclosed.
-
-We appreciate your help in keeping WebSurfer and its users safe!
-
-## 💬 Contact
-
-For bug reports and feature requests, please use [GitHub Issues](https://github.com/WebSurfer/WebSurfer/issues) or [GitHub Discussions](https://github.com/WebSurfer/WebSurfer/discussions).
-
-## 👏 Acknowledgments
-
-WebSurfer builds on top of other awesome open-source projects:
-
-- [Browser Use](https://github.com/browser-use/browser-use)
-- [Puppeteer](https://github.com/EmergenceAI/Agent-E)
-- [Chrome Extension Boilerplate](https://github.com/Jonghakseo/chrome-extension-boilerplate-react-vite)
-- [LangChain](https://github.com/langchain-ai/langchainjs)
-
-Huge thanks to their creators and contributors!
-
 ## 📄 License
 
 This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
-
-## 🚀 Our Mission
-
-**WebSurfer** is built to democratize advanced web automation. We believe AI should empower everyone to interact with the digital world more efficiently, without high costs or privacy trade-offs.
-
----
-
-Made with ❤️ by the **WebSurfer Team**.
-
-🌟 Love the project? **[Give us a star on GitHub](https://github.com/WebSurfer/WebSurfer)**!
 
 ## ⚠️ DISCLAIMER ON DERIVATIVE PROJECTS
 
 **We explicitly *DO NOT* endorse, support, or participate in any** projects involving cryptocurrencies, tokens, NFTs, or other blockchain-related applications **based on this codebase.**
 
-**Any such derivative projects are NOT Affiliated with, or maintained by, or in any way connected to the official WebSurfer project or its core team.**
+**Any such derivative projects are NOT Affiliated with, or maintained by, or in any way connected to the official WebSurfer project or its core team.**
 
 **We assume NO LIABILITY for any losses, damages, or issues arising from the use of third-party derivative projects. Users interact with these projects at their own risk.**
 
 **We reserve the right to publicly distance ourselves from any misuse or misleading use of our name, codebase, or brand.**
-
-We encourage open-source innovation but urge our community to be discerning and cautious. Please ensure you understand the risks before using any software or service built upon our codebase by independent developers.
-
-
