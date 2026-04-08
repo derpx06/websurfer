@@ -119,10 +119,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ isDarkMode, onOpenSetting
                         <a className="hover:text-obsidian-accent transition-colors flex items-center" href="https://github.com/WebSurfer/WebSurfer?tab=readme-ov-file#-quick-start" target="_blank" rel="noopener noreferrer">
                             <span>{t('welcome_quickStart')}</span>
                         </a>
-                        <span className="w-1 h-1 rounded-full bg-slate-700"></span>
-                        <a className="hover:text-obsidian-accent transition-colors flex items-center" href="https://discord.gg/NN3ABHggMK" target="_blank" rel="noopener noreferrer">
-                            <span>{t('welcome_joinCommunity')}</span>
-                        </a>
                     </div>
                 </div>
             </div>
@@ -239,10 +235,6 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ isDarkMode, onOpenSetting
                     <div className="flex items-center justify-center space-x-6 text-sm font-semibold text-slate-400" data-purpose="external-links">
                         <a className="hover:text-indigo-600 transition-colors flex items-center" href="https://github.com/WebSurfer/WebSurfer?tab=readme-ov-file#-quick-start" target="_blank" rel="noopener noreferrer">
                             <span>{t('welcome_quickStart')}</span>
-                        </a>
-                        <span className="w-1 h-1 rounded-full bg-slate-300"></span>
-                        <a className="hover:text-indigo-600 transition-colors flex items-center" href="https://discord.gg/NN3ABHggMK" target="_blank" rel="noopener noreferrer">
-                            <span>{t('welcome_joinCommunity')}</span>
                         </a>
                     </div>
                 </div>

@@ -6,8 +6,6 @@
 <div align="center">
 
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/WebSurfer)
-[![Twitter](https://img.shields.io/badge/Twitter-000000?style=for-the-badge&logo=x&logoColor=white)](https://x.com/WebSurfer_ai)
-[![Discord](https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/NN3ABHggMK)
 
 </div>
 
@@ -15,11 +13,9 @@
 
 WebSurfer es una herramienta de automatización web con IA que se ejecuta en tu navegador. Es una alternativa gratuita a OpenAI Operator, con opciones flexibles de modelos de lenguaje (LLM) y un sistema multiagente.
 
-⬇️ Descarga [WebSurfer desde Chrome Web Store](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal) gratis
+⬇️ **[Descarga WebSurfer desde Chrome Web Store](https://chromewebstore.google.com/detail/WebSurfer/imbddededgmcgfhfpcjmijokokekbkal)** (Gratis)
 
-👏 Únete a la comunidad en [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/WebSurfer_ai)
-
-❤️ ¿Te encanta WebSurfer? ¡Danos una estrella 🌟 y ayúdanos a correr la voz!
+🌟 ¿Te encanta WebSurfer? ¡Danos una estrella 🌟 en GitHub!
 
 <div align="center">
 <img src="https://github.com/user-attachments/assets/112c4385-7b03-4b81-a352-4f348093351b" width="600" alt="WebSurfer Demo GIF" />
@@ -151,7 +147,6 @@ WebSurfer te permite configurar distintos modelos LLM para cada agente para equi
   - **Qwen 2.5 Coder 14B**
   - **Mistral Small 24B**
   - [Últimos resultados de pruebas de la comunidad](https://gist.github.com/maximus2600/75d60bf3df62986e2254d5166e2524cb)
-  - Te invitamos a compartir tu experiencia con otros modelos locales en nuestro [Discord](https://discord.gg/NN3ABHggMK)
 
 - **Ingeniería de Prompts**:
   - Los modelos locales requieren prompts más específicos y claros
@@ -161,7 +156,7 @@ WebSurfer te permite configurar distintos modelos LLM para cada agente para equi
 
 > **Nota**: La configuración económica puede producir resultados menos estables y requerir más iteraciones para tareas complejas.
 
-> **Consejo**: ¡Siéntete libre de experimentar con tus propias configuraciones de modelos! ¿Encontraste una combinación excelente? Compártela con la comunidad en nuestro [Discord](https://discord.gg/NN3ABHggMK) para ayudar a otros a optimizar sus configuraciones.
+> **Consejo**: ¡Siéntete libre de experimentar con tus propias configuraciones de modelos!
 
 ## 💡 Velo en Acción
 
@@ -184,19 +179,7 @@ Consulta nuestra hoja de ruta detallada y las características próximas en nues
 
 ## 🤝 Contribuciones
 
-**Necesitamos tu ayuda para hacer que WebSurfer sea aún mejor!**  Se aceptan contribuciones de todo tipo:
-
-*  **Comparte Prompts y Casos de Uso** 
-   * Únete a nuestro [servidor de Discord](https://discord.gg/NN3ABHggMK).
-   * Comparte cómo estás usando WebSurfer. Ayúdanos a construir una biblioteca de prompts útiles y casos de uso reales.
-*  **Proporciona Retroalimentación** 
-   * Prueba WebSurfer y danos tu opinión sobre su rendimiento o sugiere mejoras en nuestro [servidor de Discord](https://discord.gg/NN3ABHggMK).
-* **Contribuye con Código**
-   * Consulta nuestro [CONTRIBUTING.md](CONTRIBUTING.md) para conocer las pautas sobre cómo contribuir con código al proyecto.
-   * Envía pull requests para corrección de errores, funciones, o mejoras en la documentación.
-
-
-Creemos en el poder del código abierto y la colaboración comunitaria. ¡Únete a nosotros para construir el futuro de la automatización web!
+¡Se aceptan contribuciones de todo tipo! Consulta nuestro [CONTRIBUTING.md](CONTRIBUTING.md) para conocer las pautas sobre cómo contribuir con código al proyecto. Envía pull requests para corrección de errores, funciones, o mejoras en la documentación.
 
 
 ## 🔒 Seguridad
@@ -207,13 +190,9 @@ En su lugar, por favor crea un [GitHub Security Advisory](https://github.com/Web
 
 ¡Agradecemos tu ayuda para mantener WebSurfer y sus usuarios seguros!
 
-## 💬 Comunidad
+## 💬 Contacto
 
-Únete a nuestra creciente comunidad de desarrolladores y usuarios:
-
-- [Discord](https://discord.gg/NN3ABHggMK) - Habla con el equipo y la comunidad
-- [Twitter](https://x.com/WebSurfer_ai) - Síguenos para actualizaciones y anuncios
-- [GitHub Discussions](https://github.com/WebSurfer/WebSurfer/discussions) - Comparte ideas y realiza preguntas
+Para informes de errores y solicitudes de funciones, utiliza [GitHub Issues](https://github.com/WebSurfer/WebSurfer/issues) o [GitHub Discussions](https://github.com/WebSurfer/WebSurfer/discussions).
 
 ## 👏 Agradecimientos
 
@@ -233,14 +212,10 @@ Este proyecto está bajo la Licencia Apache 2.0 - consulta el archivo [LICENSE](
 
 ## 🚀 Nuestra Misión
 
-**WebSurfer** se ha creado con una misión sencilla pero potente: hacer que la automatización web avanzada sea accesible para todos. Creemos que la IA debe capacitar a los usuarios para navegar e interactuar con la web de forma más eficiente, sin comprometer la privacidad ni el coste.
+**WebSurfer** se ha creado para democratizar la automatización web avanzada. Creemos que la IA debe capacitar a los usuarios para navegar e interactuar con la web de forma más eficiente, sin comprometer la privacidad ni el coste.
 
-### Valores Fundamentales
-- **Accesibilidad**: Funciones de automatización de alta gama disponibles para todos, de forma gratuita.
-- **Privacidad**: Tus datos, tus claves, tu navegador. Sin intermediarios.
-- **Flexibilidad**: Usa los LLM que prefieras, adaptados a tus necesidades específicas.
-- **Comunidad**: Desarrollo impulsado por la comunidad y de código abierto.
+---
 
 Hecho con ❤️ por el equipo de WebSurfer.
 
-¿Te gusta WebSurfer? ¡Danos una estrella 🌟 y únete a nosotros en [Discord](https://discord.gg/NN3ABHggMK) | [X](https://x.com/WebSurfer_ai)
+🌟 ¿Te gusta WebSurfer? ¡Danos una estrella 🌟 en GitHub!
