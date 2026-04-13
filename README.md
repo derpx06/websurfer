@@ -2,6 +2,7 @@
 
 **WebSurfer** is an open-source AI web automation tool that runs directly in your browser. It serves as a powerful, free alternative to OpenAI Operator, featuring flexible LLM options and a sophisticated multi-agent system.
 
+
 ## 🚀 Quick Start (Build from Source)
 
 If you prefer to build WebSurfer yourself, follow these steps:
