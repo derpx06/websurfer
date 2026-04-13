@@ -453,7 +453,415 @@ Supported message `type` values from side panel:
 
 ---
 
-## 5) Agent System (Planner + Navigator)
+## 5) Agent System (Planner + Navigator) — Complete Code Walkthrough
+
+This section traces every line of code that executes from the moment the user submits a task through to an action being taken in the browser.
+
+---
+
+### 5.0 Core source files
+
+| File | Role |
+|------|------|
+| `background/index.ts` | Service worker entry point — wires up port listener → TaskManager |
+| `background/task/manager.ts` | Manages single Executor instance, handles task/stop/pause messages |
+| `agent/executor.ts` | Main agent loop — orchestrates Planner + Navigator |
+| `agent/agents/base.ts` | `BaseAgent<TSchema, TResult>` — LLM invocation + schema validation |
+| `agent/agents/planner.ts` | `PlannerAgent` — produces observation/next_steps/done judgment |
+| `agent/agents/navigator.ts` | `NavigatorAgent` — decides and executes individual browser actions |
+| `agent/actions/builder.ts` | `ActionBuilder` — registers all default browser actions |
+| `agent/actions/schemas.ts` | Zod schemas for all action parameter types |
+| `agent/messages/service.ts` | `MessageManager` — LLM conversation history, token counting |
+| `agent/messages/views.ts` | `MessageHistory`, `MessageMetadata` — history data structures |
+| `agent/messages/utils.ts` | `filterExternalContent`, trust-tag wrappers |
+| `agent/prompts/base.ts` | `BasePrompt.buildBrowserStateUserMessage` — DOM state → LLM message |
+| `agent/prompts/navigator.ts` | `NavigatorPrompt` — system message + action protocol |
+| `agent/prompts/planner.ts` | `PlannerPrompt` — system message + completion policy |
+| `agent/types.ts` | `AgentContext`, `ActionResult`, `AgentOutput` |
+| `agent/event/types.ts` | `Actors`, `ExecutionState` — event bus enums |
+| `agent/history.ts` | `AgentStepRecord` — per-step history for replay |
+
+---
+
+### 5.1 How a task starts — the wire-up chain
+
+**`background/index.ts`** is the service worker. On load it creates one `BrowserContext` and one `TaskManager`.
+
+When the user sends a task from the side panel, the frame looks like:
+
+```
+SidePanel.sendMessage({ type: 'new_task', task, ... })
+  ↓ chrome.runtime port
+background/index.ts: port.onMessage → taskManager.handleMessage(message)
+  ↓
+TaskManager.handleNewTask(task, taskId, options)
+  → reads llmProviderStore.getAllProviders()    // storage read
+  → reads generalSettingsStore.getSettings()   // storage read
+  → reads firewallSettingsStore                // storage read
+  → builds chatLLM instances via createChatModel(provider, modelName, apiKey)
+  → creates NavigatorActionRegistry with all actions from ActionBuilder
+  → creates Executor(browserContext, navigatorLLM, plannerLLM, options)
+  → executor.execute() ← starts the loop
+```
+
+---
+
+### 5.2 The Executor loop — `executor.ts`
+
+`Executor.execute()` is the main control loop. All code below refers to `agent/executor.ts`.
+
+```typescript
+// executor.ts:113 — simplified loop
+async execute(): Promise<void> {
+  this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, task);
+
+  for (let step = 0; step < maxSteps; step++) {
+    // 1. Check abort/pause
+    if (this.context.stopped || this.context.paused) break;
+
+    // 2. Decide whether to run Planner this step
+    const shouldPlan = (step % planningInterval === 0) 
+                    || this.context.forcePlanning;
+
+    if (shouldPlan) {
+      // 3. Get current browser state for planner
+      await this.planningStrategy.addStateMessageToMemory();  // DOM snapshot
+
+      // 4. Execute Planner LLM call
+      const plannerOutput = await this.planningStrategy.execute(context);
+      // plannerOutput: { observation, done, next_steps, challenges, final_answer, reasoning, web_task }
+
+      if (plannerOutput.result?.done) break; // task complete per planner
+
+      // 5. Store planner's next_steps as an AI plan message
+      context.messageManager.addPlan(plannerOutput.result?.next_steps);
+    }
+
+    // 6. Execute Navigator LLM call + browser actions
+    const navOutput = await this.navigationStrategy.execute(context);
+
+    // 7. Check if Navigator declared done
+    if (navOutput.result?.done) break;
+
+    // 8. Detect and handle failures
+    if (navOutput.error) {
+      this.context.consecutiveFailures++;
+      if (this.context.consecutiveFailures > maxFailures) throw ...;
+    } else {
+      this.context.consecutiveFailures = 0;
+    }
+  }
+  // emit task.ok / task.fail / task.cancel
+}
+```
+
+**Key executor facts**:
+- `planningInterval` (default: 3) — planner runs every 3rd step and any time the navigator says done.
+- `maxSteps` (default: 100) — hard cap on total navigator steps.
+- `maxFailures` (default: 3) — consecutive error tolerance before aborting.
+- `forcePlanning` — the navigator can set this flag to request immediate replanning (e.g., after detecting unexpected DOM changes).
+- Each step sequence: **Planner (maybe) → Navigator (always)**.
+
+---
+
+### 5.3 Planner Agent — `agent/agents/planner.ts`
+
+**Purpose**: high-level supervisor. Reads the full conversation history and current browser state and produces a strategic plan.
+
+**Schema** (`plannerOutputSchema`):
+```typescript
+{
+  observation: string,   // what the planner sees
+  challenges: string,    // what might go wrong
+  done: boolean,         // is the task complete?
+  next_steps: string,    // what the navigator should do next
+  final_answer: string,  // the answer if done === true
+  reasoning: string,     // why the planner thinks this
+  web_task: boolean,     // is this task web-based?
+}
+```
+
+**`PlannerAgent.execute()` steps**:
+1. `emitEvent(PLANNER, STEP_START, 'Planning...')`
+2. `getMessages()` — pulls full conversation history from `MessageManager`
+3. Slice to `[systemMsg, ...history.slice(1)]` — always includes system message
+4. If `useVision=true` but `useVisionForPlanner=false`, strips images from last message
+5. Calls `this.invoke(plannerMessages)` → LLM API call with Zod schema validation
+6. Sanitizes output via `filterExternalContent()` (removes prompt-injection tags)
+7. Emits `PLANNER, STEP_OK, next_steps` (or `final_answer` if done)
+
+**Important**: The planner uses the **same** conversation history as the navigator, so it always has full context. Its output (`next_steps`) is injected into history as an AI message `<plan>...</plan>` so the navigator reads it next.
+
+---
+
+### 5.4 Navigator Agent — `agent/agents/navigator.ts`
+
+This is the core working agent. Every navigator step:
+
+#### 5.4.1 State ingestion
+
+```typescript
+// navigator.ts:178
+await this.addStateMessageToMemory();
+```
+
+→ calls `prompt.getUserMessage(context)` → calls `buildBrowserStateUserMessage(context)`:
+
+```typescript
+// prompts/base.ts:30
+const browserState = await context.browserContext.getState(useVision);
+// browserState: { elementTree, selectorMap, scrollY, scrollHeight, 
+//                  screenshot?, tabId, url, title, tabs }
+```
+
+The **full DOM snapshot** is fetched here. `getState()` has a 1-second TTL cache. Under normal conditions this hits the network (CDP round-trips for `chrome.scripting.executeScript`).
+
+The state message looks like:
+```
+[Task history memory ends]
+[Current state starts here]
+Current tab: {id: 123, url: https://..., title: ...}
+Other available tabs: ...
+Interactive elements from top layer of the current page inside the viewport:
+[Scroll info] window.scrollY: 0, ...
+[Start of page]
+<nano_untrusted_content>
+[0] <button>Search</button>
+[1] <input type="text" placeholder="Query">
+...
+</nano_untrusted_content>
+[End of page]
+Current step: 1/100  Current date and time: 2026-04-13 12:30
+```
+
+#### 5.4.2 LLM invocation
+
+```typescript
+// navigator.ts:192
+const modelOutput = await this.invoke(inputMessages);
+```
+
+`invoke()` (from `BaseAgent`) calls:
+```typescript
+// with structured output (most modern models):
+const structuredLlm = this.chatLLM.withStructuredOutput(this.jsonSchema, ...);
+response = await structuredLlm.invoke(inputMessages, { signal: abortController.signal });
+```
+
+The JSON schema is `NavigatorAgentOutput`:
+```typescript
+{
+  current_state: {
+    evaluation_previous_goal: string,
+    memory: string,
+    next_goal: string,
+  },
+  action: [
+    { action_name: { ...args } },  // one or more actions
+  ]
+}
+```
+
+If structured output parsing fails (e.g., model returns Markdown-wrapped JSON), `manuallyParseResponse()` tries JSON extraction via regex, then `repairJsonString()`.
+
+#### 5.4.3 Action execution — `doMultiAction()`
+
+```typescript
+// navigator.ts:375
+private async doMultiAction(actions: Record<string, unknown>[]): Promise<ActionResult[]> {
+  const browserState = await browserContext.getState(useVision);  // another snapshot
+  const cachedPathHashes = await calcBranchPathHashSet(browserState);
+
+  await browserContext.removeHighlight();  // clear visual highlights
+
+  for (const [i, action] of actions.entries()) {
+    const actionName = Object.keys(action)[0];  // e.g., "click_element"
+    const actionArgs = action[actionName];
+
+    // If this is not the first action and it requires an index arg:
+    // Check if the DOM has changed (new elements appeared)
+    if (i > 0 && actionInstance.getIndexArg(actionArgs) !== null) {
+      const newState = await browserContext.getState(useVision);
+      const newPathHashes = await calcBranchPathHashSet(newState);
+      if (!newPathHashes.isSubsetOf(cachedPathHashes)) {
+        // DOM changed — stop multi-action and request replanning
+        break;
+      }
+    }
+
+    const result = await actionInstance.call(actionArgs);
+    results.push(result);
+
+    // ⚠️ HARDCODED 1-second sleep after every action
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  return results;
+}
+```
+
+#### 5.4.4 Memory management after actions
+
+After `doMultiAction`:
+1. `removeLastStateMessageFromMemory()` — pops the state message added in 5.4.1
+2. `addModelOutputToMemory(modelOutput)` — adds the navigator's decision as tool-call AI message
+3. Action results with `includeInMemory=true` are prepended to the next state message
+
+This ensures the LLM sees: `...[previous actions][previous result][current state]`.
+
+---
+
+### 5.5 Browser Actions — `agent/actions/builder.ts`
+
+`ActionBuilder.buildDefaultActions()` creates `Action` instances for all 19 registered actions. Each `Action` wraps:
+- A Zod schema (validation)
+- A handler function `(input) => Promise<ActionResult>`
+- Whether the action uses an element index
+
+**Full action list with internal implementation**:
+
+| Action | Handler Implementation |
+|--------|----------------------|
+| `done` | Emits ACT_OK, returns `isDone: true` |
+| `search_google` | `browserContext.navigateTo('google.com/search?q=...')` |
+| `go_to_url` | `browserContext.navigateTo(url)` |
+| `go_back` | `page.goBack()` → Puppeteer `page.goBack()` |
+| `wait` | `setTimeout(seconds * 1000)` |
+| `click_element` | `page.getState()` → `page.clickElementNode(index)` → check for new tab |
+| `input_text` | `page.getState()` → `page.inputTextElementNode(index, text)` |
+| `switch_tab` | `browserContext.switchTab(tabId)` → Chrome tab API |
+| `open_tab` | `browserContext.openTab(url)` → Chrome tab API |
+| `close_tab` | `browserContext.closeTab(tabId)` → Chrome tab API |
+| `cache_content` | Tags content via `wrapUntrustedContent()`, adds to memory |
+| `scroll_to_percent` | `page.scrollToPercent(yPercent, elementNode?)` |
+| `scroll_to_top` | `page.scrollToPercent(0)` |
+| `scroll_to_bottom` | `page.scrollToPercent(100)` |
+| `previous_page` | `page.scrollToPreviousPage()` |
+| `next_page` | `page.scrollToNextPage()` |
+| `scroll_to_text` | `page.scrollToText(text, nth)` |
+| `send_keys` | `page.sendKeys(keys)` → Puppeteer keyboard |
+| `get_dropdown_options` | `page.getDropdownOptions(index)` |
+| `select_dropdown_option` | `page.selectDropdownOption(index, optionText)` |
+
+**Inside `clickElementNode` and `inputTextElementNode`** (`page.ts`):
+1. `locateElement(elementNode)` — CSS selector → XPath fallback → shadow DOM walk
+2. `scrollIntoViewIfNeeded(element)` — polling loop up to 1s
+3. **300 ms cursor animation delay**
+4. Puppeteer `element.click({ delay: 50 })` or `element.type(text, { delay: 20 })`
+5. `clearStateCache()` — invalidates DOM snapshot cache
+6. (for navigating actions) `waitForPageAndFramesLoad()` — **up to 8 seconds**
+
+---
+
+### 5.6 Message Manager — `agent/messages/service.ts`
+
+`MessageManager` maintains the full LLM conversation history with rough token counting.
+
+**Settings**:
+```typescript
+maxInputTokens = 128000
+estimatedCharactersPerToken = 3   // rough estimate, no real tokenizer
+imageTokens = 800
+```
+
+**Message types in history**:
+| Type | Role |
+|------|------|
+| `SystemMessage` | Agent persona + security rules (set once at task start) |
+| `HumanMessage` (init) | Task description, example output, `[history starts here]` marker |
+| `AIMessage` | Plan `<plan>...</plan>` or navigator tool-call |
+| `ToolMessage` | Tool call response placeholder |
+| `HumanMessage` (state) | Browser state snapshot — added/removed each step |
+
+**Token overflow handling** (`cutMessages()`):
+- If total tokens > `maxInputTokens`, strips images from the last message first
+- If still over, truncates the last message body proportionally
+- If `proportionToRemove > 99%`, throws — the prompt is too large
+
+**`addNewTask()`**: Appends a new goal to history for follow-up tasks without resetting conversation.
+
+---
+
+### 5.7 Replay subsystem
+
+When `replayHistoricalTasks=true`, completed tasks save `AgentStepRecord[]` to storage.
+
+Replay flow (`navigator.ts:564`):
+1. Load step record from storage
+2. `parseHistoryModelOutput()` — extracts goal and action list
+3. For each action with an element index:  
+   a. Look up stored `DOMHistoryElement` (xpath, tag, text, attributes)  
+   b. `HistoryTreeProcessor.findHistoryElementInTree()` — fuzzy-match against current DOM  
+   c. Update element index if element moved in DOM
+4. `doMultiAction(updatedActions)` — execute with corrected indices
+5. Retry up to `maxRetries` (default: 3) per step if element not found
+
+---
+
+## 6) Prompting, Memory, and Message Safety
+
+### 6.1 Prompt architecture
+
+Both agents extend `BaseAgent<TSchema, TResult>` which holds:
+- `chatLLM: BaseChatModel` — the LangChain model client
+- `prompt: BasePrompt` — system + user message builders
+- `context: AgentContext` — shared mutable state
+- `modelOutputSchema: TSchema` — Zod schema for response validation
+- `withStructuredOutput: boolean` — whether to use LangChain structured output API
+
+**NavigatorPrompt** (system message) contains:
+- The agent's identity and operational rules
+- The complete action schema (dynamically generated from registered actions)
+- Format requirements for the `current_state` + `action` JSON
+- Security rules (`commonSecurityRules`)
+
+**PlannerPrompt** (system message) contains:
+- The supervisor identity and meta-task rules
+- Output schema (`observation`, `done`, `next_steps`, etc.)
+- Instructions for detecting task completion
+- Security rules
+
+### 6.2 Browser state → LLM message
+
+`BasePrompt.buildBrowserStateUserMessage()` (`prompts/base.ts:29–96`):
+
+```
+1. browserContext.getState(useVision)        ← full DOM snapshot
+2. elementTree.clickableElementsToString()  ← serializes DOM to LLM text
+   → "[0] <button>..." format
+   → respects includeAttributes config
+3. scroll info text
+4. step counter + current date/time
+5. prior action results/errors (if includeInMemory)
+6. if useVision: embedds base64 screenshot as image_url content block
+```
+
+The resulting message is `wrapUntrustedContent(rawElementsText)` — the DOM is explicitly tagged as untrusted to prevent prompt injection from malicious page content.
+
+### 6.3 Trust boundaries and message sanitization
+
+`messages/utils.ts` defines explicit trust zones:
+
+```
+<nano_user_request>...</nano_user_request>   — actual user intent (trusted)
+<nano_untrusted_content>...</nano_untrusted_content> — DOM content (untrusted)
+<nano_attached_files>
+  <nano_file_content>...</nano_file_content>
+</nano_attached_files>                       — file uploads (untrusted)
+```
+
+`filterExternalContent(text)` strips these trust tags from planner output before storing/emitting it, preventing the model from leaking tag structure or embedding injection vectors in its own output.
+
+### 6.4 Sensitive data masking
+
+If `sensitiveData` is provided:
+```typescript
+// Messages are scanned and values replaced:
+"my-api-key-abc123" → "<secret>apiKey</secret>"
+```
+
+The model is instructed to use `<secret>placeholder_name</secret>` in actions that need the secret value, which gets resolved at execution time.
+
+---
 
 Core files:
 
@@ -1129,9 +1537,166 @@ If you are changing security behavior:
    - `pnpm -F chrome-extension type-check`
    - `pnpm -F chrome-extension lint`
    - `pnpm -F pages/side-panel type-check` (if side panel changed)
-   - `pnpm -F pages/options type-check` (if options changed)
+- `pnpm -F pages/options type-check` (if options changed)
 3. Verify end-to-end behavior manually in extension:
    - new task
    - follow-up task
    - cancel/resume path (if touched)
    - replay path (if touched)
+
+---
+
+## 20) Why Actions Take So Long: Complete Performance Analysis
+
+This section documents **every** source of latency in the action execution path, from the moment the user submits a task to a single browser action being completed. All references are to exact source files and line numbers in the current codebase.
+
+### 20.1 Summary Table
+
+| # | Source | File | Line(s) | Fixed Cost | Notes |
+|---|--------|------|---------|-----------|-------|
+| 1 | **Hardcoded 1 s sleep after every action** | `agent/agents/navigator.ts` | 444 | **1000 ms** | Unconditional. Applies to every single action including simple scrolls and key presses. Has a TODO comment acknowledging it. |
+| 2 | **300 ms cursor animation delay before every click** | `browser/page.ts` | 822, 914 | **300 ms × 2** | Awaited before both `clickElementNode` and `inputTextElementNode`. Visual cursor feedback; fires even when highlights are off. |
+| 3 | **`waitForNavigation` timeout on every navigation action** | `browser/page.ts` | 956–959 | 0–8000 ms | `waitForPageLoadState` defaults to 8-second timeout. Called from `waitForPageAndFramesLoad` on every click/navigate/send keys. |
+| 4 | **`_waitForStableNetwork` loop: up to 15 s** | `browser/page.ts` | 964–1012 | 0–15000 ms | Polls every 100 ms. Waits until `waitForNetworkIdlePageLoadTime` elapses with zero active requests. Maximum 15 s cap. Active on most navigation actions. |
+| 5 | **Full DOM snapshot via `chrome.scripting.executeScript` every step** | `browser/dom/service.ts` | 160–176 | 50–300 ms | `buildDomTree.js` is executed on the tab's page context on every navigator step. Heavy on large/complex pages. |
+| 6 | **Script injection check on every DOM snapshot** | `browser/dom/service.ts` | 603–647 | 10–50 ms | `scriptInjectedFrames` runs `executeScript` on all frames before each DOM build to check if `buildDomTree.js` is loaded. |
+| 7 | **`removeHighlights` before each DOM snapshot** | `browser/page.ts` | 116–120 | 5–30 ms | Runs `executeScript` to remove all highlight elements across all frames before getting clickable elements. |
+| 8 | **Sequential `getScrollInfo` after DOM snapshot** | `browser/page.ts` | 240 | 10–30 ms | Separate `executeScript` call for scroll position data, always runs after DOM build. |
+| 9 | **`ensurePageAccessible` evaluate call on every `_updateState`** | `browser/page.ts` | 221 + `lifecycle.ts` 62 | 5–20 ms | Runs `page.evaluate('1')` to test page responsiveness before every state update. |
+| 10 | **`scrollIntoViewIfNeeded` polling loop** | `browser/page/interaction.ts` | 104–130 | 0–1000 ms | Polls `getBoundingClientRect` every 100 ms for up to 1 second to confirm an element is in viewport. Runs before every click and input. |
+| 11 | **`page.getState()` called redundantly in action handlers** | `agent/actions/builder.ts` | 250, 306, 610, 676 | 50–300 ms | `clickElement`, `inputText`, `getDropdownOptions`, and `selectDropdownOption` all call `page.getState()` inside the action handler even though the navigator already fetched state at the beginning of the step. |
+| 12 | **`calcBranchPathHashSet` on every multi-action** | `agent/agents/navigator.ts` | 382–383, 406–407 | 5–20 ms | Hashes the entire clickable element tree before and potentially after each action in a multi-action sequence to detect DOM changes. |
+| 13 | **Puppeteer `ExtensionTransport.connectTab` on first action** | `browser/page/lifecycle.ts` | 32–46 | 200–500 ms | CDP connection to the tab is established lazily on first attach. Not repeated per action, but adds latency to the first action of a task. |
+| 14 | **Per-character input with `{ delay: 20 }` typing** | `browser/page.ts` | 861, 874 | 20 ms × text length | Puppeteer types each character with a 20 ms inter-key delay. A 30-character input adds ~600 ms. |
+
+### 20.2 Worst-Case Per-Step Timing Breakdown
+
+For a single step that includes one `click_element` action followed by one `input_text` action (a common two-action step), the breakdown with default settings is:
+
+```
+DOM snapshot (buildDomTree)          ~200 ms
+  - script injection check             ~30 ms
+  - removeHighlights                   ~20 ms
+  - getScrollInfo                      ~20 ms
+  - ensurePageAccessible               ~10 ms
+
+LLM call (network round-trip)       ~1000–5000 ms  (model/provider dependent)
+
+Action 1: click_element
+  - page.getState() inside action     ~200 ms
+  - scrollIntoViewIfNeeded (poll)     ~100–1000 ms
+  - cursor animation delay            ~300 ms
+  - Puppeteer click                   ~50 ms
+  - waitForPageAndFramesLoad          ~500–8000 ms  (navigation dependent)
+  - waitForStableNetwork              ~0–15000 ms   (if enabled)
+  - post-action sleep                 ~1000 ms      ← HARDCODED
+
+Action 2: input_text
+  - DOM change detection snapshot     ~200 ms
+  - page.getState() inside action     ~200 ms
+  - scrollIntoViewIfNeeded (poll)     ~100–1000 ms
+  - cursor animation delay            ~300 ms
+  - Puppeteer type (30 chars × 20ms)  ~600 ms
+  - post-action sleep                 ~1000 ms      ← HARDCODED
+
+Step total (optimistic, no nav)     ~5–8 seconds
+Step total (with page navigation)   ~10–25 seconds
+```
+
+> **Root cause**: The system was clearly designed for reliability and observability over speed. Every action is fully serialized and surrounded by conservative wait periods to ensure the page is stable before and after interaction.
+
+### 20.3 Key Bottleneck Deep Dives
+
+#### 20.3.1 The 1000 ms Hardcoded Sleep (Most Impactful)
+
+**File**: `chrome-extension/src/background/agent/agents/navigator.ts`, **line 444**
+
+```typescript
+// TODO: wait for 1 second for now, need to optimize this to avoid unnecessary waiting
+await new Promise(resolve => setTimeout(resolve, 1000));
+```
+
+This sleep runs after **every single action**, unconditionally. For a task that takes 20 actions, this alone adds **20 seconds** to execution time. The code itself contains a TODO acknowledging it should be optimized.
+
+#### 20.3.2 The 300 ms Cursor Animation Delay (Per Click/Input)
+
+**File**: `chrome-extension/src/background/browser/page.ts`, **lines 822 and 914**
+
+```typescript
+await new Promise(resolve => setTimeout(resolve, 300));
+```
+
+This is a visual UX delay to animate a cursor on screen. It is awaited before every click and text input operation, even when visual highlights are disabled.
+
+#### 20.3.3 `waitForPageAndFramesLoad` on Every Action
+
+**File**: `chrome-extension/src/background/browser/page.ts`, **lines 941–953**
+
+`waitForPageAndFramesLoad` calls:
+1. `_waitForStableNetwork()` — polls every 100 ms, up to 15 seconds
+2. `waitForPageLoadState()` — calls `page.waitForNavigation({ timeout: 8000 })` — can block the full 8 seconds if no navigation event fires
+
+This is called in: `navigateTo`, `goBack`, `goForward`, `sendKeys`, and `refreshPage`. For non-navigating actions (like scroll), it's absent, but for any key press that might trigger navigation, it fires.
+
+#### 20.3.4 Redundant DOM Snapshots
+
+The navigator calls `addStateMessageToMemory()` at the start of every step (which calls `page.getState()`). Then individual action handlers like `clickElement` and `inputText` call `page.getState()` again inside their own bodies (`builder.ts` lines 250, 306). This means the DOM is fetched at minimum **twice per step**, each time running `buildDomTree.js` via `chrome.scripting.executeScript`.
+
+The `getState()` method does have a 1-second TTL cache (`STATE_CACHE_TTL = 1000` in `page.ts` line 73), but since each step takes several seconds and the cache entries expire between the start-of-step call and the in-handler call, the cache rarely helps in practice.
+
+#### 20.3.5 `waitForNavigation` Blocking Pattern
+
+**File**: `chrome-extension/src/background/browser/page.ts`, **line 958**
+
+```typescript
+await this._lifecycle.puppeteerPage?.waitForNavigation({ timeout: timeoutValue });
+```
+
+`waitForNavigation` resolves when a navigation event fires, or times out after 8 seconds. If no navigation happens (e.g., a button click that dynamically updates the page via JavaScript without triggering a full navigation), this call will **always block for the full 8 seconds** before timing out and continuing.
+
+### 20.4 Configurable Wait Settings
+
+The `GeneralSettingsConfig` in `packages/storage/lib/settings/generalSettings.ts` exposes:
+
+| Setting | Default | Effect |
+|---------|---------|--------|
+| `minWaitPageLoad` | `250` ms | Used in background `index.ts` as `minimumWaitPageLoadTime`, sets `waitForNetworkIdlePageLoadTime` on `BrowserContext`. Controls how long `_waitForStableNetwork` requires the network to be idle before declaring the page settled. |
+
+> **Note**: Despite a `minWaitPageLoad` setting existing, the 1000 ms hardcoded sleep in `navigator.ts` is completely **independent** and cannot be adjusted through settings. Neither can the 300 ms cursor animation delays.
+
+### 20.5 The Cumulative Effect
+
+With default settings for a typical task (10–30 browser actions):
+
+- **Hardcoded sleeps alone**: 10–30 seconds
+- **DOM snapshots**: 5–15 seconds
+- **Navigation waits** (if any navigations occur): 5–30 seconds
+- **LLM calls** (network-dependent): 10–60 seconds
+- **Scroll, visibility polling, cursor animation**: 3–10 seconds
+
+**Total observable latency**: 30 seconds to several minutes for even modest tasks.
+
+### 20.6 Files to Change to Improve Performance
+
+In priority order:
+
+1. **Reduce or remove the post-action sleep**:
+   - `chrome-extension/src/background/agent/agents/navigator.ts` line 444
+   - Use a smarter "wait for DOM stability" check instead of a blind 1000 ms wait.
+
+2. **Reduce or conditionalize the cursor animation delay**:
+   - `chrome-extension/src/background/browser/page.ts` lines 822 and 914
+   - Only animate when `displayHighlights` is enabled.
+
+3. **Fix `waitForNavigation` to not block on non-navigation actions**:
+   - `chrome-extension/src/background/browser/page.ts` lines 941–953
+   - Only call `waitForNavigation` when the action actually triggers a navigation (e.g., check URL change or listen for `framenavigated` events).
+
+4. **Eliminate the redundant in-action `page.getState()` calls**:
+   - `chrome-extension/src/background/agent/actions/builder.ts` lines 250, 306, 610, 676
+   - The state is already available from the navigator's start-of-step snapshot. Pass it down into actions rather than re-fetching.
+
+5. **Expose the 1000 ms sleep as a user-configurable setting**:
+   - `packages/storage/lib/settings/generalSettings.ts`
+   - `pages/options/src/components/GeneralSettings.tsx`
+   - Like `minWaitPageLoad`, make post-action wait configurable.
