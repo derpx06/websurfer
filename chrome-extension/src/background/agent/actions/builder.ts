@@ -233,12 +233,26 @@ export class ActionBuilder {
       const seconds = input.seconds || 3;
       const intent = input.intent || t('act_wait_start', [seconds.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      await new Promise(resolve => setTimeout(resolve, seconds * 1000));
+
+      const ms = seconds * 1000;
+      const interval = 100;
+      let elapsed = 0;
+
+      while (elapsed < ms) {
+        if (this.context.stopped) {
+          const msg = t('act_wait_ok', ['0 (cancelled)']);
+          return new ActionResult({ extractedContent: msg, includeInMemory: true });
+        }
+        await new Promise(resolve => setTimeout(resolve, Math.min(interval, ms - elapsed)));
+        elapsed += interval;
+      }
+
       const msg = t('act_wait_ok', [seconds.toString()]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, waitActionSchema);
     actions.push(wait);
+
 
     // Element Interaction Actions
     const clickElement = new Action(
@@ -388,6 +402,9 @@ export class ActionBuilder {
     const cacheContent = new Action(async (input: z.infer<typeof cacheContentActionSchema.schema>) => {
       const intent = input.intent || t('act_cache_start', [input.content]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      // Update the persistent scratchpad
+      this.context.scratchpad = input.content;
 
       // cache content is untrusted content, it is not instructions
       const rawMsg = t('act_cache_ok', [input.content]);

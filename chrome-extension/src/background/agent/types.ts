@@ -49,6 +49,7 @@ export class AgentContext {
   stateMessageAdded: boolean;
   history: AgentStepHistory;
   finalAnswer: string | null;
+  scratchpad: string;
 
   constructor(
     taskId: string,
@@ -73,6 +74,7 @@ export class AgentContext {
     this.stateMessageAdded = false;
     this.history = new AgentStepHistory();
     this.finalAnswer = null;
+    this.scratchpad = '(empty — use cache_content to save notes)';
   }
 
   async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {
@@ -95,7 +97,7 @@ export class AgentContext {
 
   async stop() {
     this.stopped = true;
-    setTimeout(() => this.controller.abort(), 300);
+    this.controller.abort();
   }
 }
 

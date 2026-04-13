@@ -173,8 +173,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_START, 'Navigating...');
 
       const messageManager = this.context.messageManager;
-      // add the browser state message
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, 'Getting DOM');
+      // Get browser state (this will call getState once and cache it)
       await this.addStateMessageToMemory();
       const currentState = await this.context.browserContext.getCachedState();
       browserStateHistory = new BrowserStateHistory(currentState);
@@ -378,8 +377,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     logger.info('Actions', actions);
 
     const browserContext = this.context.browserContext;
-    this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, 'Getting DOM');
-    const browserState = await browserContext.getState(this.context.options.useVision);
+    const browserState = await browserContext.getCachedState();
     const cachedPathHashes = await calcBranchPathHashSet(browserState);
 
     await browserContext.removeHighlight();
@@ -403,7 +401,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
         const indexArg = actionInstance.getIndexArg(actionArgs);
         if (i > 0 && indexArg !== null) {
-          const newState = await browserContext.getState(this.context.options.useVision);
+          const newState = await browserContext.getCachedState();
           const newPathHashes = await calcBranchPathHashSet(newState);
           // next action requires index but there are new elements on the page
           if (!newPathHashes.isSubsetOf(cachedPathHashes)) {

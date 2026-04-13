@@ -256,7 +256,6 @@ export const useSidePanelController = () => {
       appendMessage({ actor: Actors.SYSTEM, content: errorMessage, timestamp: Date.now() });
     }
     setInputEnabled(true);
-    setShowStopButton(false);
   }, [appendMessage, sendMessage]);
 
   const handleNewChat = useCallback(() => {

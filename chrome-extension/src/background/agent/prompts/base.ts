@@ -70,6 +70,9 @@ abstract class BasePrompt {
     const stateDescription = `
 [Task history memory ends]
 [Current state starts here]
+[Agent scratchpad]:
+${context.scratchpad}
+
 The following is one-time information - if you need to remember it write it to memory:
 Current tab: ${currentTab}
 Other available tabs:
