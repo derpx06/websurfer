@@ -12,10 +12,14 @@ function isNotNull<T>(item: T | null | undefined): item is T {
 
 // Global cache for script injection status: tabId -> Map<frameId, boolean>
 const INJECTION_CACHE = new Map<number, Map<number, boolean>>();
+// Cache for the last time we performed a full injection check on a tab
+const LAST_INJECTION_CHECK = new Map<number, number>();
+const INJECTION_CHECK_TTL = 500; // ms
 
 // Listen for tab removals to clear cache
 chrome.tabs.onRemoved.addListener(tabId => {
   INJECTION_CACHE.delete(tabId);
+  LAST_INJECTION_CHECK.delete(tabId);
 });
 
 // Listen for navigations to clear frame cache within a tab
@@ -616,6 +620,16 @@ async function scriptInjectedFrames(tabId: number): Promise<Map<number, boolean>
 // Function to inject the buildDomTree script
 export async function injectBuildDomTreeScripts(tabId: number) {
   try {
+    const now = Date.now();
+    const lastCheck = LAST_INJECTION_CHECK.get(tabId) || 0;
+
+    // Skip full injection check if we did it very recently (e.g. within 500ms)
+    // This saves expensive executeScript calls across all frames when state is fetched multiple times.
+    if (now - lastCheck < INJECTION_CHECK_TTL && INJECTION_CACHE.has(tabId)) {
+      return;
+    }
+    LAST_INJECTION_CHECK.set(tabId, now);
+
     const tabCache = INJECTION_CACHE.get(tabId) || new Map<number, boolean>();
     INJECTION_CACHE.set(tabId, tabCache);
 

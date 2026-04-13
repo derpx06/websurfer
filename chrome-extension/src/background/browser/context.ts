@@ -16,6 +16,10 @@ export default class BrowserContext {
   private _config: BrowserContextConfig;
   private _currentTabId: number | null = null;
   private _attachedPages: Map<number, Page> = new Map();
+  // Cache for tab list queries — refreshed at most every 2 seconds
+  private _tabInfoCache: TabInfo[] | null = null;
+  private _tabInfoCacheTime = 0;
+  private readonly TAB_INFO_CACHE_TTL = 2000; // ms
 
   constructor(config: Partial<BrowserContextConfig>) {
     this._config = { ...DEFAULT_BROWSER_CONTEXT_CONFIG, ...config };
@@ -223,7 +227,7 @@ export default class BrowserContext {
 
   public async switchTab(tabId: number): Promise<Page> {
     logger.info('switchTab', tabId);
-
+    this._invalidateTabInfoCache();
     await chrome.tabs.update(tabId, { active: true });
     await this.waitForTabEvents(tabId, { waitForUpdate: false });
 
@@ -240,6 +244,7 @@ export default class BrowserContext {
 
     // Track domain visit for analytics
     void analytics.trackDomainVisit(url);
+    this._invalidateTabInfoCache();
 
     const page = await this.getCurrentPage();
     if (!page) {
@@ -273,6 +278,7 @@ export default class BrowserContext {
     if (!tab.id) {
       throw new Error('No tab ID available');
     }
+    this._invalidateTabInfoCache();
     // Wait for tab events
     await this.waitForTabEvents(tab.id);
 
@@ -289,6 +295,7 @@ export default class BrowserContext {
   public async closeTab(tabId: number): Promise<void> {
     await this.detachPage(tabId);
     await chrome.tabs.remove(tabId);
+    this._invalidateTabInfoCache();
     // update current tab id if needed
     if (this._currentTabId === tabId) {
       this._currentTabId = null;
@@ -308,19 +315,24 @@ export default class BrowserContext {
   }
 
   public async getTabInfos(): Promise<TabInfo[]> {
+    const now = Date.now();
+    if (this._tabInfoCache && now - this._tabInfoCacheTime < this.TAB_INFO_CACHE_TTL) {
+      return this._tabInfoCache;
+    }
     const tabs = await chrome.tabs.query({});
     const tabInfos: TabInfo[] = [];
-
     for (const tab of tabs) {
       if (tab.id && tab.url && tab.title) {
-        tabInfos.push({
-          id: tab.id,
-          url: tab.url,
-          title: tab.title,
-        });
+        tabInfos.push({ id: tab.id, url: tab.url, title: tab.title });
       }
     }
+    this._tabInfoCache = tabInfos;
+    this._tabInfoCacheTime = now;
     return tabInfos;
+  }
+
+  private _invalidateTabInfoCache(): void {
+    this._tabInfoCache = null;
   }
 
   public async getCachedState(useVision = false, cacheClickableElementsHashes = false): Promise<BrowserState> {

@@ -101,33 +101,25 @@ export class InteractionManager {
         }, tagName, text, element.attributes) as ElementHandle<Element> | null;
     }
 
-    async scrollIntoViewIfNeeded(element: ElementHandle<Element>, timeout = 1000): Promise<void> {
-        const startTime = Date.now();
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-            const isVisible = await element.evaluate((el: Element) => {
+    async scrollIntoViewIfNeeded(element: ElementHandle<Element>): Promise<void> {
+        // scrollIntoView is synchronous in the browser — one call is enough.
+        // No polling loop needed; saves up to 1000ms per interaction.
+        try {
+            await element.evaluate((el: Element) => {
                 const rect = el.getBoundingClientRect();
-                if (rect.width === 0 || rect.height === 0) return false;
-                const style = window.getComputedStyle(el);
-                if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') return false;
-
                 const inViewport =
+                    rect.width > 0 && rect.height > 0 &&
                     rect.top >= 0 &&
-                    rect.left >= 0 &&
-                    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
-                    rect.right <= (window.innerWidth || document.documentElement.clientWidth);
-
+                    rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
                 if (!inViewport) {
-                    el.scrollIntoView({ behavior: 'auto', block: 'center', inline: 'center' });
-                    return false;
+                    el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
                 }
-                return true;
             });
-
-            if (isVisible || Date.now() - startTime > timeout) break;
-            await new Promise(resolve => setTimeout(resolve, 100));
+        } catch {
+            // If evaluate fails (detached frame, etc.) just proceed
         }
     }
+
 
     async findNearestScrollableElement(element: ElementHandle<Element>): Promise<ElementHandle<Element> | null> {
         const isScrollable = await element.evaluate((el: Element) => {
