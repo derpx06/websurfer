@@ -440,8 +440,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         if (this.context.paused || this.context.stopped) {
           return results;
         }
-        // TODO: wait for 1 second for now, need to optimize this to avoid unnecessary waiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Brief pause for JS event loop to flush after action (reduced from 1000ms)
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         if (error instanceof URLNotAllowedError) {
           throw error;

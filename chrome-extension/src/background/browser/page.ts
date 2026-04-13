@@ -819,7 +819,10 @@ export default class Page {
           window._websurferCursor.move(x, y);
         }
       });
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Only animate cursor delay when highlights are visible (purely cosmetic)
+      if (this._config.displayHighlights) {
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
 
       // Get element properties to determine input method
       const tagName = await element.evaluate((el: Element) => el.tagName.toLowerCase());
@@ -857,8 +860,8 @@ export default class Page {
           el.dispatchEvent(new Event('change', { bubbles: true }));
         });
 
-        // Type the text
-        await element.type(text, { delay: 20 });
+        // Type the text (no per-character delay — JS events fire synchronously)
+        await element.type(text, { delay: 0 });
       } else {
         // Fallback for other elements (e.g., textarea, div with contenteditable)
         // Focus first
@@ -871,7 +874,7 @@ export default class Page {
         await this._lifecycle.puppeteerPage.keyboard.press('Backspace');
 
         // Type directly
-        await element.type(text, { delay: 20 });
+        await element.type(text, { delay: 0 });
       }
 
       // Final events to ensure state is updated
@@ -911,7 +914,10 @@ export default class Page {
           window._websurferCursor.click(x, y);
         }
       });
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Only animate cursor delay when highlights are visible (purely cosmetic)
+      if (this._config.displayHighlights) {
+        await new Promise(resolve => setTimeout(resolve, 150));
+      }
 
       // Use vision or standard click
       try {
@@ -954,8 +960,13 @@ export default class Page {
   }
 
   async waitForPageLoadState(timeout?: number) {
-    const timeoutValue = timeout || 8000;
-    await this._lifecycle.puppeteerPage?.waitForNavigation({ timeout: timeoutValue });
+    // Use domcontentloaded (faster than 'load') and 3s timeout
+    // For SPA clicks that don't trigger navigation, this times out quickly rather than blocking 8s
+    const timeoutValue = timeout || 3000;
+    await this._lifecycle.puppeteerPage?.waitForNavigation({
+      timeout: timeoutValue,
+      waitUntil: 'domcontentloaded',
+    });
   }
 
   private _isTimeoutError(error: unknown): boolean {
@@ -991,7 +1002,7 @@ export default class Page {
 
     try {
       const startTime = Date.now();
-      const maxWaitTime = 15000; // 15s absolute maximum
+      const maxWaitTime = 5000; // 5s absolute maximum (down from 15s)
 
       while (Date.now() - startTime < maxWaitTime) {
         await new Promise(resolve => setTimeout(resolve, 100));
