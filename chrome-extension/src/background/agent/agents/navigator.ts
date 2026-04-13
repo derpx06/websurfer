@@ -175,6 +175,10 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       const messageManager = this.context.messageManager;
       // Get browser state (this will call getState once and cache it)
       await this.addStateMessageToMemory();
+
+      // Prune history if needed (e.g. summarize older history)
+      await this.context.messageManager.cutMessages(this.chatLLM);
+
       const currentState = await this.context.browserContext.getCachedState();
       browserStateHistory = new BrowserStateHistory(currentState);
 
