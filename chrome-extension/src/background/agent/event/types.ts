@@ -45,6 +45,7 @@ export enum ExecutionState {
   ACT_START = 'act.start',
   ACT_OK = 'act.ok',
   ACT_FAIL = 'act.fail',
+  ACT_ASK_HUMAN = 'act.ask_human',
 }
 
 export interface EventData {
@@ -70,7 +71,7 @@ export class AgentEvent {
     public data: EventData,
     public timestamp: number = Date.now(),
     public type: EventType = EventType.EXECUTION,
-  ) {}
+  ) { }
 }
 
 // The type of callback for event subscribers

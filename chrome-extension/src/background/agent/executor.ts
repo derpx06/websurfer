@@ -261,8 +261,8 @@ export class Executor {
         if (recentHistory.length === 6) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const recentActions = recentHistory.map((h: any) => {
-            const url = h.browserStateHistory.url;
-            const actionPayload = h.modelOutput?.action?.[0];
+            const url = h?.state?.url || 'unknown';
+            const actionPayload = h?.modelOutput?.action?.[0];
             let actionStr = 'unknown';
             if (actionPayload) {
               const actionName = Object.keys(actionPayload)[0];
@@ -397,6 +397,17 @@ export class Executor {
 
   async resume(): Promise<void> {
     this.context.resume();
+  }
+
+  async resumeWithInput(input: string): Promise<void> {
+    const logger = createLogger('Executor:resumeWithInput');
+    logger.info(`Injecting human input: ${input}`);
+
+    // Inject human response directly into the scratchpad for context
+    this.context.scratchpad += `\n[Human Input at Step ${this.context.nSteps}]: ${input}`;
+
+    // Unpause to allow the executor loop to continue
+    await this.resume();
   }
 
   async pause(): Promise<void> {

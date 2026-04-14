@@ -223,3 +223,12 @@ export const appendResultActionSchema: ActionSchema = {
     value: z.any().describe('the value to append'),
   }),
 };
+
+export const askHumanActionSchema: ActionSchema = {
+  name: 'ask_human',
+  description: 'Ask the human user a question for clarification, permission, or manual input from the UI. This pauses the agent execution completely.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    question: z.string().describe('The question you want to ask the user'),
+  }),
+};

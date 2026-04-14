@@ -23,6 +23,7 @@ import {
   scrollToTopActionSchema,
   scrollToBottomActionSchema,
   appendResultActionSchema,
+  askHumanActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
@@ -193,6 +194,16 @@ export class ActionBuilder {
       });
     }, doneActionSchema);
     actions.push(done);
+
+    const askHuman = new Action(async (input: z.infer<typeof askHumanActionSchema.schema>) => {
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_ASK_HUMAN, input.question);
+      this.context.paused = true;
+
+      const rawMsg = `Asked human user: "${input.question}". Pausing execution.`;
+      const msg = wrapUntrustedContent(rawMsg);
+      return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    }, askHumanActionSchema);
+    actions.push(askHuman);
 
     const searchGoogle = new Action(async (input: z.infer<typeof searchGoogleActionSchema.schema>) => {
       const context = this.context;

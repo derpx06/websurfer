@@ -57,6 +57,9 @@ export default class BrowserContext {
       await existingPage.detachPuppeteer();
       this._attachedPages.delete(tab.id);
     }
+    if (!tab) {
+      throw new Error('Tab is undefined in getOrCreatePage');
+    }
     logger.info('getOrCreatePage', tab.id, 'creating new page');
     return new Page(tab.id, tab.url || '', tab.title || '', this._config);
   }
@@ -337,7 +340,7 @@ export default class BrowserContext {
     const tabInfos: TabInfo[] = [];
     for (const tab of tabs) {
       if (tab.id && tab.url && tab.title) {
-        tabInfos.push({ id: tab.id, url: tab.url, title: tab.title });
+        tabInfos.push({ id: tab.id, url: tab.url || '', title: tab.title || '' });
       }
     }
     this._tabInfoCache = tabInfos;

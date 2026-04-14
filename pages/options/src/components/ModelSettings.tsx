@@ -8,7 +8,7 @@
  */
 import { useEffect, useState, useRef, useCallback } from 'react';
 import type { KeyboardEvent } from 'react';
-import { Button } from '@extension/ui';
+import { FiCpu, FiChevronDown, FiTrendingUp, FiShield, FiX, FiCheck, FiEye, FiEyeOff, FiTarget, FiAlertCircle } from 'react-icons/fi';
 import {
   llmProviderStore,
   agentModelStore,
@@ -712,133 +712,114 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
   const renderModelSelect = (agentName: AgentNameEnum) => {
     const isPlanner = agentName === AgentNameEnum.Planner;
-    const pillClass = isPlanner ? 'planner' : 'navigator';
+    const isDark = isDarkMode;
 
     return (
-      <div className="agent-card">
-        <div className="agent-head">
-          <div className={`agent-pill ${pillClass}`}>
-            <div className="agent-pill-dot"></div>
-            {isPlanner ? 'Planner' : 'Navigator'}
+      <div className={`group/agent relative overflow-hidden rounded-[2rem] border transition-all duration-500 hover:scale-[1.01] ${isDark ? 'border-white/5 bg-white/[0.02] shadow-2xl' : 'border-slate-200 bg-slate-50 shadow-lg'
+        } p-8 mb-8`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+          <div className="flex items-center gap-4">
+            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${isPlanner
+              ? (isDark ? 'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500/30' : 'bg-indigo-100 text-indigo-700')
+              : (isDark ? 'bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30' : 'bg-cyan-100 text-cyan-700')
+              }`}>
+              {isPlanner ? 'Strategic Planner' : 'Execution Navigator'}
+            </div>
           </div>
-          <div className="agent-role">{getAgentDescription(agentName)}</div>
+          <div className={`text-[13px] font-medium leading-relaxed max-w-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            {getAgentDescription(agentName)}
+          </div>
         </div>
 
-        <div className="agent-body">
-          {/* Model Row */}
-          <div className="model-row">
-            <div className="model-label">Model</div>
-            <div className="sel-wrap">
+        <div className="grid grid-cols-1 gap-6">
+          {/* Model Selection Field */}
+          <div className={`group/field relative p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-black/20 border-white/5 hover:border-indigo-500/30' : 'bg-white border-slate-200 hover:border-indigo-300 shadow-sm'
+            }`}>
+            <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-3 ml-1">Assigned Neural Model</label>
+            <div className="relative">
               <select
-                className="model-sel"
+                className={`w-full appearance-none bg-transparent text-sm font-bold focus:ring-0 outline-none cursor-pointer pr-10 ${isDark ? 'text-white' : 'text-slate-900'
+                  }`}
                 disabled={availableModels.length === 0}
                 value={selectedModels[agentName] || ''}
-                onChange={e => handleModelChange(agentName, e.target.value)}>
-                <option value="">{t('options_models_chooseModel')}</option>
+                onChange={e => handleModelChange(agentName, e.target.value)}
+              >
+                <option value="" className="bg-[#1a1c23]">Unassigned</option>
                 {availableModels.map(({ provider, providerName, model }) => (
-                  <option key={`${provider}>${model}`} value={`${provider}>${model}`}>
-                    {`${providerName} > ${model}`}
+                  <option key={`${provider}>${model}`} value={`${provider}>${model}`} className="bg-[#1a1c23]">
+                    {`${providerName} | ${model}`}
                   </option>
                 ))}
               </select>
-              <div className="sel-arrow">
-                <svg fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </div>
+              <FiChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 transition-transform group-hover/field:scale-110" />
             </div>
           </div>
 
-          {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
-            <div className="slider-row">
-              <div className="model-label" style={{ minWidth: '80px' }}>{t('options_models_labels_temperature')}</div>
-              <input
-                type="range"
-                min="0"
-                max="2"
-                step="0.01"
-                value={modelParameters[agentName].temperature}
-                style={{
-                  background: `linear-gradient(90deg, #38bdf8 ${(modelParameters[agentName].temperature / 2) * 100}%, rgba(13,26,46,1) ${(modelParameters[agentName].temperature / 2) * 100}%)`,
-                }}
-                onChange={e => handleParameterChange(agentName, 'temperature', Number.parseFloat(e.target.value))}
-              />
-              <div className="slider-val">{modelParameters[agentName].temperature.toFixed(2)}</div>
-              <input
-                type="number"
-                min="0"
-                max="2"
-                step="0.01"
-                value={modelParameters[agentName].temperature}
-                onChange={e => {
-                  const value = Number.parseFloat(e.target.value);
-                  if (!Number.isNaN(value) && value >= 0 && value <= 2) {
-                    handleParameterChange(agentName, 'temperature', value);
-                  }
-                }}
-                className="slider-input"
-              />
-            </div>
-          )}
-
-          {selectedModels[agentName] &&
-            !isOpenAIReasoningModel(selectedModels[agentName]) &&
-            !isAnthropicModel(selectedModels[agentName]) && (
-              <div className="slider-row">
-                <div className="model-label" style={{ minWidth: '80px' }}>{t('options_models_labels_topP')}</div>
+          {/* Parameters Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
+              <div className={`p-6 rounded-2xl border ${isDark ? 'bg-black/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Creativity (Temp)</label>
+                  <span className={`text-xs font-black font-mono ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                    {modelParameters[agentName].temperature.toFixed(2)}
+                  </span>
+                </div>
                 <input
                   type="range"
                   min="0"
-                  max="1"
-                  step="0.001"
-                  value={modelParameters[agentName].topP}
-                  style={{
-                    background: `linear-gradient(90deg, #38bdf8 ${modelParameters[agentName].topP * 100}%, rgba(13,26,46,1) ${modelParameters[agentName].topP * 100}%)`,
-                  }}
-                  onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
-                />
-                <div className="slider-val">{modelParameters[agentName].topP.toFixed(3)}</div>
-                <input
-                  type="number"
-                  min="0"
-                  max="1"
-                  step="0.001"
-                  value={modelParameters[agentName].topP}
-                  onChange={e => {
-                    const value = Number.parseFloat(e.target.value);
-                    if (!Number.isNaN(value) && value >= 0 && value <= 1) {
-                      handleParameterChange(agentName, 'topP', value);
-                    }
-                  }}
-                  className="slider-input"
+                  max="2"
+                  step="0.01"
+                  value={modelParameters[agentName].temperature}
+                  className="w-full h-1.5 rounded-full appearance-none bg-indigo-500/10 cursor-pointer accent-indigo-500"
+                  onChange={e => handleParameterChange(agentName, 'temperature', Number.parseFloat(e.target.value))}
                 />
               </div>
             )}
 
-          {/* Reasoning Effort (O-series models) */}
-          {selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName]) && (
-            <div className="model-row">
-              <div className="model-label">{t('options_models_labels_reasoning')}</div>
-              <div className="sel-wrap">
-                <select
-                  value={reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')}
-                  onChange={e =>
-                    handleReasoningEffortChange(agentName, e.target.value as 'minimal' | 'low' | 'medium' | 'high')
-                  }
-                  className="model-sel">
-                  <option value="minimal">Minimal</option>
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                </select>
-                <div className="sel-arrow">
-                  <svg fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
+            {selectedModels[agentName] &&
+              !isOpenAIReasoningModel(selectedModels[agentName]) &&
+              !isAnthropicModel(selectedModels[agentName]) && (
+                <div className={`p-6 rounded-2xl border ${isDark ? 'bg-black/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Nucleus Sampling (TopP)</label>
+                    <span className={`text-xs font-black font-mono ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                      {modelParameters[agentName].topP.toFixed(3)}
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.001"
+                    value={modelParameters[agentName].topP}
+                    className="w-full h-1.5 rounded-full appearance-none bg-cyan-500/10 cursor-pointer accent-cyan-500"
+                    onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
+                  />
+                </div>
+              )}
+
+            {/* Reasoning Effort (O-series models) */}
+            {selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName]) && (
+              <div className={`col-span-1 md:col-span-2 p-6 rounded-2xl border ${isDark ? 'bg-black/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
+                <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-4">Cognitive Effort</label>
+                <div className="flex gap-2">
+                  {(['minimal', 'low', 'medium', 'high'] as const).map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => handleReasoningEffortChange(agentName, level)}
+                      className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-tighter transition-all duration-300 ${(reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')) === level
+                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/50'
+                        : 'bg-white/5 text-slate-500 hover:text-slate-300 hover:bg-white/10'
+                        }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1103,36 +1084,78 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   };
 
   return (
-    <div className="page" id="tab-models">
-      <div className="page-header">
-        <div>
-          <div className="page-title">Models & Providers</div>
-          <div className="page-sub">Configure LLM endpoints and agent roles</div>
-        </div>
-      </div>
+    <div className={`space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
 
       {/* LLM Providers Section */}
-      <div className="card">
-        <div className="card-header">
-          <div className="card-title-group">
-            <div className="card-icon cyan">
-              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                <line x1="6" y1="6" x2="6.01" y2="6" />
-                <line x1="6" y1="18" x2="6.01" y2="18" />
-              </svg>
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-[#1a1c23]/60 border-white/5 shadow-2xl backdrop-blur-3xl' : 'bg-white/80 border-slate-200 shadow-xl'
+        }`}>
+        <div className={`border-b px-10 py-8 flex items-center justify-between gap-6 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
+          }`}>
+          <div className="flex items-center gap-6">
+            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-2xl transition-transform duration-500 group-hover:scale-110 ${isDarkMode ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white' : 'bg-gradient-to-br from-indigo-400 to-indigo-600 text-white'
+              }`}>
+              <FiCpu size={24} />
             </div>
             <div>
-              <div className="card-title">LLM Providers</div>
-              <div className="card-desc">API keys and endpoint configurations</div>
+              <h2 className="text-2xl font-black font-outfit tracking-tight">LLM Intelligence</h2>
+              <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                Hardware acceleration & Neural endpoint configurations
+              </p>
             </div>
           </div>
+
+          <div className="relative group/add">
+            <button
+              onClick={() => setIsProviderSelectorOpen(!isProviderSelectorOpen)}
+              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 ${isDarkMode ? 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+            >
+              Add Provider
+              <FiChevronDown className={`transition-transform duration-300 ${isProviderSelectorOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {isProviderSelectorOpen && (
+              <div className={`absolute right-0 mt-3 w-64 rounded-3xl border shadow-2xl overflow-hidden z-[100] p-2 backdrop-blur-3xl ${isDarkMode ? 'bg-[#1a1c23]/95 border-white/10' : 'bg-white/95 border-slate-200'
+                }`}>
+                {Object.values(ProviderTypeEnum)
+                  .filter(type => type !== ProviderTypeEnum.CustomOpenAI)
+                  .map(type => {
+                    const isAdded = providersFromStorage.has(type) || modifiedProviders.has(type);
+                    const isAzure = type === ProviderTypeEnum.AzureOpenAI;
+                    return (
+                      <button
+                        key={type}
+                        onClick={() => handleProviderSelection(type)}
+                        className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl text-[13px] font-bold transition-all duration-200 ${isDarkMode ? 'text-slate-300 hover:bg-indigo-500/20 hover:text-white' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                          } ${isAdded && !isAzure ? 'opacity-50' : ''}`}
+                      >
+                        <span>{getDefaultDisplayNameFromProviderId(type)}</span>
+                        {isAdded && !isAzure && <FiCheck className="opacity-50" size={12} />}
+                      </button>
+                    );
+                  })}
+                <button
+                  onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}
+                  className={`w-full text-left px-5 py-3 rounded-2xl text-[13px] font-bold border-t transition-all duration-200 mt-1 pt-4 ${isDarkMode ? 'text-indigo-400 border-white/5 hover:bg-indigo-500/10' : 'text-indigo-600 border-slate-100 hover:bg-indigo-50'
+                    }`}
+                >
+                  OpenAI Compatible
+                </button>
+              </div>
+            )}
+          </div>
         </div>
-        <div className="card-body" style={{ padding: '0' }}>
+
+        <div className="divide-y divide-white/[0.03]">
           {getSortedProviders().length === 0 ? (
-            <div className="p-8 text-center" style={{ color: 'var(--text-dim)' }}>
-              {t('options_models_providers_notConfigured')}
+            <div className="p-20 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-500/10 text-indigo-500 mb-6">
+                <FiCpu size={32} />
+              </div>
+              <h3 className="text-xl font-bold mb-2">No Active Proccessors</h3>
+              <p className={`text-sm max-w-xs mx-auto ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                Connect an AI provider to enable WebSurfer&#39;s autonomous navigation capabilities.
+              </p>
             </div>
           ) : (
             getSortedProviders().map(([providerId, providerConfig]) => {
@@ -1141,97 +1164,85 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
               const isInStorage = providersFromStorage.has(providerId);
 
               return (
-                <div key={providerId} className="provider-item" id={`provider-${providerId}`}>
-                  <div className="provider-head">
-                    <div className="provider-info">
-                      <div className="provider-name">{providerConfig.name || providerId}</div>
-                      {isModified && !isInStorage && <div className="p-tag">New</div>}
-                    </div>
-                    <div className="provider-actions">
+                <div key={providerId} id={`provider-${providerId}`} className="p-10 transition-all duration-300 hover:bg-white/[0.02]">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm ${isInStorage
+                        ? (isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
+                        : (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-700')
+                        }`}>
+                        {isInStorage ? 'Live Node' : 'Draft Intake'}
+                      </div>
+                      <h3 className="text-xl font-black font-outfit uppercase tracking-tight">{providerConfig.name || providerId}</h3>
                       {isModified && !isInStorage && (
-                        <button className="btn btn-sec" onClick={() => handleCancelProvider(providerId)}>
-                          Cancel
+                        <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">Awaiting Sync</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {isModified && !isInStorage && (
+                        <button
+                          className="px-5 py-2.5 rounded-2xl text-sm font-bold opacity-60 hover:opacity-100 transition-opacity"
+                          onClick={() => handleCancelProvider(providerId)}
+                        >
+                          Discard
                         </button>
                       )}
                       <button
-                        className={`btn ${getButtonProps(providerId).variant === 'danger' ? 'btn-danger' : 'btn-prim'}`}
+                        className={`flex items-center justify-center gap-2 px-8 py-3 rounded-2xl text-[13px] font-black uppercase tracking-widest shadow-2xl transition-all duration-300 transform active:scale-95 disabled:opacity-30 ${getButtonProps(providerId).variant === 'danger'
+                          ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white ring-1 ring-red-500/20 shadow-red-500/10'
+                          : 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5'
+                          }`}
                         disabled={getButtonProps(providerId).disabled}
-                        onClick={() =>
-                          isInStorage && !isModified ? handleDelete(providerId) : handleSave(providerId)
-                        }>
+                        onClick={() => isInStorage && !isModified ? handleDelete(providerId) : handleSave(providerId)}
+                      >
                         {getButtonProps(providerId).children}
                       </button>
                     </div>
                   </div>
 
-                  <div className="provider-form">
-                    {/* Setup instructions for new providers */}
-                    {isModified && !isInStorage && (
-                      <div className="mb-4 text-sm" style={{ color: 'var(--cyan)' }}>
-                        {t('options_models_providers_setupInstructions')}
-                      </div>
-                    )}
-
-                    {/* Name input for Custom Providers */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {providerConfig.type === ProviderTypeEnum.CustomOpenAI && (
-                      <div className="field">
-                        <label className="field-label">Provider Name</label>
+                      <div className="space-y-3">
+                        <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Identity Label</label>
                         <input
                           type="text"
-                          className="inp w-full"
-                          placeholder="My Provider"
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+                          placeholder="e.g. Local Research Engine"
                           value={providerConfig.name || ''}
                           onChange={e => handleNameChange(providerId, e.target.value)}
                         />
-                        {nameErrors[providerId] && (
-                          <div className="text-xs mt-1" style={{ color: 'var(--red)' }}>{nameErrors[providerId]}</div>
-                        )}
                       </div>
                     )}
 
-                    {/* API Key */}
-                    <div className="field">
-                      <label className="field-label">API Key</label>
-                      <div className="relative">
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Encryption Key</label>
+                      <div className="relative group">
                         <input
                           type={visibleApiKeys[providerId] ? 'text' : 'password'}
-                          className="inp w-full"
-                          placeholder="sk-..."
+                          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-mono"
+                          placeholder="••••••••••••••••"
                           value={providerConfig.apiKey || ''}
                           onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
                         />
                         <button
-                          className="absolute right-3 top-1/2 -translate-y-1/2"
-                          style={{ background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
-                          onClick={() => toggleApiKeyVisibility(providerId)}>
-                          {visibleApiKeys[providerId] ? (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                              <line x1="1" y1="1" x2="23" y2="23" />
-                            </svg>
-                          ) : (
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                              <circle cx="12" cy="12" r="3" />
-                            </svg>
-                          )}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-100 transition-opacity"
+                          onClick={() => toggleApiKeyVisibility(providerId)}
+                        >
+                          {visibleApiKeys[providerId] ? <FiEyeOff /> : <FiEye />}
                         </button>
                       </div>
                     </div>
 
-                    {/* Base URL / Endpoint */}
                     {(providerConfig.type === ProviderTypeEnum.CustomOpenAI ||
                       providerConfig.type === ProviderTypeEnum.Ollama ||
                       providerConfig.type === ProviderTypeEnum.AzureOpenAI ||
                       providerConfig.type === ProviderTypeEnum.OpenRouter ||
                       providerConfig.type === ProviderTypeEnum.Llama) && (
-                        <div className="field">
-                          <label className="field-label">
-                            {providerConfig.type === ProviderTypeEnum.AzureOpenAI ? 'Azure Endpoint' : 'Base URL'}
-                          </label>
+                        <div className="space-y-3">
+                          <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Networking Endpoint</label>
                           <input
                             type="text"
-                            className="inp w-full"
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-mono"
                             placeholder="https://api.openai.com/v1"
                             value={providerConfig.baseUrl || ''}
                             onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
@@ -1239,62 +1250,32 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         </div>
                       )}
 
-                    {/* Azure Specifics */}
-                    {providerConfig.type === ProviderTypeEnum.AzureOpenAI && (
-                      <>
-                        <div className="field">
-                          <label className="field-label">API Version</label>
-                          <input
-                            type="text"
-                            className="inp w-full"
-                            placeholder="2023-05-15"
-                            value={providerConfig.azureApiVersion || ''}
-                            onChange={e => handleAzureApiVersionChange(providerId, e.target.value)}
-                          />
-                        </div>
-                        <div className="field">
-                          <label className="field-label">Deployments (comma separated or enter)</label>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {(providerConfig.azureDeploymentNames || []).map(name => (
-                              <div key={name} className="p-tag badge">
-                                {name}
-                                <span onClick={() => removeAzureDeployment(providerId, name)} style={{ marginLeft: '4px', cursor: 'pointer' }}>×</span>
-                              </div>
-                            ))}
-                          </div>
-                          <input
-                            type="text"
-                            className="inp w-full"
-                            placeholder="gpt-4, gpt-35-turbo"
-                            value={newModelInputs[providerId] || ''}
-                            onChange={e => handleModelsChange(providerId, e.target.value)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                addAzureDeployment(providerId, (newModelInputs[providerId] || '').trim());
-                              }
-                            }}
-                          />
-                        </div>
-                      </>
+                    {providerConfig.type === ProviderTypeEnum.Ollama && (
+                      <div className="md:col-span-2 p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-4 items-start">
+                        <div className="mt-1 text-amber-500"><FiShield /></div>
+                        <p className="text-[13px] font-medium leading-relaxed text-amber-500/80">
+                          Critical: Ensure CORS permissions are active. Run Ollama with <code className="bg-black/20 px-1.5 py-0.5 rounded text-amber-500 font-bold">OLLAMA_ORIGINS=chrome-extension://*</code>
+                        </p>
+                      </div>
                     )}
+                  </div>
 
-                    {/* Model IDs / Tags */}
-                    {providerConfig.type !== ProviderTypeEnum.AzureOpenAI && (
-                      <div className="field">
-                        <label className="field-label">Models (press Enter to add)</label>
-                        <div className="flex flex-wrap gap-2 mb-2">
-                          {(providerConfig.modelNames || llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || []).map(model => (
-                            <div key={model} className="p-tag badge">
-                              {model}
-                              <span onClick={() => removeModel(providerId, model)} style={{ marginLeft: '4px', cursor: 'pointer' }}>×</span>
-                            </div>
-                          ))}
-                        </div>
+                  {providerConfig.type !== ProviderTypeEnum.AzureOpenAI && (
+                    <div className="mt-8 space-y-4">
+                      <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Intelligence Matrix (Models)</label>
+                      <div className="flex flex-wrap gap-2.5 p-6 rounded-[2rem] bg-black/20 border border-white/5 min-h-[80px]">
+                        {(providerConfig.modelNames || llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || []).map(model => (
+                          <div key={model} className="group/tag flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-black uppercase tracking-tight transition-all hover:bg-indigo-500 hover:text-white">
+                            {model}
+                            <button onClick={() => removeModel(providerId, model)} className="opacity-0 group-hover/tag:opacity-100 transition-opacity">
+                              <FiX size={10} />
+                            </button>
+                          </div>
+                        ))}
                         <input
                           type="text"
-                          className="inp w-full"
-                          placeholder="gpt-4o, llama3..."
+                          className="bg-transparent border-none outline-none text-xs font-bold text-white placeholder-white/20 ml-2"
+                          placeholder="Add Model ID..."
                           value={newModelInputs[providerId] || ''}
                           onChange={e => handleModelsChange(providerId, e.target.value)}
                           onKeyDown={e => {
@@ -1305,115 +1286,75 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           }}
                         />
                       </div>
-                    )}
-
-                    {/* Ollama Alert */}
-                    {providerConfig.type === ProviderTypeEnum.Ollama && (
-                      <div className="p-alert info" style={{ marginTop: '12px' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>
-                        <span>Set <code>OLLAMA_ORIGINS=chrome-extension://*</code> in your environment.</span>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               );
             })
           )}
+        </div>
+      </section>
 
-          {/* Add Provider — native select avoids overflow:hidden clipping */}
-          <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border)' }}>
-            <div className="sel-wrap">
-              <select
-                className="model-sel"
-                value=""
-                onChange={e => {
-                  if (e.target.value) handleProviderSelection(e.target.value);
-                }}
-                style={{ width: '100%', fontWeight: '500' }}>
-                <option value="" disabled>+ Add New Provider…</option>
-                {Object.values(ProviderTypeEnum)
-                  .filter(
-                    type =>
-                      type === ProviderTypeEnum.AzureOpenAI ||
-                      (!providersFromStorage.has(type) && !modifiedProviders.has(type)),
-                  )
-                  .map(type => (
-                    <option key={type} value={type}>
-                      {getDefaultDisplayNameFromProviderId(type)}
-                    </option>
-                  ))}
-                <option value={ProviderTypeEnum.CustomOpenAI}>OpenAI Compatible (Custom)</option>
-              </select>
-              <div className="sel-arrow">
-                <svg fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <polyline points="6 9 12 15 18 9" />
-                </svg>
-              </div>
-            </div>
+      {/* Agent Calibration Section */}
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-indigo-600/5 border-indigo-500/20 shadow-2xl backdrop-blur-3xl' : 'bg-white shadow-xl border-slate-200'
+        }`}>
+        <div className={`border-b px-10 py-8 flex items-center gap-6 ${isDarkMode ? 'border-white/5 bg-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-100 text-violet-600'
+            }`}>
+            <FiShield size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">Agent Calibration</h2>
+            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-violet-400' : 'text-violet-600'}`}>
+              Assigned cognitive roles and parameter tuning
+            </p>
           </div>
         </div>
-      </div>
-
-      {/* Model Selection Card */}
-      <div className="card" style={{ marginTop: '20px' }}>
-        <div className="card-header">
-          <div className="card-title-group">
-            <div className="card-icon violet">
-              <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 2c-2.5 3-4 6.4-4 10s1.5 7 4 10M12 2c2.5 3 4 6.4 4 10s-1.5 7-4 10" />
-                <line x1="2" y1="12" x2="22" y2="12" />
-              </svg>
-            </div>
-            <div>
-              <div className="card-title">Model Selection</div>
-              <div className="card-desc">Assign models and tune parameters for each agent</div>
-            </div>
-          </div>
-        </div>
-        <div className="card-body">
+        <div className="p-10 space-y-8">
           {renderModelSelect(AgentNameEnum.Planner)}
           {renderModelSelect(AgentNameEnum.Navigator)}
         </div>
-      </div>
+      </section>
 
-      {/* STT Section */}
-      <div className="card" style={{ marginTop: '20px' }}>
-        <div className="card-header">
-          <div className="card-title-group">
-            <div className="card-icon vio">
-              <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </svg>
-            </div>
-            <div>
-              <div className="card-title">Speech-to-Text</div>
-              <div className="card-desc">Transcribe voice commands using Gemini</div>
+      {/* Voice Transcription Section */}
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20 shadow-2xl backdrop-blur-3xl' : 'bg-white shadow-xl border-slate-200'
+        }`}>
+        <div className={`border-b px-10 py-8 flex items-center gap-6 ${isDarkMode ? 'border-white/5 bg-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'
+            }`}>
+            <FiTrendingUp size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">Vocal Intelligence</h2>
+            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+              Real-time speech analysis and transcription
+            </p>
+          </div>
+        </div>
+        <div className="p-10">
+          <div className="max-w-md space-y-4">
+            <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Primary Audio Processor</label>
+            <div className="relative group/sel">
+              <select
+                className={`w-full appearance-none bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all outline-none cursor-pointer ${isDarkMode ? 'text-white' : 'text-slate-900'
+                  }`}
+                value={selectedSpeechToTextModel}
+                onChange={e => handleSpeechToTextModelChange(e.target.value)}
+              >
+                <option value="" className="bg-[#1a1c23]">Disable Voice Command</option>
+                {availableModels
+                  .filter(({ provider }) => providers[provider]?.type === ProviderTypeEnum.Gemini)
+                  .map(({ provider, providerName, model }) => (
+                    <option key={`${provider}>${model}`} value={`${provider}>${model}`} className="bg-[#1a1c23]">
+                      {`${providerName} | ${model}`}
+                    </option>
+                  ))}
+              </select>
+              <FiChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 group-hover/sel:opacity-100 transition-opacity" />
             </div>
           </div>
         </div>
-        <div className="card-body">
-          <div className="field">
-            <label className="field-label">Transcription Model</label>
-            <select
-              className="model-sel"
-              value={selectedSpeechToTextModel}
-              onChange={e => handleSpeechToTextModelChange(e.target.value)}>
-              <option value="">{t('options_models_chooseModel')}</option>
-              {availableModels
-                .filter(({ provider }) => providers[provider]?.type === ProviderTypeEnum.Gemini)
-                .map(({ provider, providerName, model }) => (
-                  <option key={`${provider}>${model}`} value={`${provider}>${model}`}>
-                    {`${providerName} > ${model}`}
-                  </option>
-                ))}
-            </select>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 };

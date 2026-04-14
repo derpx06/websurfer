@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { type GeneralSettingsConfig, generalSettingsStore, DEFAULT_GENERAL_SETTINGS } from '@extension/storage';
 import { t } from '@extension/i18n';
+import { FiSettings, FiShield } from 'react-icons/fi';
 
 interface GeneralSettingsProps {
   isDarkMode?: boolean;
@@ -27,172 +28,113 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
     setSettings(latestSettings);
   };
 
+  const renderToggle = (
+    title: string,
+    desc: string,
+    checked: boolean,
+    onChange: (checked: boolean) => void,
+    accentColor: string = 'indigo'
+  ) => (
+    <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-8 transition-all duration-300 ${isDarkMode ? 'hover:bg-white/[0.02] border-b border-white/5 last:border-0' : 'hover:bg-slate-50 border-b border-slate-100 last:border-0'
+      }`}>
+      <div className="flex-1 pr-6">
+        <h3 className={`text-lg font-black font-outfit uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
+        <p className={`mt-1.5 text-[13px] font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{desc}</p>
+      </div>
+      <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 group">
+        <input type="checkbox" className="sr-only peer" checked={checked} onChange={e => onChange(e.target.checked)} />
+        <div className={`w-14 h-8 bg-white/5 border border-white/10 peer-focus:outline-none rounded-full peer transition-all duration-300 
+          peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] 
+          after:bg-white/20 after:rounded-full after:h-6 after:w-6 after:transition-all after:shadow-2xl after:backdrop-blur-md
+          ${isDarkMode ? `peer-checked:bg-${accentColor}-500/80` : `peer-checked:bg-${accentColor}-500`} 
+          peer-checked:after:bg-white peer-checked:after:after:shadow-indigo-500/50`}>
+        </div>
+      </label>
+    </div>
+  );
+
+  const renderInput = (
+    title: string,
+    desc: string,
+    value: number,
+    onChange: (val: number) => void,
+    min: number,
+    max: number,
+    step: number = 1
+  ) => (
+    <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-8 transition-all duration-300 ${isDarkMode ? 'hover:bg-white/[0.02] border-b border-white/5 last:border-0' : 'hover:bg-slate-50 border-b border-slate-100 last:border-0'
+      }`}>
+      <div className="flex-1 pr-6">
+        <h3 className={`text-lg font-black font-outfit uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
+        <p className={`mt-1.5 text-[13px] font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{desc}</p>
+      </div>
+      <input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={e => onChange(Number.parseInt(e.target.value, 10))}
+        className={`w-32 text-center rounded-2xl border transition-all duration-300 
+          ${isDarkMode ? 'border-white/10 bg-white/5 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+            : 'border-slate-200 bg-white text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10'} 
+          px-5 py-4 text-base font-black font-mono focus:outline-none shadow-2xl`}
+      />
+    </div>
+  );
+
   return (
-    <div className="page" id="tab-general">
-      <div className="page-header">
-        <div>
-          <div className="page-title">General</div>
-          <div className="page-sub">Appearance, behaviour and extension preferences</div>
-        </div>
-      </div>
+    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
 
-      <div className="card">
-        <div className="card-header">
-          <div className="card-title-group">
-            <div className="card-icon amber">
-              <svg fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-              </svg>
-            </div>
-            <div>
-              <div className="card-title">Preferences</div>
-              <div className="card-desc">Extension behaviour and UI settings</div>
-            </div>
+      {/* Execution Limits Section */}
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-[#1a1c23]/60 border-white/5 shadow-2xl backdrop-blur-3xl' : 'bg-white border-slate-200 shadow-xl'
+        }`}>
+        <div className={`border-b px-10 py-8 flex items-center gap-6 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
+          }`}>
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'
+            }`}>
+            <FiSettings size={24} />
+          </div>
+          <div>
+            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">System Runtime</h2>
+            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>
+              Safety thresholds and autonomous limits
+            </p>
           </div>
         </div>
-        <div className="card-body">
-          {/* Max Steps */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_maxSteps')}</div>
-              <div className="toggle-desc">{t('options_general_maxSteps_desc')}</div>
-            </div>
-            <input
-              type="number"
-              min={1}
-              max={50}
-              value={settings.maxSteps}
-              onChange={e => updateSetting('maxSteps', Number.parseInt(e.target.value, 10))}
-              className="inp"
-              style={{ width: '80px' }}
-            />
-          </div>
 
-          {/* Max Actions Per Step */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_maxActions')}</div>
-              <div className="toggle-desc">{t('options_general_maxActions_desc')}</div>
-            </div>
-            <input
-              type="number"
-              min={1}
-              max={50}
-              value={settings.maxActionsPerStep}
-              onChange={e => updateSetting('maxActionsPerStep', Number.parseInt(e.target.value, 10))}
-              className="inp"
-              style={{ width: '80px' }}
-            />
-          </div>
+        <div className="flex flex-col">
+          {renderInput(t('options_general_maxSteps'), t('options_general_maxSteps_desc'), settings.maxSteps, val => updateSetting('maxSteps', val), 1, 50)}
+          {renderInput(t('options_general_maxActions'), t('options_general_maxActions_desc'), settings.maxActionsPerStep, val => updateSetting('maxActionsPerStep', val), 1, 50)}
+          {renderInput(t('options_general_maxFailures'), t('options_general_maxFailures_desc'), settings.maxFailures, val => updateSetting('maxFailures', val), 1, 10)}
+          {renderInput(t('options_general_planningInterval'), t('options_general_planningInterval_desc'), settings.planningInterval, val => updateSetting('planningInterval', val), 1, 20)}
+          {renderInput(t('options_general_minWaitPageLoad'), t('options_general_minWaitPageLoad_desc'), settings.minWaitPageLoad, val => updateSetting('minWaitPageLoad', val), 250, 5000, 50)}
+        </div>
+      </section>
 
-          {/* Max Failures */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_maxFailures')}</div>
-              <div className="toggle-desc">{t('options_general_maxFailures_desc')}</div>
-            </div>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={settings.maxFailures}
-              onChange={e => updateSetting('maxFailures', Number.parseInt(e.target.value, 10))}
-              className="inp"
-              style={{ width: '80px' }}
-            />
+      {/* Intelligence & Vision Section */}
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-indigo-600/5 border-indigo-500/20 shadow-2xl backdrop-blur-3xl' : 'bg-white shadow-xl border-slate-200'
+        }`}>
+        <div className={`border-b px-10 py-8 flex items-center gap-6 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
+          }`}>
+          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'
+            }`}>
+            <FiShield size={24} />
           </div>
-
-          {/* Enable Vision */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_enableVision')}</div>
-              <div className="toggle-desc">{t('options_general_enableVision_desc')}</div>
-            </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={settings.useVision}
-                onChange={e => updateSetting('useVision', e.target.checked)}
-              />
-              <div className="toggle-track">
-                <div className="toggle-thumb"></div>
-              </div>
-            </label>
-          </div>
-
-          {/* Display Highlights */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_displayHighlights')}</div>
-              <div className="toggle-desc">{t('options_general_displayHighlights_desc')}</div>
-            </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={settings.displayHighlights}
-                onChange={e => updateSetting('displayHighlights', e.target.checked)}
-              />
-              <div className="toggle-track">
-                <div className="toggle-thumb"></div>
-              </div>
-            </label>
-          </div>
-
-          {/* Planning Interval */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_planningInterval')}</div>
-              <div className="toggle-desc">{t('options_general_planningInterval_desc')}</div>
-            </div>
-            <input
-              type="number"
-              min={1}
-              max={20}
-              value={settings.planningInterval}
-              onChange={e => updateSetting('planningInterval', Number.parseInt(e.target.value, 10))}
-              className="inp"
-              style={{ width: '80px' }}
-            />
-          </div>
-
-          {/* Min Wait Page Load */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_minWaitPageLoad')}</div>
-              <div className="toggle-desc">{t('options_general_minWaitPageLoad_desc')}</div>
-            </div>
-            <input
-              type="number"
-              min={250}
-              max={5000}
-              step={50}
-              value={settings.minWaitPageLoad}
-              onChange={e => updateSetting('minWaitPageLoad', Number.parseInt(e.target.value, 10))}
-              className="inp"
-              style={{ width: '80px' }}
-            />
-          </div>
-
-          {/* Replay Historical Tasks */}
-          <div className="toggle-row">
-            <div className="toggle-info">
-              <div className="toggle-title">{t('options_general_replayHistoricalTasks')}</div>
-              <div className="toggle-desc">{t('options_general_replayHistoricalTasks_desc')}</div>
-            </div>
-            <label className="toggle">
-              <input
-                type="checkbox"
-                checked={settings.replayHistoricalTasks}
-                onChange={e => updateSetting('replayHistoricalTasks', e.target.checked)}
-              />
-              <div className="toggle-track">
-                <div className="toggle-thumb"></div>
-              </div>
-            </label>
+          <div>
+            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">Cognitive Bio-Feedback</h2>
+            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+              Neural monitoring and visualization systems
+            </p>
           </div>
         </div>
-      </div>
+
+        <div className="flex flex-col">
+          {renderToggle(t('options_general_enableVision'), t('options_general_enableVision_desc'), settings.useVision, val => updateSetting('useVision', val), 'purple')}
+          {renderToggle(t('options_general_displayHighlights'), t('options_general_displayHighlights_desc'), settings.displayHighlights, val => updateSetting('displayHighlights', val), 'emerald')}
+          {renderToggle(t('options_general_replayHistoricalTasks'), t('options_general_replayHistoricalTasks_desc'), settings.replayHistoricalTasks, val => updateSetting('replayHistoricalTasks', val), 'indigo')}
+        </div>
+      </section>
     </div>
   );
 };

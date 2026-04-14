@@ -110,6 +110,17 @@ export class TaskManager {
                     return this.currentPort.postMessage({ type: 'success' });
                 }
 
+                case 'resume_task_with_input': {
+                    if (!this.currentExecutor)
+                        return this.currentPort.postMessage({ type: 'error', error: t('bg_errors_noRunningTask') });
+                    if (!message.input)
+                        return this.currentPort.postMessage({ type: 'error', error: 'No input provided' });
+
+                    logger.info('resume_task_with_input', message.input);
+                    await this.currentExecutor.resumeWithInput(message.input);
+                    return this.currentPort.postMessage({ type: 'success' });
+                }
+
                 case 'screenshot': {
                     if (!message.tabId) return this.currentPort.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
                     const page = await this.browserContext.switchTab(message.tabId);

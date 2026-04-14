@@ -43,7 +43,7 @@ const taskManager = new TaskManager(browserContext, notifyAgentStatus);
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
 
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-  if (tabId && changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
+  if (tab && tabId && changeInfo.status === 'complete' && tab.url?.startsWith('http')) {
     await injectBuildDomTreeScripts(tabId);
     // If an agent is running ON THIS TAB, notify it
     const executor = taskManager.getExecutor();
