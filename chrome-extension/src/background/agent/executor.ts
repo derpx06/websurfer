@@ -29,6 +29,7 @@ import type { GeneralSettingsConfig } from '@extension/storage';
 import { analytics } from '../services/analytics';
 import { PlanningStrategy } from './strategies/planner';
 import { NavigationStrategy } from './strategies/navigator';
+import { safeGetTabUrl } from '../browser/util';
 
 const logger = createLogger('Executor');
 
@@ -115,7 +116,26 @@ export class Executor {
     this.context.actionResults = this.context.actionResults.filter(result => result.includeInMemory);
   }
 
+  /**
+   * Restores critical context state from a checkpoint
+   */
+  public restoreContext(historyStr: string) {
+    try {
+      const parsed = JSON.parse(historyStr);
+      if (parsed.context) {
+        this.context.taskStack = parsed.context.taskStack || [];
+        this.context.completedSubTasks = parsed.context.completedSubTasks || [];
+        this.context.results = parsed.context.results || {};
+        this.context.scratchpad = parsed.context.scratchpad || '(empty)';
 
+        // Push a system message to inform the agent that it resumed from a checkpoint
+        this.context.messageManager.addNewTask(`[SYSTEM RESUME]: Task was restarted due to interruption. Your scratchpad, results, and sub-task stack have been restored. Resume from where you left off.`);
+        logger.info(`Successfully restored checkpointed context.`);
+      }
+    } catch (e) {
+      logger.error(`Failed to parse checkpoint: ${e}`);
+    }
+  }
 
   /**
    * Execute the task
@@ -145,18 +165,44 @@ export class Executor {
           maxSteps: context.options.maxSteps,
         };
 
+        // Phase 2: Bulletproof Tab Handling
+        const tabId = this.context.browserContext.currentTabId;
+        if (tabId) {
+          let stableUrl = null;
+          for (let retry = 0; retry < 5; retry++) {
+            stableUrl = await safeGetTabUrl(tabId);
+            if (stableUrl) break;
+            logger.info(`Tab ${tabId} URL is undefined (navigating?), retrying in 500ms... (${retry + 1}/5)`);
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+          // If after 5 retries it's still null, it might be a terminal error for this tab, 
+          // but we continue to let existing error handling catch it later if it's truly dead.
+        }
+
         logger.info(`🔄 Step ${step + 1} / ${allowedMaxSteps}`);
         if (await this.shouldStop()) {
           break;
         }
 
-        // Run planner periodically for guidance
-        if (this.planningStrategy && (context.nSteps % context.options.planningInterval === 0 || navigatorDone)) {
+        // Run planner periodically for guidance, or if forced by loop detection or navigator completion
+        if (this.planningStrategy && (context.nSteps % context.options.planningInterval === 0 || navigatorDone || context.loopDetected)) {
           navigatorDone = false;
+
+          let wasLoopDetected = false;
+          if (context.loopDetected) {
+            logger.info('Running planner due to loop detection!');
+            wasLoopDetected = true;
+          }
 
           // Add current browser state to memory if needed
           if (this.tasks.length > 1 || context.nSteps > 0) {
             await this.navigator.addStateMessageToMemory();
+            context.stateMessageAdded = true;
+          }
+
+          // Reset loop flag after state message captures it
+          if (wasLoopDetected) {
+            context.loopDetected = false;
           }
 
           latestPlanOutput = await this.planningStrategy.execute(context);
@@ -172,9 +218,93 @@ export class Executor {
           }
         }
 
+        // Phase 4: State Caching for the active Sub-Task
+        const pendingTasks = context.taskStack.filter(t => t.status !== 'done');
+        if (pendingTasks.length > 0) {
+          const activeTask = pendingTasks[pendingTasks.length - 1]; // active subtask is the last element
+          if (!activeTask.rollbackUrl) {
+            const browserState = await context.browserContext.getCachedState();
+            if (browserState && browserState.url) {
+              activeTask.rollbackUrl = browserState.url;
+              logger.info(`Set rollbackUrl for current sub-task: ${activeTask.rollbackUrl}`);
+            }
+          }
+        }
+
         // Execute navigator via navigation strategy
-        const navOutput = await this.navigationStrategy.execute(context);
-        navigatorDone = navOutput?.result?.done ?? false;
+        let navOutput;
+        try {
+          navOutput = await this.navigationStrategy.execute(context);
+        } catch (error) {
+          if (error instanceof MaxFailuresReachedError) {
+            const currentPending = context.taskStack.filter(t => t.status !== 'done');
+            if (currentPending.length > 0 && currentPending[currentPending.length - 1].rollbackUrl) {
+              const activeTask = currentPending[currentPending.length - 1];
+              logger.warning(`Max failures reached! Initiating state rollback to ${activeTask.rollbackUrl!}`);
+              await context.browserContext.navigateTo(activeTask.rollbackUrl!);
+
+              // Reset failures and mark sub-task as failed for planner orchestration
+              context.consecutiveFailures = 0;
+              activeTask.status = 'failed';
+              navigatorDone = true; // force planner loop next step
+            } else {
+              throw error; // Let outer limit handle if no rollback is available
+            }
+          } else {
+            throw error;
+          }
+        }
+        navigatorDone = navOutput?.result?.done ?? navigatorDone;
+
+        // Loop detection heuristic
+        const recentHistory = context.history.history.slice(-6);
+        if (recentHistory.length === 6) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const recentActions = recentHistory.map((h: any) => {
+            const url = h.browserStateHistory.url;
+            const actionPayload = h.modelOutput?.action?.[0];
+            let actionStr = 'unknown';
+            if (actionPayload) {
+              const actionName = Object.keys(actionPayload)[0];
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const innerPayload = (actionPayload as any)[actionName];
+              actionStr = `${actionName}:${innerPayload?.index ?? innerPayload?.text ?? ''}`;
+            }
+            return `${url}|${actionStr}`;
+          });
+
+          const uniqueActions = new Set(recentActions);
+          // If we have very few unique actions over the last 6 steps, and we haven't already fired a loop warning recently:
+          if (uniqueActions.size <= 2) {
+            context.loopDetected = true;
+            logger.warning('Loop detected: Actions are repeating! Forcing planner re-evaluation.');
+            navigatorDone = true; // force planner loop next step
+
+            // To prevent getting stuck in a new meta-loop, inject an extra artificial pause
+            await new Promise(r => setTimeout(r, 2000));
+          }
+        }
+
+        // Checkpoint the task every 10 steps
+        // The checkpoint is just AgentStepHistory serialized, plus general AgentContext
+        if (step > 0 && step % 10 === 0 && this.generalSettings?.replayHistoricalTasks) {
+          try {
+            const historyString = JSON.stringify({
+              history: this.context.history,
+              context: {
+                taskStack: this.context.taskStack,
+                completedSubTasks: this.context.completedSubTasks,
+                results: this.context.results,
+                scratchpad: this.context.scratchpad,
+                step: context.nSteps
+              }
+            });
+            await chatHistoryStore.storeAgentStepHistory(this.context.taskId, this.tasks[0], historyString);
+            logger.info(`Checkpoint saved securely at step ${step}.`);
+          } catch (e) {
+            logger.error(`Failed to save checkpoint: ${e}`);
+          }
+        }
 
         // If navigator indicates completion, the next periodic planner run will validate it
         if (navigatorDone) {

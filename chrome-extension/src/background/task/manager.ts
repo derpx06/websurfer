@@ -53,6 +53,18 @@ export class TaskManager {
                     this.currentExecutor = await this.setupExecutor(message.taskId, message.task);
                     this.subscribeToExecutorEvents(this.currentExecutor);
 
+                    // Auto-Resume Checkpoint Logic
+                    try {
+                        const { chatHistoryStore } = await import('@extension/storage/lib/chat');
+                        const checkpoint = await chatHistoryStore.loadAgentStepHistory(message.taskId);
+                        if (checkpoint && checkpoint.history) {
+                            logger.info(`Found existing checkpoint for ${message.taskId}, attempting to restore context.`);
+                            this.currentExecutor.restoreContext(checkpoint.history);
+                        }
+                    } catch (e) {
+                        logger.error('Failed to restore checkpoint from storage', e);
+                    }
+
                     const result = await this.currentExecutor.execute();
                     logger.info('new_task execution result', message.tabId, result);
                     break;

@@ -33,6 +33,14 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
   planningInterval: 3,
 };
 
+export interface SubTask {
+  goal: string;
+  status: 'pending' | 'running' | 'done' | 'failed';
+  result?: string;
+  steps: number;
+  rollbackUrl?: string; // Phase 4 Memory Rollback
+}
+
 export class AgentContext {
   controller: AbortController;
   taskId: string;
@@ -50,6 +58,13 @@ export class AgentContext {
   history: AgentStepHistory;
   finalAnswer: string | null;
   scratchpad: string;
+
+  // Advanced Long-Running Task State
+  taskStack: SubTask[];
+  completedSubTasks: SubTask[];
+  loopDetected: boolean;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  results: Record<string, any>;
 
   constructor(
     taskId: string,
@@ -75,6 +90,11 @@ export class AgentContext {
     this.history = new AgentStepHistory();
     this.finalAnswer = null;
     this.scratchpad = '(empty — use cache_content to save notes)';
+
+    this.taskStack = [];
+    this.completedSubTasks = [];
+    this.loopDetected = false;
+    this.results = {};
   }
 
   async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {

@@ -22,6 +22,7 @@ import {
   nextPageActionSchema,
   scrollToTopActionSchema,
   scrollToBottomActionSchema,
+  appendResultActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
@@ -175,6 +176,17 @@ export class ActionBuilder {
     const done = new Action(async (input: z.infer<typeof doneActionSchema.schema>) => {
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, doneActionSchema.name);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, input.text);
+
+      // Phase 4 Cross-Integration: If we are in a sub-task, mark it as done
+      const pendingTasks = this.context.taskStack.filter(t => t.status !== 'done');
+      if (pendingTasks.length > 0) {
+        const activeTask = pendingTasks[pendingTasks.length - 1];
+        activeTask.status = 'done';
+        activeTask.result = input.text;
+        this.context.completedSubTasks.push(activeTask);
+        logger.info(`Sub-task marked as DONE: ${activeTask.goal}`);
+      }
+
       return new ActionResult({
         isDone: true,
         extractedContent: input.text,
@@ -414,6 +426,29 @@ export class ActionBuilder {
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, cacheContentActionSchema);
     actions.push(cacheContent);
+
+    // append result for structured data
+    const appendResult = new Action(async (input: z.infer<typeof appendResultActionSchema.schema>) => {
+      const intent = input.intent || `Appending result to ${input.key}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+      if (!this.context.results[input.key]) {
+        this.context.results[input.key] = [];
+      }
+
+      if (Array.isArray(this.context.results[input.key])) {
+        this.context.results[input.key].push(input.value);
+      } else {
+        // Convert to array if it was single value
+        this.context.results[input.key] = [this.context.results[input.key], input.value];
+      }
+
+      const rawMsg = `Successfully appended result to key: ${input.key}`;
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, rawMsg);
+      const msg = wrapUntrustedContent(rawMsg);
+      return new ActionResult({ extractedContent: msg, includeInMemory: true });
+    }, appendResultActionSchema);
+    actions.push(appendResult);
 
     // Scroll to percent
     const scrollToPercent = new Action(async (input: z.infer<typeof scrollToPercentActionSchema.schema>) => {

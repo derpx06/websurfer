@@ -543,7 +543,11 @@ Key insight: **The state message is a temporary snapshot.** It gets added before
    └─ HTTP POST to OpenAI / Anthropic / Google API
    └─ Response: { current_state: {}, action: [{click_element: {index:5}}] }
 
-5. doMultiAction([{click_element: {index: 5}}])
+5. Browser Stabilization Guard (Executor.ts)
+   └─ Polls `safeGetTabUrl(tabId)` with 500ms backoff
+   └─ Ensures tab is not actively redirecting/unreachable before firing action
+
+6. doMultiAction([{click_element: {index: 5}}])
    ├─ BrowserContext.getState()                   [DOM snapshot #2]
    ├─ BrowserContext.removeHighlight()            [CDP: clear highlights]
    └─ For action: click_element, index: 5
@@ -571,9 +575,57 @@ Key insight: **The state message is a temporary snapshot.** It gets added before
 
 ---
 
+## Advanced Long-Running Task Architecture
+
+To support tasks that take 50–200 steps (e.g., researching 10 products), the agent is fundamentally built on an Orchestrator-Actor architecture over a Directed Acyclic Graph (DAG) state machine.
+
+### 1. Hierarchical Sub-Task Routing (Context Reduction)
+**Problem**: The Navigator agent suffers from context collapse when the task stack grows beyond what its limited token window can cleanly process.
+**Architecture**: 
+- **Planner (Orchestrator)**: Evaluates the master task and outputs `sub_tasks: [...]`. These are pushed to the `taskStack` inside `AgentContext`.
+- **Navigator (Actor)**: In `base.ts`, before formatting the state message, we filter the `taskStack` to ONLY expose the *Active Sub-Task* (the top unsolved item) to the Navigator prompt. 
+- **Cross-Integration**: When the Navigator fires the `done` action, `ActionBuilder.ts` automatically pops the sub-task off the `taskStack` as complete, prompting the Planner to spawn the next assignment.
+
+### 2. Deep State Rollbacks (Memory)
+**Problem**: In long iterations, simple network timeouts (`net::ERR_TIMED_OUT`) or broken API states traditionally break the entire task because consecutive failures exceeded the limit.
+**Architecture**: 
+- **Checkpointing**: Every iteration in `-executor.ts`, if a sub-task is active and lacks a `rollbackUrl`, the Executor dynamically caches the `browserState.url`. 
+- **Guarded Catch**: If a fatal error like `MaxFailuresReachedError` evaluates true, the Executor catches it, invokes `browserContext.navigateTo(subTask.rollbackUrl)`, drops `consecutiveFailures` back to 0, and cleanly marks the current sub-task as `failed`. The Planner then routes around the failure instead of aborting the master loop.
+
+### 3. Heuristic Loop Detection & Break-out
+**Problem**: Deterministic models often get stuck clicking the same unclickable `<div>` repetitively due to poor layout rendering, leading to an infinite cycle.
+**Architecture**: 
+- **Hashing Window**: The Executor hashes the last 6 `URL + Action` pairs. 
+- **Cycle Tripping**: If there are 2 or fewer unique actions occurring in a tight loop, it sets `loopDetected = true`. This mathematically guarantees cyclic behavior is caught. It forces the Planner to immediately re-evaluate the DOM, breaking the Navigator's cycle.
+
+### 4. Structured Output Accumulator
+**Problem**: Relying solely on the `history` log for final reporting causes massive token truncation, leading to omitted findings.
+**Architecture**: The `append_result` action allows the Navigator to stream structured JSON objects into `AgentContext.results[key] = [...]`. This lives purely outside the token window until the final task aggregator reads it.
+
+### 5. Checkpoint & Auto-Resume
+**Problem**: Catastrophic failure (browser crash).
+**Architecture**: Every 10 steps, the `AgentContext` is fully serialized and stored natively to `chatHistoryStore`. `TaskManager.ts` parses this on boot and restores state if a task hash matches an existing incomplete checkpoint.
+
+---
+
+## Phase 2: Stable Browser Tab Handling
+
+To prevent 'Cannot read properties of undefined (reading `url`)' crashes common in Puppeteer when pages run dynamic single-page applications or chaotic HTTP redirects, the architecture was fortified:
+
+### 1. The Safe Getter (`util.ts`)
+Instead of directly querying `chrome.tabs.get()`, all interactions must path through `safeGetTab()` or `safeGetTabUrl()`. These swallow isolated `chrome.runtime.lastError` exceptions that trigger when tabs momentarily freeze or enter an ambiguous state.
+
+### 2. Execution Guard Loops (`executor.ts`)
+Before every single execution cycle, the `Executor` reads `BrowserContext.currentTabId`. It then polls `safeGetTabUrl()` in a recursive bounded backoff loop (up to 5 attempts, waiting 500ms between each). Only when a stable, readable URL context is confirmed does the Planner or Navigator proceed.
+
+### 3. Bulletproof Switching (`BrowserContext.ts`)
+`switchTab` and `getCurrentPage` actively re-resolve tab IDs against the `safeGetTab` proxy. If an orphaned tab ID is requested, it recursively fetches a fallback tab rather than throwing an uncontrolled runtime error.
+
+---
+
 ## Why Is It So Slow — Summary
 
-The agent does many blocking serial operations per step. Here's the time cost:
+The agent acts deterministically. Here's a breakdown of the serial latency matrix:
 
 ```
 DOM snapshot (getState)         → 100–300ms
@@ -582,23 +634,19 @@ DOM snapshot (getState)         → 100–300ms
   + getScrollInfo               →  10– 30ms
   + chrome.tabs.query           →  10– 30ms
 
-LLM API call                    → 1000–5000ms (network)
+LLM API call                    → 1000–5000ms (network dependent)
 
 Action execution (click/type):
+  Browser Stabilization Guard   → 0–2500ms (retry loop overhead resolving redirects)
   Redundant DOM snapshot        → 100–300ms
-  scrollIntoViewIfNeeded POLL   → 100–1000ms
+  scrollIntoView POLL           → 100–1000ms
   Cursor animation delay        → 300ms (hardcoded)
   Puppeteer click               →  50ms
-  waitForNavigation             → 500–8000ms (blocks even if no navigation!)
-  waitForStableNetwork          → 0–15000ms
-
-Post-action sleep               → 1000ms (hardcoded, has a TODO comment)
+  waitForNavigation             → 500–8000ms (network-idle timeout bounding box)
 
 TOTAL PER STEP (typical):       → 3–15 seconds
 TOTAL PER STEP (with navigation): → 10–25 seconds
 ```
-
-For full fixes with code, see [PERFORMANCE-OPTIMIZATION.md](./PERFORMANCE-OPTIMIZATION.md).
 
 ---
 
@@ -608,49 +656,49 @@ For full fixes with code, see [PERFORMANCE-OPTIMIZATION.md](./PERFORMANCE-OPTIMI
 chrome-extension/src/background/
 ├── index.ts                    ← Service worker boot, port listener, tab hooks
 ├── task/
-│   └── manager.ts              ← Task lifecycle: start, stop, pause, cleanup
+│   └── manager.ts              ← Task lifecycle: start, stop, pause, resume logic
 ├── agent/
-│   ├── executor.ts             ← Main Planner+Navigator loop, step counting
-│   ├── types.ts                ← AgentContext, ActionResult, AgentOutput types
-│   ├── history.ts              ← AgentStepRecord for replay storage
+│   ├── executor.ts             ← Planner+Navigator Orchestration loop, Rollbacks, Retry Guards
+│   ├── types.ts                ← AgentContext, SubTask schemas, AgentOutput generic signatures
+│   ├── history.ts              ← AgentStepRecord for serialization
 │   ├── agents/
-│   │   ├── base.ts             ← LLM invocation, schema validation, error mapping
-│   │   ├── planner.ts          ← High-level supervisor: done?, next_steps?
-│   │   ├── navigator.ts        ← Worker: state→LLM→action→memory cycle
-│   │   └── errors.ts           ← Typed API error classes
+│   │   ├── base.ts             ← Abstract LLM invocation, schema enforcement, API recovery
+│   │   ├── planner.ts          ← Orchestrator logic: DAG generation, state analysis
+│   │   ├── navigator.ts        ← Actor logic: focused DOM manipulation, tool execution
+│   │   └── errors.ts           ← Runtime execution failure typings (MaxFailuresReachedError, etc)
 │   ├── actions/
-│   │   ├── builder.ts          ← Creates all 19 browser actions
-│   │   └── schemas.ts          ← Zod schemas for action parameters
+│   │   ├── builder.ts          ← Instantiates browser actions + Sub-Task cross-integration
+│   │   └── schemas.ts          ← Zod schema models injected into LLM contexts
 │   ├── messages/
-│   │   ├── service.ts          ← MessageManager: conversation history + token counting
-│   │   ├── views.ts            ← MessageHistory, MessageMetadata data structs
-│   │   └── utils.ts            ← Trust tags, JSON repair, content filtering
+│   │   ├── service.ts          ← Conversational history lifecycle management + token boundaries
+│   │   ├── views.ts            ← Token structs
+│   │   └── utils.ts            ← Security wrappers + LLM JSON repair sequences
 │   ├── prompts/
-│   │   ├── base.ts             ← buildBrowserStateUserMessage (DOM → LLM text)
-│   │   ├── navigator.ts        ← Navigator system prompt + action schema text
-│   │   └── planner.ts          ← Planner system prompt
+│   │   ├── base.ts             ← Builds prompt contexts, handles token reduction for active sub-tasks
+│   │   ├── navigator.ts        ← Injects tool capability index to Actor
+│   │   └── planner.ts          ← Injects Orchestrator rulesets
 │   └── event/
-│       └── types.ts            ← Actors (PLANNER/NAVIGATOR/SYSTEM), ExecutionState enums
+│       └── types.ts            ← Telemetry layer event models
 ├── browser/
-│   ├── context.ts              ← Tab manager: create/switch/attach pages
-│   ├── page.ts                 ← Single tab: click, type, scroll, snapshot
-│   ├── views.ts                ← BrowserState, BrowserContextConfig types
-│   ├── util.ts                 ← URL allow/deny checking
+│   ├── context.ts              ← Bulletproof tab lifecycle management + Page caching
+│   ├── page.ts                 ← Atomic puppeteer commands, element interactions
+│   ├── views.ts                ← Configuration schemas
+│   ├── util.ts                 ← safeGetTab, firewalls, and URL normalization
 │   └── page/
-│       ├── lifecycle.ts        ← Puppeteer connect/disconnect, anti-detection
-│       └── interaction.ts      ← Element finding, scroll helpers, dropdown utils
+│       ├── lifecycle.ts        ← Headless CDP mounting sequences
+│       └── interaction.ts      ← Robust shadow-DOM tree locators
 └── browser/dom/
-    ├── service.ts              ← Injects buildDomTree.js, calls it, stitches frames
-    ├── views.ts                ← DOMElementNode, DOMTextNode, clickableElementsToString
+    ├── service.ts              ← Injects buildDomTree.js on the fly
+    ├── views.ts                ← DOM structure mappings
     └── history/
-        ├── view.ts             ← DOMHistoryElement (what element was clicked)
-        └── service.ts          ← HistoryTreeProcessor (re-map elements for replay)
+        ├── view.ts             ← DOM history telemetry tracking
+        └── service.ts          ← Recovery mechanism for dropped DOM nodes
 
 public/
-└── buildDomTree.js             ← Runs INSIDE the browser page, scans real DOM
+└── buildDomTree.js             ← In-page JS injection engine
 
 packages/storage/lib/settings/
-├── generalSettings.ts          ← maxSteps, vision, planningInterval, etc.
-├── llmProviderStore.ts         ← API keys, model names per provider
-└── firewallSettingsStore.ts    ← allowed/denied URL lists
+├── generalSettings.ts          ← Task configurations (planning intervals, visual boundaries)
+├── llmProviderStore.ts         ← Dynamic API orchestration layer
+└── firewallSettingsStore.ts    ← Security compliance domains
 ```

@@ -35,6 +35,7 @@ export const plannerOutputSchema = z.object({
     }),
   ]),
   next_steps: z.string(),
+  sub_tasks: z.array(z.string()).optional(),
   final_answer: z.string(),
   reasoning: z.string(),
   web_task: z.union([
@@ -101,6 +102,17 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
         final_answer,
         next_steps,
       };
+
+      if (cleanedPlan.sub_tasks && cleanedPlan.sub_tasks.length > 0) {
+        for (let i = cleanedPlan.sub_tasks.length - 1; i >= 0; i--) {
+          this.context.taskStack.push({
+            goal: cleanedPlan.sub_tasks[i],
+            status: 'pending',
+            steps: 0
+          });
+        }
+        logger.info(`Pushed ${cleanedPlan.sub_tasks.length} sub-tasks to the context stack.`);
+      }
 
       // If task is done, emit the final answer; otherwise emit next steps
       const eventMessage = cleanedPlan.done ? cleanedPlan.final_answer : cleanedPlan.next_steps;

@@ -1,0 +1,32 @@
+
+> chrome-extension@0.1.13 build /home/manas/Documents/nanobrowser/chrome-extension
+> vite build
+
+vite v6.4.1 building for production...
+transforming...
+[plugin vite:resolve] Module "crypto" has been externalized for browser compatibility, imported by "/home/manas/Documents/nanobrowser/node_modules/.pnpm/chromium-bidi@11.0.0_devtools-protocol@0.0.1521046/node_modules/chromium-bidi/lib/cjs/utils/uuid.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+[plugin vite:resolve] Module "crypto" has been externalized for browser compatibility, imported by "/home/manas/Documents/nanobrowser/node_modules/.pnpm/chromium-bidi@11.0.0_devtools-protocol@0.0.1521046/node_modules/chromium-bidi/lib/cjs/utils/uuid.js". See https://vite.dev/guide/troubleshooting.html#module-externalized-for-browser-compatibility for more details.
+✓ 1016 modules transformed.
+✗ Build failed in 2.25s
+error during build:
+src/background/agent/actions/builder.ts (25:2): "appendResultActionSchema" is not exported by "src/background/agent/actions/schemas.ts", imported by "src/background/agent/actions/builder.ts".
+file: /home/manas/Documents/nanobrowser/chrome-extension/src/background/agent/actions/builder.ts:25:2
+
+23:   scrollToTopActionSchema,
+24:   scrollToBottomActionSchema,
+25:   appendResultActionSchema,
+      ^
+26: } from './schemas';
+27: import { z } from 'zod';
+
+    at getRollupError (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/parseAst.js:401:41)
+    at error (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/parseAst.js:397:42)
+    at Module.error (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:16956:16)
+    at Module.traceVariable (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:17412:29)
+    at ModuleScope.findVariable (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:15076:39)
+    at ChildScope.findVariable (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at ClassBodyScope.findVariable (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at ChildScope.findVariable (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at ChildScope.findVariable (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+    at FunctionScope.findVariable (file:///home/manas/Documents/nanobrowser/node_modules/.pnpm/rollup@4.53.3/node_modules/rollup/dist/es/shared/node-entry.js:5649:38)
+ ELIFECYCLE  Command failed with exit code 1.

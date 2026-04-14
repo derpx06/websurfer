@@ -751,7 +751,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
           {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
             <div className="slider-row">
-              <div className="model-label">{t('options_models_labels_temperature')}</div>
+              <div className="model-label" style={{ minWidth: '80px' }}>{t('options_models_labels_temperature')}</div>
               <input
                 type="range"
                 min="0"
@@ -785,7 +785,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             !isOpenAIReasoningModel(selectedModels[agentName]) &&
             !isAnthropicModel(selectedModels[agentName]) && (
               <div className="slider-row">
-                <div className="model-label">{t('options_models_labels_topP')}</div>
+                <div className="model-label" style={{ minWidth: '80px' }}>{t('options_models_labels_topP')}</div>
                 <input
                   type="range"
                   min="0"

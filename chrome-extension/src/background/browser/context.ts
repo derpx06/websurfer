@@ -8,7 +8,7 @@ import {
 } from './views';
 import Page, { build_initial_state } from './page';
 import { createLogger } from '@src/background/log';
-import { isUrlAllowed } from './util';
+import { isUrlAllowed, safeGetTab } from './util';
 import { analytics } from '../services/analytics';
 
 const logger = createLogger('BrowserContext');
@@ -16,6 +16,10 @@ export default class BrowserContext {
   private _config: BrowserContextConfig;
   private _currentTabId: number | null = null;
   private _attachedPages: Map<number, Page> = new Map();
+
+  public get currentTabId(): number | null {
+    return this._currentTabId;
+  }
   // Cache for tab list queries — refreshed at most every 2 seconds
   private _tabInfoCache: TabInfo[] | null = null;
   private _tabInfoCacheTime = 0;
@@ -120,7 +124,12 @@ export default class BrowserContext {
     // 2. If _currentTabId is set but not in attachedPages, attach the tab
     const existingPage = this._attachedPages.get(this._currentTabId);
     if (!existingPage) {
-      const tab = await chrome.tabs.get(this._currentTabId);
+      const tab = await safeGetTab(this._currentTabId);
+      if (!tab) {
+        logger.warning(`Tab ${this._currentTabId} not found, resetting current tab id`);
+        this._currentTabId = null;
+        return this.getCurrentPage(); // Recursively try to find another tab
+      }
       const page = await this._getOrCreatePage(tab);
       // set current tab id to null if the page is not attached successfully
       await this.attachPage(page);
@@ -229,9 +238,12 @@ export default class BrowserContext {
     logger.info('switchTab', tabId);
     this._invalidateTabInfoCache();
     await chrome.tabs.update(tabId, { active: true });
-    await this.waitForTabEvents(tabId, { waitForUpdate: false });
 
-    const page = await this._getOrCreatePage(await chrome.tabs.get(tabId));
+    const tab = await safeGetTab(tabId);
+    if (!tab) {
+      throw new Error(`Cannot switch to tab ${tabId} because it no longer exists`);
+    }
+    const page = await this._getOrCreatePage(tab);
     await this.attachPage(page);
     this._currentTabId = tabId;
     return page;
@@ -263,7 +275,9 @@ export default class BrowserContext {
     await this.waitForTabEvents(tabId);
 
     // Reattach the page after navigation completes
-    const updatedPage = await this._getOrCreatePage(await chrome.tabs.get(tabId), true);
+    const tab = await safeGetTab(tabId);
+    if (!tab) return;
+    const updatedPage = await this._getOrCreatePage(tab, true);
     await this.attachPage(updatedPage);
     this._currentTabId = tabId;
   }

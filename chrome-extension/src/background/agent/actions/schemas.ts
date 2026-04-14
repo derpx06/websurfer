@@ -213,3 +213,13 @@ export const waitActionSchema: ActionSchema = {
     seconds: z.number().int().default(3).describe('amount of seconds'),
   }),
 };
+
+export const appendResultActionSchema: ActionSchema = {
+  name: 'append_result',
+  description: 'Append a value to a results key for structured data accumulation',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    key: z.string().describe('the key in the results object'),
+    value: z.any().describe('the value to append'),
+  }),
+};
