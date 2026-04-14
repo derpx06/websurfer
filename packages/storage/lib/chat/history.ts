@@ -9,7 +9,7 @@ import type {
   ChatAgentStepHistory,
 } from './types';
 
-// Key for storing chat session metadata
+// Global index key for all chat session metadata (title, createdAt, messageCount, etc.)
 const CHAT_SESSIONS_META_KEY = 'chat_sessions_meta';
 
 // Create storage for session metadata
@@ -18,10 +18,14 @@ const chatSessionsMetaStorage = createStorage<ChatSessionMetadata[]>(CHAT_SESSIO
   liveUpdate: true,
 });
 
-// Helper function to get storage key for a specific session's messages
+/**
+ * Generates an isolated storage key for a session's messages to avoid bloating the main index.
+ */
 const getSessionMessagesKey = (sessionId: string) => `chat_messages_${sessionId}`;
 
-// Helper function to create storage for a specific session's messages
+/**
+ * Creates a reactive storage handle for a specific session's message array.
+ */
 const getSessionMessagesStorage = (sessionId: string) => {
   return createStorage<ChatMessage[]>(getSessionMessagesKey(sessionId), [], {
     storageEnum: StorageEnum.Local,
@@ -52,10 +56,15 @@ const getSessionAgentStepHistoryStorage = (sessionId: string) => {
 const getCurrentTimestamp = (): number => Date.now();
 
 /**
- * Creates a chat history storage instance with optimized operations
+ * Creates a chat history storage instance with optimized operations for session and message management.
+ * This storage handles atomic updates to metadata when messages are added or removed.
  */
 export function createChatHistoryStorage(): ChatHistoryStorage {
   return {
+    /**
+     * Retrieves all chat sessions from storage.
+     * Note: Messages are not loaded here for performance; use getSession(id) for full data.
+     */
     getAllSessions: async (): Promise<ChatSession[]> => {
       const sessionsMeta = await chatSessionsMetaStorage.get();
 
@@ -67,6 +76,9 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       }));
     },
 
+    /**
+     * Wipes all chat sessions and their associated messages from local storage.
+     */
     clearAllSessions: async (): Promise<void> => {
       const sessionsMeta = await chatSessionsMetaStorage.get();
       for (const sessionMeta of sessionsMeta) {
@@ -76,11 +88,18 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       await chatSessionsMetaStorage.set([]);
     },
 
-    // Get session metadata without messages (for UI listing)
+    /**
+     * Retrieves only the metadata for all sessions (title, timestamps, count).
+     */
     getSessionsMetadata: async (): Promise<ChatSessionMetadata[]> => {
       return await chatSessionsMetaStorage.get();
     },
 
+    /**
+     * Retrieves a full chat session including its message history.
+     * 
+     * @param sessionId The unique ID of the session.
+     */
     getSession: async (sessionId: string): Promise<ChatSession | null> => {
       const sessionsMeta = await chatSessionsMetaStorage.get();
       const sessionMeta = sessionsMeta.find(session => session.id === sessionId);
@@ -97,6 +116,11 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       };
     },
 
+    /**
+     * Creates a new chat session with the given title.
+     * 
+     * @param title The initial title of the session.
+     */
     createSession: async (title: string): Promise<ChatSession> => {
       const newSessionId = crypto.randomUUID();
       const currentTime = getCurrentTimestamp();
@@ -121,6 +145,12 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       };
     },
 
+    /**
+     * Updates the title of an existing chat session.
+     * 
+     * @param sessionId ID of the session to update.
+     * @param title The new title.
+     */
     updateTitle: async (sessionId: string, title: string): Promise<ChatSessionMetadata> => {
       let updatedSessionMeta: ChatSessionMetadata | undefined;
 
@@ -153,6 +183,9 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       return updatedSessionMeta;
     },
 
+    /**
+     * Permanently deletes a session and all its messages.
+     */
     deleteSession: async (sessionId: string): Promise<void> => {
       // Remove session from metadata
       await chatSessionsMetaStorage.set(prevSessions => prevSessions.filter(session => session.id !== sessionId));
@@ -162,6 +195,12 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       await messagesStorage.set([]);
     },
 
+    /**
+     * Appends a new message to a session and updates the session metadata atomically.
+     * 
+     * @param sessionId ID of the session.
+     * @param message The message metadata and content.
+     */
     addMessage: async (sessionId: string, message: Message): Promise<ChatMessage> => {
       const newMessage: ChatMessage = {
         ...message,
@@ -197,6 +236,9 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       return newMessage;
     },
 
+    /**
+     * Deletes a specific message from a session and decrements the messageCount in metadata.
+     */
     deleteMessage: async (sessionId: string, messageId: string): Promise<void> => {
       // Get the messages storage for this session
       const messagesStorage = getSessionMessagesStorage(sessionId);
@@ -225,6 +267,10 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       });
     },
 
+    /**
+     * Persists the logical agent state (history, task context) for a session.
+     * This is used by the CheckpointManager to enable task resumption.
+     */
     storeAgentStepHistory: async (sessionId: string, task: string, history: string): Promise<void> => {
       // Check if session exists
       const sessionsMeta = await chatSessionsMetaStorage.get();
@@ -241,6 +287,9 @@ export function createChatHistoryStorage(): ChatHistoryStorage {
       });
     },
 
+    /**
+     * Loads the persisted agent state for a session.
+     */
     loadAgentStepHistory: async (sessionId: string): Promise<ChatAgentStepHistory | null> => {
       const agentStepHistoryStorage = getSessionAgentStepHistoryStorage(sessionId);
       const history = await agentStepHistoryStorage.get();

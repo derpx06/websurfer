@@ -1,29 +1,29 @@
 import { Executor } from '../agent/executor';
 import { createLogger } from '../log';
 import BrowserContext from '../browser/context';
-import {
-    agentModelStore,
-    AgentNameEnum,
-    firewallStore,
-    generalSettingsStore,
-    llmProviderStore,
-} from '@extension/storage';
 import { t } from '@extension/i18n';
-import { createChatModel } from '../agent/helper';
-import { ExecutionState } from '../agent/event/types';
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { DEFAULT_AGENT_OPTIONS } from '../agent/types';
+import { ExecutorFactory } from './factory';
+import { StatusNotifier } from './notifier';
 
 const logger = createLogger('background/task/manager');
 
+/**
+ * TaskManager acts as the primary orchestrator for the lifecycle of background tasks.
+ * It manages the communication port with the Side Panel, handles incoming UI commands,
+ * and maintains the lifecycle of the Agent Executor.
+ */
 export class TaskManager {
     private currentExecutor: Executor | null = null;
     private currentPort: chrome.runtime.Port | null = null;
+    private readonly statusNotifier: StatusNotifier;
 
     constructor(
         private readonly browserContext: BrowserContext,
-        private readonly notifyAgentStatus: (active: boolean, status?: string, targetTabId?: number) => Promise<void>,
-    ) { }
+        notifyAgentStatus: (active: boolean, status?: string, targetTabId?: number) => Promise<void>,
+    ) {
+        this.statusNotifier = new StatusNotifier(notifyAgentStatus);
+    }
 
     public setPort(port: chrome.runtime.Port | null) {
         this.currentPort = port;
@@ -33,7 +33,14 @@ export class TaskManager {
         return this.currentExecutor;
     }
 
+    /**
+     * Entry point for messages arriving from the Side Panel via the Chrome runtime port.
+     * Routes messages to specialized executor commands or browser context actions.
+     * 
+     * @param message The deserialized message object from the port.
+     */
     public async handleMessage(message: any) {
+        // Port check: All background-to-UI communication relies on a healthy, active port.
         if (!this.currentPort) {
             logger.warning('Received message but no port is connected');
             return;
@@ -46,14 +53,18 @@ export class TaskManager {
                     break;
 
                 case 'new_task': {
-                    if (!message.task) return this.currentPort.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
-                    if (!message.tabId) return this.currentPort.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
+                    if (!message.task) return this.currentPort!.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
+                    if (!message.tabId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
                     logger.info('new_task', message.tabId, message.task);
-                    this.currentExecutor = await this.setupExecutor(message.taskId, message.task);
-                    this.subscribeToExecutorEvents(this.currentExecutor);
 
-                    // Auto-Resume Checkpoint Logic
+                    // Create a fresh executor for the new task session using the factory pattern
+                    this.currentExecutor = await ExecutorFactory.create(message.taskId, message.task, this.browserContext);
+
+                    // Wire up the executor to the UI via the status notifier
+                    this.statusNotifier.subscribe(this.currentExecutor, this.currentPort!);
+
+                    // Auto-Resume: Check for existing step history in local storage to support crash recovery
                     try {
                         const { chatHistoryStore } = await import('@extension/storage/lib/chat');
                         const checkpoint = await chatHistoryStore.loadAgentStepHistory(message.taskId);
@@ -65,6 +76,7 @@ export class TaskManager {
                         logger.error('Failed to restore checkpoint from storage', e);
                     }
 
+                    // Start the asynchronous execution loop
                     const result = await this.currentExecutor.execute();
                     logger.info('new_task execution result', message.tabId, result);
                     break;
@@ -79,7 +91,7 @@ export class TaskManager {
 
                     if (this.currentExecutor) {
                         this.currentExecutor.addFollowUpTask(message.task);
-                        this.subscribeToExecutorEvents(this.currentExecutor);
+                        this.statusNotifier.subscribe(this.currentExecutor, this.currentPort);
                         const result = await this.currentExecutor.execute();
                         logger.info('follow_up_task execution result', message.tabId, result);
                     } else {
@@ -122,14 +134,18 @@ export class TaskManager {
                 }
 
                 case 'screenshot': {
-                    if (!message.tabId) return this.currentPort.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
+                    if (!message.tabId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
+
+                    // Switch to the target tab before capturing
                     const page = await this.browserContext.switchTab(message.tabId);
                     const screenshot = await page.takeScreenshot();
                     logger.info('screenshot', message.tabId, screenshot);
-                    return this.currentPort.postMessage({ type: 'success', screenshot });
+
+                    return this.currentPort!.postMessage({ type: 'success', screenshot });
                 }
 
                 case 'state': {
+                    // Extract the full interactive state of the browser, intended for debugging or LLM feeding.
                     try {
                         const browserState = await this.browserContext.getState(true);
                         const elementsText = browserState.elementTree.clickableElementsToString(
@@ -137,35 +153,40 @@ export class TaskManager {
                         );
                         logger.info('state', browserState);
                         logger.info('interactive elements', elementsText);
-                        return this.currentPort.postMessage({ type: 'success', msg: t('bg_cmd_state_printed') });
+                        return this.currentPort!.postMessage({ type: 'success', msg: t('bg_cmd_state_printed') });
                     } catch (error) {
                         logger.error('Failed to get state:', error);
-                        return this.currentPort.postMessage({ type: 'error', error: t('bg_cmd_state_failed') });
+                        return this.currentPort!.postMessage({ type: 'error', error: t('bg_cmd_state_failed') });
                     }
                 }
 
                 case 'nohighlight': {
+                    // Instruct the active page to remove any visual bounding boxes or markers.
                     const page = await this.browserContext.getCurrentPage();
                     await page.removeHighlight();
-                    return this.currentPort.postMessage({ type: 'success', msg: t('bg_cmd_nohighlight_ok') });
+                    return this.currentPort!.postMessage({ type: 'success', msg: t('bg_cmd_nohighlight_ok') });
                 }
 
                 case 'replay': {
-                    if (!message.tabId) return this.currentPort.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
-                    if (!message.taskId) return this.currentPort.postMessage({ type: 'error', error: t('bg_errors_noTaskId') });
+                    // Triggers a historic replay of actions from a saved session.
+                    if (!message.tabId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
+                    if (!message.taskId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTaskId') });
                     if (!message.historySessionId)
-                        return this.currentPort.postMessage({ type: 'error', error: t('bg_cmd_replay_noHistory') });
+                        return this.currentPort!.postMessage({ type: 'error', error: t('bg_cmd_replay_noHistory') });
 
                     logger.info('replay', message.tabId, message.taskId, message.historySessionId);
                     try {
                         await this.browserContext.switchTab(message.tabId);
-                        this.currentExecutor = await this.setupExecutor(message.taskId, message.task);
-                        this.subscribeToExecutorEvents(this.currentExecutor);
+                        this.currentExecutor = await ExecutorFactory.create(message.taskId, message.task, this.browserContext);
+
+                        // Bridge events from the replaying executor to the UI.
+                        this.statusNotifier.subscribe(this.currentExecutor, this.currentPort!);
+
                         const result = await this.currentExecutor.replayHistory(message.historySessionId);
                         logger.debug('replay execution result', message.tabId, result);
                     } catch (error) {
                         logger.error('Replay failed:', error);
-                        return this.currentPort.postMessage({
+                        return this.currentPort!.postMessage({
                             type: 'error',
                             error: error instanceof Error ? error.message : t('bg_cmd_replay_failed'),
                         });
@@ -185,108 +206,9 @@ export class TaskManager {
         }
     }
 
-    private async setupExecutor(taskId: string, task: string) {
-        const providers = await llmProviderStore.getAllProviders();
-        if (Object.keys(providers).length === 0) {
-            throw new Error(t('bg_setup_noApiKeys'));
-        }
-
-        await agentModelStore.cleanupLegacyValidatorSettings();
-        const agentModels = await agentModelStore.getAllAgentModels();
-
-        for (const agentModel of Object.values(agentModels)) {
-            if (!providers[agentModel.provider]) {
-                throw new Error(t('bg_setup_noProvider', [agentModel.provider]));
-            }
-        }
-
-        const navigatorModel = agentModels[AgentNameEnum.Navigator];
-        if (!navigatorModel) throw new Error(t('bg_setup_noNavigatorModel'));
-
-        const navigatorProviderConfig = providers[navigatorModel.provider];
-        const navigatorLLM = createChatModel(navigatorProviderConfig, navigatorModel);
-
-        let plannerLLM: BaseChatModel | null = null;
-        const plannerModel = agentModels[AgentNameEnum.Planner];
-        if (plannerModel) {
-            const plannerProviderConfig = providers[plannerModel.provider];
-            plannerLLM = createChatModel(plannerProviderConfig, plannerModel);
-        }
-
-        const firewall = await firewallStore.getFirewall();
-        this.browserContext.updateConfig({
-            allowedUrls: firewall.enabled ? firewall.allowList : [],
-            deniedUrls: firewall.enabled ? firewall.denyList : [],
-        });
-
-        const generalSettings = await generalSettingsStore.getSettings();
-        this.browserContext.updateConfig({
-            minimumWaitPageLoadTime: generalSettings.minWaitPageLoad / 1000.0,
-            displayHighlights: generalSettings.displayHighlights,
-        });
-
-        return new Executor(task, taskId, this.browserContext, navigatorLLM, {
-            plannerLLM: plannerLLM ?? navigatorLLM,
-            agentOptions: {
-                maxSteps: generalSettings.maxSteps,
-                maxFailures: generalSettings.maxFailures,
-                maxActionsPerStep: generalSettings.maxActionsPerStep,
-                useVision: generalSettings.useVision,
-                useVisionForPlanner: true,
-                planningInterval: generalSettings.planningInterval,
-            },
-            generalSettings: generalSettings,
-        });
-    }
-
-    private subscribeToExecutorEvents(executor: Executor) {
-        executor.clearExecutionEvents();
-        executor.subscribeExecutionEvents(async event => {
-            try {
-                if (this.currentPort) {
-                    this.currentPort.postMessage(event);
-                }
-            } catch (error) {
-                logger.error('Failed to send message to side panel:', error);
-            }
-
-            // @ts-expect-error - context is private
-            const tabId = executor.context?.browserContext?._currentTabId ?? undefined;
-
-            if (
-                event.state === ExecutionState.TASK_START ||
-                event.state === ExecutionState.STEP_START ||
-                event.state === ExecutionState.ACT_START
-            ) {
-                let statusText: string | undefined;
-                if (event.state === ExecutionState.ACT_START) {
-                    const toolName = event.data.details;
-                    if (toolName === 'click_browser_pixel') statusText = 'Clicking element';
-                    else if (toolName === 'type_text_browser_pixel' || toolName === 'input_text_browser_pixel')
-                        statusText = 'Typing text';
-                    else if (toolName === 'scroll_browser_pixel') statusText = 'Scrolling page';
-                    else if (toolName === 'wait_browser_pixel') statusText = 'Waiting for page';
-                    else if (toolName === 'navigate_browser_pixel') statusText = 'Navigating';
-                    else statusText = toolName;
-                } else if (event.state === ExecutionState.STEP_START) {
-                    statusText = 'Planning next move...';
-                } else if (event.state === ExecutionState.TASK_START) {
-                    statusText = 'Starting task...';
-                }
-                await this.notifyAgentStatus(true, statusText, tabId);
-            }
-
-            if (
-                event.state === ExecutionState.TASK_OK ||
-                event.state === ExecutionState.TASK_FAIL ||
-                event.state === ExecutionState.TASK_CANCEL
-            ) {
-                await this.notifyAgentStatus(false, undefined, tabId);
-                await this.currentExecutor?.cleanup();
-            }
-        });
-    }
-
+    /**
+     * Terminate the currently active task and release related executor resources.
+     */
     public async cleanup() {
         await this.currentExecutor?.cancel();
         this.currentExecutor = null;

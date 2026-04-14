@@ -1,6 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { type Message, chatHistoryStore, Actors } from '@extension/storage';
 
+/**
+ * useChatSession manages the state and persistence of a single chat conversation.
+ * It handles message history, session switching, and automatic synchronization with local storage.
+ */
 export const useChatSession = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -18,9 +22,16 @@ export const useChatSession = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
+    /**
+     * Adds a new message to the local state and asynchronously persists it to storage.
+     * 
+     * @param newMessage The message object to append.
+     * @param sessionId Optional explicit session ID, defaults to the current active session.
+     */
     const appendMessage = useCallback((newMessage: Message, sessionId?: string | null) => {
         const progressMessage = 'Showing progress...';
         setMessages(prev => {
+            // Filter out transient 'progress' markers to keep the UI clean
             const filteredMessages = prev.filter((msg, idx) => !(msg.content === progressMessage && idx === prev.length - 1));
             return [...filteredMessages, newMessage];
         });

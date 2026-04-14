@@ -1,47 +1,85 @@
-# WebSurfer Project Structure
+# WebSurfer Modular Architecture Detail
 
-WebSurfer is a modern, modular Monorepo browser extension built for agentic web navigation and LLM-driven interactions. The repository uses `pnpm` workspaces and is broken down into modular chunks for scalability, UI sharing, and distinct background script management.
-
-This document breaks down the project structure into distinct functional modules.
-
-## Architecture & Modules Overview
-
-The monorepo is grouped into three main primary modules:
-1. **`chrome-extension/`**: The core extension lifecycles and background worker logic.
-2. **`pages/`**: The decoupled React-based User Interfaces for different extension views.
-3. **`packages/`**: Shared libraries, core data stores, UI components, and utilities used by the apps.
+WebSurfer is organized as a modular monorepo. This document provides a granular breakdown of the modules and sub-modules that power the agentic browser experience.
 
 ---
 
-### 1. The Core Extension Runtime (`/chrome-extension/`)
-This is the heart of the agentic processing and where background executions happen.
-- **`src/background/agent/`**: Contains the Executor, Action Builder, and Human-In-The-Loop processing cycles. This is the background "brain" running the LLM inferences while the browser navigates.
-- **`src/background/task/`**: Task Manager that brokers requests between the UI side panels and the agent executor.
-- **`manifest.js` / `vite.config.mts`**: Configuration to bundle the background scripts into the final extension.
+## 1. Core Background Engine (`/chrome-extension/`)
 
-### 2. Frontend UIs (`/pages/`)
-Contains all the separate React applications that function as different views for the browser extension. These are highly decoupled and styled using Tailwind, integrating the `ui-ux-pro-max` design system.
-- **`pages/side-panel/`**: The primary user-facing interface. Contains the chatbot chat UI, history lists, and HITL (Human-in-the-Loop) pauses where the user injects interactions directly to the agent.
-- **`pages/options/`**: The settings dashboard. Built with a premium glassmorphic UI. Contains sub-components for **Model Settings**, **Firewall Rules**, **Analytics**, and **General Preferences** for fine-tuning API keys and agent behavior.
-- **`pages/content/`**: The content script injected into every loaded webpage. This module is responsible for reading the DOM recursively (`buildDomTree.js`), overlaying bounds/highlights, and executing click/type actions seamlessly.
+The background service worker acts as the orchestrator for all agentic behavior, browser control, and UI state management.
 
-### 3. Shared Internal Packages (`/packages/`)
-These act as Node packages used across the repo, abstracting logic out of the UI components.
-- **`packages/storage/`**: Centralized persistent state management built over `chrome.storage`. Contains configurations for LLM Providers (`llmProviderStore`), Firewall Rules, Prompts, and Agent models.
-- **`packages/ui/`**: A shared UI component library preventing duplication of basic buttons, inputs, and layout wrappers across Option and Side Panel pages.
-- **`packages/i18n/`**: Fully configured internationalization module holding the localized strings (`t()`).
-- **`packages/hmr/` & `packages/dev-utils/`**: Tooling for hot-module-reloading during the rapid iteration development cycle.
-- **`packages/schema-utils/` & `packages/shared/`**: Common types, TypeScript interfaces, error boundaries, and shared logic wrappers utilized by all clients.
+### **A. Agent Brain (`src/background/agent/`)**
+The logic for reasoning and task planning.
+- **`prompts/`**: Manages the system context for the LLM. Includes the `Navigator` and `Planner` templates.
+- **`strategies/`**: Orchestrates the multi-step reasoning cycles (e.g., *Planning* -> *Action* -> *Verification*).
+- **`messages/`**: Service layer for passing states and HITL (Human-in-the-Loop) pauses to the Side Panel UI.
+- **`executor/`**: The core runtime that manages the loop of fetching context, invoking the LLM, and executing actions.
+
+### **B. Browser Interaction (`src/background/browser/`)**
+An abstraction layer over the standard Chrome Extension APIs.
+- **`dom/`**: Specifically handles analysis of the webpage.
+  - **`service.ts`**: Builds the accessibility tree and identifies interactive elements.
+  - **`clickable/`**: Optimized detection for buttons, links, and input fields.
+- **`page/`**: Low-level execution of browser events.
+  - **`interaction.ts`**: Performs actual clicks, typing, and scrolling.
+  - **`lifecycle.ts`**: Monitors tab loading states and navigation events.
+
+### **C. Background Services (`src/background/services/`)**
+Ancillary logic required for a production-grade agent.
+- **`guardrails/`**: Safety layer that sanitizes LLM output and enforces security patterns.
+- **`analytics.ts`**: Tracks agent performance and task completion metrics.
+- **`speechToText.ts`**: Logic for voice-driven interaction processing.
 
 ---
 
-## Development Workflow & Code Flow
+## 2. User Interface Views (`/pages/`)
 
-1. **User interacts in the Frontends (`pages/side-panel`)** targeting an objective.
-2. The UI pushes a message/status to the **Background Scripts (`chrome-extension/src/background`)**.
-3. Background Scripts communicate with the active injected webpage via **Content Scripts (`pages/content`)** to extract screen context.
-4. The background invokes LLMs using endpoints configured and persisted in the **Storage Module (`packages/storage`)**.
-5. Complex tasks utilize HITL pausing, triggering an update back up to the Side Panel UI to prompt the user.
+Decoupled React applications providing dedicated views for interaction and configuration.
 
-## Styling System
-All UI components use a unified **Tailwind CSS** configuration exported by `packages/tailwind-config/`, allowing identical styling logic across isolated view endpoints. The UI relies heavily on modern glassmorphism, dynamic gradients, and SVG micro-interactions.
+### **A. Side Panel (`pages/side-panel/`)**
+The primary workspace for user-agent collaboration.
+- **`components/`**: Modular UI elements including the `ChatHistoryList`, `ChatInput`, and `WelcomeScreen`.
+- **`hooks/`**: Custom hooks (`useSidePanelController.ts`) that bridge the UI to the background message bus.
+- **`VoiceOrb.tsx`**: Special UI component for visualizing and managing voice interactions.
+
+### **B. Dashboard & Settings (`pages/options/`)**
+Centralized management for the extension’s personality and constraints.
+- **`components/ModelSettings.tsx`**: Provider configuration (OpenAI, Anthropic, Google, etc.).
+- **`components/FirewallSettings.tsx`**: Logic for URL blacklisting and agent permissions.
+- **`components/GeneralSettings.tsx`**: App-wide behavior toggles and experimental features.
+
+### **C. Injected Scripting (`pages/content/`)**
+Code that runs directly within the context of the user's active tab.
+- **`src/buildDomTree.js`**: Recursively crawls the active DOM to generate a machine-readable snapshot for the LLM.
+- **`Overlay/`**: Renders the highlighted boxes and pointer indicators so users can see what the agent is "looking at".
+
+---
+
+## 3. Shared Internal Packages (`/packages/`)
+
+Shared libraries that provide the backbone for all modules, ensuring consistency and centralizing state.
+
+- **`storage/`**: Persists critical data using `chrome.storage.local`.
+  - **Stores**: Config for LLM Providers, Firewall Rules, Conversation Histories, and Prompts.
+- **`ui/`**: A standard library of Tailwind-styled components (Buttons, Modals, Cards) to maintain the `ui-ux-pro-max` aesthetic.
+- **`i18n/`**: Centralized string repository for multi-language support.
+- **`shared/`**: Global TypeScript types, shared constants, and error handling utilities.
+- **`tailwind-config/`**: Source of truth for the project's design system (Gradients, Glassmorphism, Radii).
+
+---
+
+## Technical Workflow Flowchart
+
+```mermaid
+graph TD
+    A[Side Panel UI] -->|Message| B[Background Broker]
+    B -->|Task| C[Agent Brain]
+    C -->|Request| D[DOM Scanner Content Script]
+    D -->|Context| C
+    C -->|Reasoning| E[LLM Provider]
+    E -->|Action| C
+    C -->|Command| F[Browser Interaction Layer]
+    F -->|Exec| G[Physical Page Interaction]
+    G -->|Result| C
+    C -->|Update| A
+```

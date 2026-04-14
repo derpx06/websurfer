@@ -6,7 +6,7 @@ import type { BaseMessage } from '@langchain/core/messages';
 import { createLogger } from '@src/background/log';
 import type { Action } from '../actions/builder';
 import { convertInputMessages, extractJsonFromModelOutput, removeThinkTags } from '../messages/utils';
-import { isAbortedError, ResponseParseError } from './errors';
+import { isAbortedError, ResponseParseError, isRateLimitError, ChatModelRateLimitError } from './errors';
 import { ProviderTypeEnum } from '@extension/storage';
 
 const logger = createLogger('agent');
@@ -28,9 +28,12 @@ export interface ExtraAgentOptions {
 }
 
 /**
- * Base class for all agents
- * @param T - The Zod schema for the model output
- * @param M - The type of the result field of the agent output
+ * BaseAgent serves as the foundation for all specialized AI agents (Navigator, Planner, etc.).
+ * It abstracts the complexity of LLM direct interaction, structured output parsing,
+ * and input message conversion.
+ * 
+ * @template T The Zod schema type defining the expected structured output from the model.
+ * @template M The type of the final result data returned by the agent.
  */
 export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
   protected id: string;
@@ -49,20 +52,27 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
   declare ModelOutput: z.infer<T>;
 
   constructor(modelOutputSchema: T, options: BaseAgentOptions, extraOptions?: Partial<ExtraAgentOptions>) {
-    // base options
+    // core dependencies
     this.modelOutputSchema = modelOutputSchema;
     this.chatLLM = options.chatLLM;
     this.prompt = options.prompt;
     this.context = options.context;
     this.provider = options.provider || '';
-    // TODO: fix this, the name is not correct in production environment
+
+    // Determine the class name of the LLM provider for internal logic routing.
+    // Note: this may behave differently in minified production builds.
     this.chatModelLibrary = this.chatLLM.constructor.name;
     this.modelName = this.getModelName();
+
+    // Choose the best output format based on model capabilities
     this.withStructuredOutput = this.setWithStructuredOutput();
-    // extra options
+
+    // Configuration details
     this.id = extraOptions?.id || 'agent';
     this.toolCallingMethod = this.setToolCallingMethod(extraOptions?.toolCallingMethod);
     this.callOptions = extraOptions?.callOptions;
+
+    // Name used for the tool-calling schema in structured output
     this.modelOutputToolName = `${this.id}_output`;
   }
 
@@ -118,8 +128,15 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     return true;
   }
 
+  /**
+   * Primary method for interacting with the LLM.
+   * Handles structured output calls with automatic retries and manual parsing fallbacks.
+   * 
+   * @param inputMessages Sequential list of messages to send to the model.
+   * @returns Parsed and validated object conforming to this agent's ModelOutput schema.
+   */
   async invoke(inputMessages: BaseMessage[]): Promise<this['ModelOutput']> {
-    // Use structured output
+    // Path A: Use native structured output (JSON schema/tool calling) if supported
     if (this.withStructuredOutput) {
       logger.debug(`[${this.modelName}] Preparing structured output call with schema:`, {
         schemaName: this.modelOutputToolName,
@@ -127,6 +144,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
         modelProvider: this.provider,
       });
 
+      // Bind the Zod schema to the LLM to enforce strict output formatting
       const structuredLlm = this.chatLLM.withStructuredOutput(this.modelOutputSchema, {
         includeRaw: true,
         name: this.modelOutputToolName,
@@ -136,7 +154,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       try {
         logger.debug(`[${this.modelName}] Invoking LLM with structured output...`);
         response = await structuredLlm.invoke(inputMessages, {
-          signal: this.context.controller.signal,
+          signal: this.context.controller.signal, // Propagate cancellation signal
           ...this.callOptions,
         });
 
@@ -157,6 +175,11 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
           throw error;
         }
 
+        if (isRateLimitError(error)) {
+          logger.error(`[${this.modelName}] Rate limit exceeded (429/quota).`);
+          throw new ChatModelRateLimitError(`API limit reached for ${this.modelName}. Please check your quota or wait before retrying.`, error);
+        }
+
         // Try to extract JSON from raw response manually if possible
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (
@@ -174,7 +197,7 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
       }
     }
 
-    // Fallback: Without structured output support, need to extract JSON from model output manually
+    // Path B: Fallback - Without structured output support, extract JSON from model output manually
     logger.debug(`[${this.modelName}] Using manual JSON extraction fallback method`);
     const convertedInputMessages = convertInputMessages(inputMessages, this.modelName);
 
@@ -191,18 +214,33 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
         }
       }
     } catch (error) {
+      // Capture and wrap rate limit errors for the UI
+      if (isRateLimitError(error)) {
+        logger.error(`[${this.modelName}] Rate limit exceeded in manual mode.`);
+        throw new ChatModelRateLimitError(`API limit reached for ${this.modelName} (Manual Mode).`, error);
+      }
       logger.error(`[${this.modelName}] LLM call failed in manual extraction mode:`, error);
       throw error;
     }
+
+    // If we reach here, the model output couldn't be parsed as JSON
     const errorMessage = `Failed to parse response from ${this.modelName}`;
     logger.error(errorMessage);
     throw new ResponseParseError('Could not parse response');
   }
 
-  // Execute the agent and return the result
+  /**
+   * Executes the specialized agent logic.
+   * Implementation must be provided by child classes.
+   */
   abstract execute(): Promise<AgentOutput<M>>;
 
-  // Helper method to validate metadata
+  /**
+   * Validates raw data against the agent's Zod schema.
+   * 
+   * @param data The raw object to validate.
+   * @returns Parsed data or undefined if validation fails.
+   */
   protected validateModelOutput(data: unknown): this['ModelOutput'] | undefined {
     if (!this.modelOutputSchema || !data) return undefined;
     try {
@@ -213,7 +251,13 @@ export abstract class BaseAgent<T extends z.ZodType, M = unknown> {
     }
   }
 
-  // Helper method to manually parse the response content
+  /**
+   * Attempts to find and parse a JSON block within a string of text.
+   * Useful for models that wrap their JSON output in markdown or conversational text.
+   * 
+   * @param content The raw string content from the LLM.
+   * @returns Parsed and validated object, or undefined if no valid JSON is found.
+   */
   protected manuallyParseResponse(content: string): this['ModelOutput'] | undefined {
     const cleanedContent = removeThinkTags(content);
     try {

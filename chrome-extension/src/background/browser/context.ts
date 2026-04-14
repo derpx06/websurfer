@@ -12,6 +12,13 @@ import { isUrlAllowed, safeGetTab } from './util';
 import { analytics } from '../services/analytics';
 
 const logger = createLogger('BrowserContext');
+/**
+ * BrowserContext is the primary interface between the Agent's execution logic 
+ * and the actual browser environment (tabs, pages, and Playwright instances).
+ * 
+ * It manages a set of "attached" pages, where each page is a wrapper around a 
+ * Chrome tab with an active Puppeteer/Playwright connection for interaction.
+ */
 export default class BrowserContext {
   private _config: BrowserContextConfig;
   private _currentTabId: number | null = null;
@@ -101,16 +108,22 @@ export default class BrowserContext {
     }
   }
 
+  /**
+   * Retrieves the current active Page instance.
+   * If no tab is currently tracked, it queries the active Chrome tab.
+   * If the tab is not yet attached to Puppeteer, it initiates the attachment.
+   * 
+   * @returns {Promise<Page>} The active Page wrapper.
+   */
   public async getCurrentPage(): Promise<Page> {
-    // 1. If _currentTabId not set, query the active tab and attach it
+    // Stage 1: If no tab ID is tracked, discover the active tab in the current window
     if (!this._currentTabId) {
       let activeTab: chrome.tabs.Tab;
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) {
-        // open a new tab with blank page
+        // Fallback: Open a new blank tab if no active tab is found
         const newTab = await chrome.tabs.create({ url: this._config.homePageUrl });
         if (!newTab.id) {
-          // this should rarely happen
           throw new Error('No tab ID available');
         }
         activeTab = newTab;
@@ -124,22 +137,21 @@ export default class BrowserContext {
       return page;
     }
 
-    // 2. If _currentTabId is set but not in attachedPages, attach the tab
+    // Stage 2: If we have a tab ID but no attached Page, verify tab existence and attach
     const existingPage = this._attachedPages.get(this._currentTabId);
     if (!existingPage) {
       const tab = await safeGetTab(this._currentTabId);
       if (!tab) {
         logger.warning(`Tab ${this._currentTabId} not found, resetting current tab id`);
         this._currentTabId = null;
-        return this.getCurrentPage(); // Recursively try to find another tab
+        return this.getCurrentPage(); // Retry discovery
       }
       const page = await this._getOrCreatePage(tab);
-      // set current tab id to null if the page is not attached successfully
       await this.attachPage(page);
       return page;
     }
 
-    // 3. Return existing page from attachedPages
+    // Stage 3: Return the already managed Page instance
     return existingPage;
   }
 
@@ -252,12 +264,19 @@ export default class BrowserContext {
     return page;
   }
 
+  /**
+   * Navigates the current tab to a specified URL.
+   * Includes security checks to verify the URL is allowed by current configuration.
+   * 
+   * @param url The destination address.
+   */
   public async navigateTo(url: string): Promise<void> {
+    // Security check against blacklist/whitelist
     if (!isUrlAllowed(url, this._config.allowedUrls, this._config.deniedUrls)) {
       throw new URLNotAllowedError(`URL: ${url} is not allowed`);
     }
 
-    // Track domain visit for analytics
+    // Track domain visit for analytics metrics
     void analytics.trackDomainVisit(url);
     this._invalidateTabInfoCache();
 
@@ -266,18 +285,19 @@ export default class BrowserContext {
       await this.openTab(url);
       return;
     }
-    // if page is attached, use puppeteer to navigate to the url
+
+    // Optimized path: If page is already attached to Puppeteer, use it for direct navigation
     if (page.attached) {
       await page.navigateTo(url);
       return;
     }
-    //  Use chrome.tabs.update only if the page is not attached
+
+    // Fallback path: Use standard Chrome API if no active attachment exists
     const tabId = page.tabId;
-    // Update tab and wait for events
     await chrome.tabs.update(tabId, { url, active: true });
     await this.waitForTabEvents(tabId);
 
-    // Reattach the page after navigation completes
+    // Reattach the page to regain control after navigation completes
     const tab = await safeGetTab(tabId);
     if (!tab) return;
     const updatedPage = await this._getOrCreatePage(tab, true);
@@ -368,17 +388,27 @@ export default class BrowserContext {
     return browserState;
   }
 
+  /**
+   * Captures the full state of the current page and browser session.
+   * This includes the interactive element tree, screenshots, and tab list.
+   * 
+   * @param useVision Whether to capture visual screenshots for multi-modal models.
+   * @param cacheClickableElementsHashes Whether to compute and store element hashes for loop detection.
+   * @returns {Promise<BrowserState>} The unified browser state description.
+   */
   public async getState(useVision = false, cacheClickableElementsHashes = false): Promise<BrowserState> {
     const currentPage = await this.getCurrentPage();
 
+    // Extract page-specific state (DOM, accessibility tree, etc.)
     const pageState = !currentPage
       ? build_initial_state()
       : await currentPage.getState(useVision, cacheClickableElementsHashes);
+
+    // Combine with global browser metadata
     const tabInfos = await this.getTabInfos();
     const browserState: BrowserState = {
       ...pageState,
       tabs: tabInfos,
-      // browser_errors: [],
     };
     return browserState;
   }

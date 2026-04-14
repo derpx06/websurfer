@@ -37,38 +37,24 @@ Also: injects `buildDomTree.js` into every page that loads (so the agent can sca
 
 - Reads your LLM settings (which AI model to use, API key)
 - Reads your general settings (max steps, vision on/off, etc.)
-- Builds the AI model connections
-- Creates the `Executor` and starts it
+- Uses **`StatusNotifier`** to broadcast progress to the Side Panel UI
+- Uses **`ExecutorFactory`** to initialize the correct agent context
+- Starts the `Executor` loop
 
 ---
 
 ### Layer 2 — The Agent Loop
 
 #### `chrome-extension/src/background/agent/executor.ts`
-**The main loop.** This runs the agent step by step.
-
-```
-Step 1: Should I run the Planner? (every 3rd step, by default)
-  → Yes: Planner looks at the page and makes a plan
-Step 2: Run the Navigator (always)
-  → Navigator looks at the page, decides action, does it
-Step 3: Did the task finish?
-  → No: go back to Step 1
-  → Yes: stop and report result
-```
-
-**Key settings it uses**:
-| Setting | Default | Meaning |
-|---------|---------|---------|
-| `maxSteps` | 100 | Maximum actions before giving up |
-| `planningInterval` | 3 | Run Planner every N navigator steps |
-| `maxFailures` | 3 | Stop after 3 errors in a row |
+**Key logic decoupled into services**:
+- **`CheckpointManager`**: Saves and restores task state (every 10 steps or on significant events).
+- **`LoopDetector`**: Uses Hashing Windows to detect if the agent is stuck in an infinite cycle.
+- **`ReplayManager`**: Manages the loading and execution of historical task logs.
 
 **State it tracks** (`AgentContext`):
 - `stopped` / `paused` — user stop/pause flags
 - `consecutiveFailures` — how many errors in a row
-- `actionResults` — what the last action returned
-- `stateMessageAdded` — whether the current DOM snapshot is in memory
+- `actionResults` — what the last action returned (stored in the Accumulator)
 - `history` — saved step records (for replay)
 
 ---
@@ -656,9 +642,14 @@ TOTAL PER STEP (with navigation): → 10–25 seconds
 chrome-extension/src/background/
 ├── index.ts                    ← Service worker boot, port listener, tab hooks
 ├── task/
-│   └── manager.ts              ← Task lifecycle: start, stop, pause, resume logic
+│   ├── manager.ts              ← Task broker: handles start/stop/pause commands
+│   ├── factory.ts              ← ExecutorFactory: creates the AgentContext and LLM bindings
+│   └── notifier.ts             ← StatusNotifier: central hub for UI event broadcasting
 ├── agent/
-│   ├── executor.ts             ← Planner+Navigator Orchestration loop, Rollbacks, Retry Guards
+│   ├── executor.ts             ← The main Agent Loop (Planner + Navigator orchestration)
+│   ├── checkpoint.ts           ← CheckpointManager: handles native state persistence
+│   ├── loopDetector.ts         ← Hashing-based cycle detection logic
+│   ├── replay.ts               ← ReplayManager: handles historical task re-injection
 │   ├── types.ts                ← AgentContext, SubTask schemas, AgentOutput generic signatures
 │   ├── history.ts              ← AgentStepRecord for serialization
 │   ├── agents/

@@ -13,6 +13,14 @@ import { TaskManager } from './task/manager';
 
 const logger = createLogger('background');
 
+/**
+ * Primary entry point for the WebSurfer Background Service Worker (MV3).
+ * 
+ * This module initializes the core singleton services:
+ * - BrowserContext: Manages CDP/Playwright attachments to tabs.
+ * - TaskManager: Orchestrates agent execution and UI communication.
+ * - Event Listeners: Handles Chrome runtime events (tab updates, port connections, debugging).
+ */
 const browserContext = new BrowserContext({});
 const SIDE_PANEL_URL = chrome.runtime.getURL('side-panel/index.html');
 

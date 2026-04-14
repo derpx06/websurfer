@@ -9,7 +9,18 @@ import { useChatSession } from './useChatSession';
 import { useAgentConnection } from './useAgentConnection';
 import { useAudioRecorder } from './useAudioRecorder';
 import { useFavoritePrompts } from './useFavoritePrompts';
+import { useTaskExecution } from './useTaskExecution';
 
+/**
+ * useSidePanelController is the main orchestrator for the Side Panel UI.
+ * It serves as a centralized hub that aggregates multiple specialized hooks (theme, config, session, connection, etc.)
+ * and exposes a unified API to the view components.
+ * 
+ * Responsibilities include:
+ * - Managing shared UI states (loading, replaying, history visibility).
+ * - Coordinating task execution and communication.
+ * - Handling session persistence and history navigation.
+ */
 export const useSidePanelController = () => {
   // UI State that didn't fit elsewhere
   const [inputEnabled, setInputEnabled] = useState(true);
@@ -81,183 +92,32 @@ export const useSidePanelController = () => {
     isReplayingRef.current = isReplaying;
   }, [isReplaying, isReplayingRef]);
 
-  const handleReplay = useCallback(
-    async (historySessionId: string): Promise<void> => {
-      try {
-        if (!replayEnabled) {
-          appendMessage({ actor: Actors.SYSTEM, content: t('chat_replay_disabled'), timestamp: Date.now() });
-          return;
-        }
+  const {
+    handleSendMessage,
+    handleStopTask,
+    handleReplay,
+    handleCommand
+  } = useTaskExecution({
+    portRef,
+    sessionIdRef,
+    replayEnabled,
+    isHistoricalSession,
+    isFollowUpMode,
+    appendMessage,
+    setMessages,
+    createNewSession,
+    setupConnection,
+    sendMessage,
+    setInputEnabled,
+    setShowStopButton,
+    setIsFollowUpMode,
+    setIsHistoricalSession,
+    setIsReplaying,
+  });
 
-        const historyData = await chatHistoryStore.loadAgentStepHistory(historySessionId);
-        if (!historyData) {
-          appendMessage({
-            actor: Actors.SYSTEM,
-            content: t('chat_replay_noHistory', historySessionId.substring(0, 20)),
-            timestamp: Date.now(),
-          });
-          return;
-        }
-
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        const tabId = tabs[0]?.id;
-        if (!tabId) throw new Error('No active tab found');
-
-        if (isHistoricalSession) setMessages([]);
-
-        const newTaskId = await createNewSession(`Replay of ${historySessionId.substring(0, 20)}...`);
-
-        setInputEnabled(false);
-        setShowStopButton(true);
-        setIsFollowUpMode(false);
-        setIsHistoricalSession(false);
-
-        const userMessage = {
-          actor: Actors.USER,
-          content: `/replay ${historySessionId}`,
-          timestamp: Date.now(),
-        };
-        appendMessage(userMessage, sessionIdRef.current);
-
-        if (!portRef.current) setupConnection();
-
-        sendMessage({
-          type: 'replay',
-          taskId: newTaskId,
-          tabId,
-          historySessionId,
-          task: historyData.task,
-        });
-
-        appendMessage({
-          actor: Actors.SYSTEM,
-          content: t('chat_replay_starting', historyData.task),
-          timestamp: Date.now(),
-        });
-        setIsReplaying(true);
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        appendMessage({
-          actor: Actors.SYSTEM,
-          content: t('chat_replay_failed', errorMessage),
-          timestamp: Date.now(),
-        });
-      }
-    },
-    [appendMessage, isHistoricalSession, replayEnabled, setupConnection, createNewSession, sessionIdRef, portRef, sendMessage, setMessages],
-  );
-
-  const handleCommand = useCallback(
-    async (command: string): Promise<boolean> => {
-      try {
-        if (!portRef.current) setupConnection();
-
-        if (command === '/state') {
-          sendMessage({ type: 'state' });
-          return true;
-        }
-
-        if (command === '/nohighlight') {
-          sendMessage({ type: 'nohighlight' });
-          return true;
-        }
-
-        if (command.startsWith('/replay ')) {
-          const parts = command.split(' ').filter(part => part.trim() !== '');
-          if (parts.length !== 2) {
-            appendMessage({ actor: Actors.SYSTEM, content: t('chat_replay_invalidArgs'), timestamp: Date.now() });
-            return true;
-          }
-          await handleReplay(parts[1]);
-          return true;
-        }
-
-        appendMessage({
-          actor: Actors.SYSTEM,
-          content: t('errors_cmd_unknown', command),
-          timestamp: Date.now(),
-        });
-        return true;
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        appendMessage({ actor: Actors.SYSTEM, content: errorMessage, timestamp: Date.now() });
-        return true;
-      }
-    },
-    [appendMessage, handleReplay, setupConnection, sendMessage],
-  );
-
-  const handleSendMessage = useCallback(
-    async (text: string, displayText?: string) => {
-      const trimmedText = text.trim();
-      if (!trimmedText) return;
-
-      if (trimmedText.startsWith('/')) {
-        const wasHandled = await handleCommand(trimmedText);
-        if (wasHandled) return;
-      }
-
-      if (isHistoricalSession) return;
-
-      try {
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
-        const tabId = tabs[0]?.id;
-        if (!tabId) throw new Error('No active tab found');
-
-        setInputEnabled(false);
-        setShowStopButton(true);
-
-        if (!isFollowUpMode) {
-          const titleText = displayText || text;
-          await createNewSession(titleText.substring(0, 50) + (titleText.length > 50 ? '...' : ''));
-        }
-
-        const userMessage = {
-          actor: Actors.USER,
-          content: displayText || text,
-          timestamp: Date.now(),
-        };
-
-        appendMessage(userMessage, sessionIdRef.current);
-
-        if (!portRef.current) setupConnection();
-
-        if (isFollowUpMode) {
-          await sendMessage({
-            type: 'follow_up_task',
-            task: text,
-            taskId: sessionIdRef.current,
-            tabId,
-          });
-        } else {
-          await sendMessage({
-            type: 'new_task',
-            task: text,
-            taskId: sessionIdRef.current,
-            tabId,
-          });
-        }
-      } catch (err) {
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        appendMessage({ actor: Actors.SYSTEM, content: errorMessage, timestamp: Date.now() });
-        setInputEnabled(true);
-        setShowStopButton(false);
-        stopConnection();
-      }
-    },
-    [appendMessage, handleCommand, isFollowUpMode, isHistoricalSession, sendMessage, setupConnection, stopConnection, createNewSession, sessionIdRef, portRef],
-  );
-
-  const handleStopTask = useCallback(async () => {
-    try {
-      sendMessage({ type: 'cancel_task' });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      appendMessage({ actor: Actors.SYSTEM, content: errorMessage, timestamp: Date.now() });
-    }
-    setInputEnabled(true);
-  }, [appendMessage, sendMessage]);
-
+  /**
+   * Resets the current view and background connection to start a fresh interaction.
+   */
   const handleNewChat = useCallback(() => {
     resetSession();
     setInputEnabled(true);

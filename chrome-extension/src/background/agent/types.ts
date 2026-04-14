@@ -7,6 +7,10 @@ import type { EventManager } from './event/manager';
 import { type Actors, type ExecutionState, AgentEvent } from './event/types';
 import { AgentStepHistory } from './history';
 
+/**
+ * Configuration options for the Agent's execution behavior.
+ * Controls the limits on steps, actions, retries, and vision usage.
+ */
 export interface AgentOptions {
   maxSteps: number;
   maxActionsPerStep: number;
@@ -41,6 +45,11 @@ export interface SubTask {
   rollbackUrl?: string; // Phase 4 Memory Rollback
 }
 
+/**
+ * AgentContext maintains the live, mutable state of a running agent task.
+ * It tracks the execution lifecycle (paused, stopped), step counts,
+ * failure rates, and the logical task stack for sub-goal management.
+ */
 export class AgentContext {
   controller: AbortController;
   taskId: string;
@@ -59,7 +68,7 @@ export class AgentContext {
   finalAnswer: string | null;
   scratchpad: string;
 
-  // Advanced Long-Running Task State
+  // Advanced Long-Running Task State (Recursive planning)
   taskStack: SubTask[];
   completedSubTasks: SubTask[];
   loopDetected: boolean;

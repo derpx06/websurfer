@@ -1,10 +1,11 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
-import { Actors, type Message } from '@extension/storage';
-import { EventType, type AgentEvent, ExecutionState } from '../types/event';
+import { useCallback, useRef } from 'react';
+import { Actors } from '@extension/storage';
+import { EventType } from '../types/event';
 import { t } from '@extension/i18n';
+import { useAgentEventHandler } from './useAgentEventHandler';
 
 interface UseAgentConnectionProps {
-    appendMessage: (message: Message) => void;
+    appendMessage: (message: any) => void;
     setIsFollowUpMode: (mode: boolean) => void;
     setInputEnabled: (enabled: boolean) => void;
     setShowStopButton: (show: boolean) => void;
@@ -14,6 +15,15 @@ interface UseAgentConnectionProps {
     setInputTextRef: React.MutableRefObject<((text: string) => void) | null>;
 }
 
+/**
+ * useAgentConnection manages a robust, long-lived communication channel (Chrome Port)
+ * between the Side Panel and the Background Service Worker.
+ * 
+ * It handles:
+ * - Establishing and tearing down connections.
+ * - Heartbeat/keep-alive logic to prevent Service Worker hibernation.
+ * - Routing specific message types (execution events, errors, speech-to-text) to their handlers.
+ */
 export const useAgentConnection = ({
     appendMessage,
     setIsFollowUpMode,
@@ -28,6 +38,16 @@ export const useAgentConnection = ({
     const heartbeatIntervalRef = useRef<number | null>(null);
     const isReplayingRef = useRef<boolean>(false);
 
+    const { handleTaskState } = useAgentEventHandler({
+        appendMessage,
+        setIsFollowUpMode,
+        setInputEnabled,
+        setShowStopButton,
+        setIsReplaying,
+        setIsHistoricalSession,
+        isReplayingRef
+    });
+
     const stopConnection = useCallback(() => {
         if (heartbeatIntervalRef.current) {
             clearInterval(heartbeatIntervalRef.current);
@@ -38,52 +58,6 @@ export const useAgentConnection = ({
             portRef.current = null;
         }
     }, []);
-
-    const handleTaskState = useCallback((event: AgentEvent) => {
-        const { actor, state, timestamp, data } = event;
-        const content = data?.details;
-        const progressMessage = 'Showing progress...';
-        let skip = true;
-        let displayProgress = false;
-
-        switch (actor) {
-            case Actors.SYSTEM:
-                if (state === ExecutionState.TASK_START) setIsHistoricalSession(false);
-                else if (state === ExecutionState.TASK_OK || state === ExecutionState.TASK_FAIL) {
-                    setIsFollowUpMode(true);
-                    setInputEnabled(true);
-                    setShowStopButton(false);
-                    setIsReplaying(false);
-                    skip = false;
-                } else if (state === ExecutionState.TASK_CANCEL) {
-                    setIsFollowUpMode(false);
-                    setInputEnabled(true);
-                    setShowStopButton(false);
-                    setIsReplaying(false);
-                    skip = false;
-                }
-                break;
-            case Actors.PLANNER:
-                if (state === ExecutionState.STEP_START) displayProgress = true;
-                else if (state === ExecutionState.STEP_OK || state === ExecutionState.STEP_FAIL) skip = false;
-                break;
-            case Actors.NAVIGATOR:
-                if (state === ExecutionState.STEP_START) displayProgress = true;
-                else if (state === ExecutionState.STEP_OK) displayProgress = false;
-                else if (state === ExecutionState.STEP_FAIL) { skip = false; displayProgress = false; }
-                else if (state === ExecutionState.ACT_START && content !== 'cache_content') skip = false;
-                else if (state === ExecutionState.ACT_OK) skip = !isReplayingRef.current;
-                else if (state === ExecutionState.ACT_FAIL) skip = false;
-                break;
-            case Actors.VALIDATOR:
-                if (state === ExecutionState.STEP_START) displayProgress = true;
-                else if (state === ExecutionState.STEP_OK || state === ExecutionState.STEP_FAIL) skip = false;
-                break;
-        }
-
-        if (!skip) appendMessage({ actor, content: content || '', timestamp });
-        if (displayProgress) appendMessage({ actor, content: progressMessage, timestamp });
-    }, [appendMessage, setIsFollowUpMode, setInputEnabled, setShowStopButton, setIsReplaying, setIsHistoricalSession]);
 
     const setupConnection = useCallback(() => {
         if (portRef.current) return;
@@ -104,20 +78,24 @@ export const useAgentConnection = ({
                 }
             });
 
+            // Recovery: Handle unexpected connection termination by cleaning up the interval
             portRef.current.onDisconnect.addListener(() => {
                 portRef.current = null;
                 stopConnection();
+                // Reset UI to allow user to retry
                 setInputEnabled(true);
                 setShowStopButton(false);
             });
 
+            // Keep-Alive Loop: Service Workers in MV3 are ephemeral. 
+            // Injects a periodic 'heartbeat' message to ensure the worker stays active during long tasks.
             if (heartbeatIntervalRef.current) clearInterval(heartbeatIntervalRef.current);
             heartbeatIntervalRef.current = window.setInterval(() => {
                 if (portRef.current?.name === 'side-panel-connection') {
                     try { portRef.current.postMessage({ type: 'heartbeat' }); }
                     catch (e) { stopConnection(); }
                 } else stopConnection();
-            }, 25000);
+            }, 25000); // 25s window (Chrome hibernation threshold is ~30s)
         } catch (error) {
             appendMessage({ actor: Actors.SYSTEM, content: t('errors_conn_serviceWorker'), timestamp: Date.now() });
             portRef.current = null;

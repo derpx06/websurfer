@@ -1,0 +1,92 @@
+import { useCallback } from 'react';
+import { Actors, type Message } from '@extension/storage';
+import { ExecutionState, type AgentEvent } from '../types/event';
+
+interface UseAgentEventHandlerProps {
+    appendMessage: (message: Message) => void;
+    setIsFollowUpMode: (mode: boolean) => void;
+    setInputEnabled: (enabled: boolean) => void;
+    setShowStopButton: (show: boolean) => void;
+    setIsReplaying: (replaying: boolean) => void;
+    setIsHistoricalSession: (historical: boolean) => void;
+    isReplayingRef: React.MutableRefObject<boolean>;
+}
+
+/**
+ * Hook responsible for translating raw agent execution events into UI state changes.
+ * This acts as a reducer-like layer that decides which events to display as messages,
+ * when to enable/disable input, and how to update the task lifecycle state.
+ * 
+ * @param props Configuration and state setters from the connection hook.
+ * @returns Object containing the handleTaskState event processor.
+ */
+export const useAgentEventHandler = ({
+    appendMessage,
+    setIsFollowUpMode,
+    setInputEnabled,
+    setShowStopButton,
+    setIsReplaying,
+    setIsHistoricalSession,
+    isReplayingRef,
+}: UseAgentEventHandlerProps) => {
+
+    /**
+     * Processes an incoming AgentEvent and updates the relevant UI states.
+     * It maps execution states (START, OK, FAIL, CANCEL) to visual feedback and interaction rules.
+     * 
+     * @param event The agent execution event received from the background engine.
+     */
+    const handleTaskState = useCallback((event: AgentEvent) => {
+        // ... implementation
+        const { actor, state, timestamp, data } = event;
+        let content = data?.details;
+        const progressMessage = 'Showing progress...';
+        let skip = true;
+        let displayProgress = false;
+
+        // Enhance rate limit message clarity
+        if (content && (content.includes('429') || content.toLowerCase().includes('rate limit') || content.toLowerCase().includes('quota'))) {
+            content = `⚠️ API Limit Exceeded: ${content}`;
+        }
+
+        switch (actor) {
+            case Actors.SYSTEM:
+                if (state === ExecutionState.TASK_START) setIsHistoricalSession(false);
+                else if (state === ExecutionState.TASK_OK || state === ExecutionState.TASK_FAIL) {
+                    setIsFollowUpMode(true);
+                    setInputEnabled(true);
+                    setShowStopButton(false);
+                    setIsReplaying(false);
+                    skip = false;
+                } else if (state === ExecutionState.TASK_CANCEL) {
+                    setIsFollowUpMode(false);
+                    setInputEnabled(true);
+                    setShowStopButton(false);
+                    setIsReplaying(false);
+                    skip = false;
+                }
+                break;
+            case Actors.PLANNER:
+                if (state === ExecutionState.STEP_START) displayProgress = true;
+                else if (state === ExecutionState.STEP_OK || state === ExecutionState.STEP_FAIL) skip = false;
+                break;
+            case Actors.NAVIGATOR:
+                if (state === ExecutionState.STEP_START) displayProgress = true;
+                else if (state === ExecutionState.STEP_OK) displayProgress = false;
+                else if (state === ExecutionState.STEP_FAIL) { skip = false; displayProgress = false; }
+                else if (state === ExecutionState.ACT_START && content !== 'cache_content') skip = false;
+                else if (state === ExecutionState.ACT_OK) skip = !isReplayingRef.current;
+                else if (state === ExecutionState.ACT_FAIL) skip = false;
+                break;
+            case Actors.VALIDATOR:
+                if (state === ExecutionState.STEP_START) displayProgress = true;
+                else if (state === ExecutionState.STEP_OK || state === ExecutionState.STEP_FAIL) skip = false;
+                break;
+        }
+
+        if (!skip) appendMessage({ actor, content: content || '', timestamp });
+        if (displayProgress) appendMessage({ actor, content: progressMessage, timestamp });
+    }, [appendMessage, setIsFollowUpMode, setInputEnabled, setShowStopButton, setIsReplaying, setIsHistoricalSession, isReplayingRef]);
+
+    return { handleTaskState };
+};

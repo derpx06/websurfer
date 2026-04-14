@@ -30,6 +30,9 @@ import { analytics } from '../services/analytics';
 import { PlanningStrategy } from './strategies/planner';
 import { NavigationStrategy } from './strategies/navigator';
 import { safeGetTabUrl } from '../browser/util';
+import { CheckpointManager } from './checkpoint';
+import { LoopDetector } from './loopDetector';
+import { ReplayManager } from './replay';
 
 const logger = createLogger('Executor');
 
@@ -40,6 +43,17 @@ export interface ExecutorExtraArgs {
   generalSettings?: GeneralSettingsConfig;
 }
 
+/**
+ * The Executor class is the central orchestration engine of the WebSurfer agent.
+ * It manages the lifecycle of a task by coordinating between a Planner agent (high-level strategy)
+ * and a Navigator agent (low-level browser actions).
+ * 
+ * The execution loop generally follows four phases per step:
+ * 1. Planning: Determining the next optimal sub-task.
+ * 2. Execution: Translating sub-tasks into concrete browser interactions.
+ * 3. Monitoring: Detecting loops and verifying progress.
+ * 4. Checkpointing: Persisting state for task resumption.
+ */
 export class Executor {
   private readonly navigator: NavigatorAgent;
   private readonly planner: PlannerAgent;
@@ -49,7 +63,19 @@ export class Executor {
   private readonly generalSettings: GeneralSettingsConfig | undefined;
   private readonly planningStrategy: PlanningStrategy;
   private readonly navigationStrategy: NavigationStrategy;
+  private readonly checkpointManager: CheckpointManager;
+  private readonly replayManager: ReplayManager;
   private tasks: string[] = [];
+
+  /**
+   * Initializes a new Executor instance with the necessary agents and strategies.
+   * 
+   * @param task The initial high-level user request.
+   * @param taskId Unique identifier for the current session.
+   * @param browserContext The Playwright-based browser interface.
+   * @param navigatorLLM The chat model used for navigation decisions.
+   * @param extraArgs Optional configuration for specialized LLMs and settings.
+   */
   constructor(
     task: string,
     taskId: string,
@@ -59,8 +85,10 @@ export class Executor {
   ) {
     const messageManager = new MessageManager();
 
+    // Allow specialized LLMs for different roles, falling back to the primary navigator LLM
     const plannerLLM = extraArgs?.plannerLLM ?? navigatorLLM;
     const extractorLLM = extraArgs?.extractorLLM ?? navigatorLLM;
+
     const eventManager = new EventManager();
     const context = new AgentContext(
       taskId,
@@ -72,13 +100,16 @@ export class Executor {
 
     this.generalSettings = extraArgs?.generalSettings;
     this.tasks.push(task);
+
+    // Prompts define the behavior and constraints for each agent type
     this.navigatorPrompt = new NavigatorPrompt(context.options.maxActionsPerStep);
     this.plannerPrompt = new PlannerPrompt();
 
+    // Registry manages the set of available tool-calling actions
     const actionBuilder = new ActionBuilder(context, extractorLLM);
     const navigatorActionRegistry = new NavigatorActionRegistry(actionBuilder.buildDefaultActions());
 
-    // Initialize agents with their respective prompts
+    // Initialize specialized agents
     this.navigator = new NavigatorAgent(navigatorActionRegistry, {
       chatLLM: navigatorLLM,
       context: context,
@@ -91,28 +122,47 @@ export class Executor {
       prompt: this.plannerPrompt,
     });
 
+    // Strategy wrappers encapsulate the execution logic for each agent role
     this.planningStrategy = new PlanningStrategy(this.planner);
     this.navigationStrategy = new NavigationStrategy(this.navigator);
 
+    // Auxiliary managers handle persistence, monitoring, and debugging
+    this.checkpointManager = new CheckpointManager(context, this.generalSettings);
+    this.replayManager = new ReplayManager(context, this.navigator);
+
     this.context = context;
-    // Initialize message history
+    // Initialize message history with the base system prompt and user task
     this.context.messageManager.initTaskMessages(this.navigatorPrompt.getSystemMessage(), task);
   }
 
+  /**
+   * Subscribes a listener to execution-related events (e.g., TASK_START, STEP_OK).
+   * 
+   * @param callback Function to be called when an execution event occurs.
+   */
   subscribeExecutionEvents(callback: EventCallback): void {
     this.context.eventManager.subscribe(EventType.EXECUTION, callback);
   }
 
+  /**
+   * Unsubscribes all listeners from execution events.
+   */
   clearExecutionEvents(): void {
-    // Clear all execution event listeners
     this.context.eventManager.clearSubscribers(EventType.EXECUTION);
   }
 
+  /**
+   * Appends a new sub-task or follow-up instruction to the current execution.
+   * This is used when a user provides refinement during a live session.
+   * 
+   * @param task The follow-up task description.
+   */
   addFollowUpTask(task: string): void {
     this.tasks.push(task);
     this.context.messageManager.addNewTask(task);
 
-    // need to reset previous action results that are not included in memory
+    // Filter out results that shouldn't be kept in memory to maintain context window efficiency.
+    // Only results tagged for memory inclusion are retained.
     this.context.actionResults = this.context.actionResults.filter(result => result.includeInMemory);
   }
 
@@ -120,52 +170,40 @@ export class Executor {
    * Restores critical context state from a checkpoint
    */
   public restoreContext(historyStr: string) {
-    try {
-      const parsed = JSON.parse(historyStr);
-      if (parsed.context) {
-        this.context.taskStack = parsed.context.taskStack || [];
-        this.context.completedSubTasks = parsed.context.completedSubTasks || [];
-        this.context.results = parsed.context.results || {};
-        this.context.scratchpad = parsed.context.scratchpad || '(empty)';
-
-        // Push a system message to inform the agent that it resumed from a checkpoint
-        this.context.messageManager.addNewTask(`[SYSTEM RESUME]: Task was restarted due to interruption. Your scratchpad, results, and sub-task stack have been restored. Resume from where you left off.`);
-        logger.info(`Successfully restored checkpointed context.`);
-      }
-    } catch (e) {
-      logger.error(`Failed to parse checkpoint: ${e}`);
-    }
+    this.checkpointManager.restoreContext(historyStr);
   }
 
   /**
-   * Execute the task
-   *
-   * @returns {Promise<void>}
+   * Starts the main execution loop for the current task.
+   * This method runs until the task is completed, failed, or manually stopped.
+   * It orchestrates the flow between planning, navigation, monitoring, and checkpointing.
    */
   async execute(): Promise<void> {
     logger.info(`🚀 Executing task: ${this.tasks[this.tasks.length - 1]}`);
-    // reset the step counter
+
+    // Initialize step counter and fetch limits from context options
     const context = this.context;
     context.nSteps = 0;
     const allowedMaxSteps = this.context.options.maxSteps;
 
     try {
+      // Signal task start to the UI and analytics
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
-
-      // Track task start
       void analytics.trackTaskStart(this.context.taskId);
 
       let step = 0;
       let latestPlanOutput: AgentOutput<PlannerOutput> | null = null;
       let navigatorDone = false;
 
+      // Main Iterative Loop
       for (step = 0; step < allowedMaxSteps; step++) {
         context.stepInfo = {
           stepNumber: context.nSteps,
           maxSteps: context.options.maxSteps,
         };
 
-        // Phase 2: Bulletproof Tab Handling
+        // --- Phase 1: Tab Stability Check ---
+        // Ensure the browser tab is stable and has a valid URL before proceeding
         const tabId = this.context.browserContext.currentTabId;
         if (tabId) {
           let stableUrl = null;
@@ -175,16 +213,17 @@ export class Executor {
             logger.info(`Tab ${tabId} URL is undefined (navigating?), retrying in 500ms... (${retry + 1}/5)`);
             await new Promise(resolve => setTimeout(resolve, 500));
           }
-          // If after 5 retries it's still null, it might be a terminal error for this tab, 
-          // but we continue to let existing error handling catch it later if it's truly dead.
         }
 
         logger.info(`🔄 Step ${step + 1} / ${allowedMaxSteps}`);
+
+        // Stop check: Handles manual stops, pauses, or failure limits
         if (await this.shouldStop()) {
           break;
         }
 
-        // Run planner periodically for guidance, or if forced by loop detection or navigator completion
+        // --- Phase 2: Planning & Strategy ---
+        // The Planner is invoked periodically or when a sub-task is marked done
         if (this.planningStrategy && (context.nSteps % context.options.planningInterval === 0 || navigatorDone || context.loopDetected)) {
           navigatorDone = false;
 
@@ -194,7 +233,7 @@ export class Executor {
             wasLoopDetected = true;
           }
 
-          // Add current browser state to memory if needed
+          // Add current browser state to memory if needed to provide better context to the model
           if (this.tasks.length > 1 || context.nSteps > 0) {
             await this.navigator.addStateMessageToMemory();
             context.stateMessageAdded = true;
@@ -205,23 +244,25 @@ export class Executor {
             context.loopDetected = false;
           }
 
+          // Run the planning strategy to get the next optimal sub-task
           latestPlanOutput = await this.planningStrategy.execute(context);
 
-          // Check if task is complete after planner run
+          // If the Planner decides the task is finished, exit the loop
           if (latestPlanOutput?.result?.done) {
             break;
           }
 
-          // If planner returned an error, stop execution
+          // Stop if the planner returns a terminal error
           if (latestPlanOutput?.error) {
             throw new Error(latestPlanOutput.error);
           }
         }
 
-        // Phase 4: State Caching for the active Sub-Task
+        // --- Phase 3: Checkpoint Preparation ---
+        // Update rollback URLs for sub-tasks to enable state recovery on failure
         const pendingTasks = context.taskStack.filter(t => t.status !== 'done');
         if (pendingTasks.length > 0) {
-          const activeTask = pendingTasks[pendingTasks.length - 1]; // active subtask is the last element
+          const activeTask = pendingTasks[pendingTasks.length - 1];
           if (!activeTask.rollbackUrl) {
             const browserState = await context.browserContext.getCachedState();
             if (browserState && browserState.url) {
@@ -231,11 +272,13 @@ export class Executor {
           }
         }
 
-        // Execute navigator via navigation strategy
+        // --- Phase 4: Execution (Navigation) ---
+        // The Navigator translates plans into actual browser actions
         let navOutput;
         try {
           navOutput = await this.navigationStrategy.execute(context);
         } catch (error) {
+          // Special handling for consecutive failures - attempt to rollback to previous sub-task state
           if (error instanceof MaxFailuresReachedError) {
             const currentPending = context.taskStack.filter(t => t.status !== 'done');
             if (currentPending.length > 0 && currentPending[currentPending.length - 1].rollbackUrl) {
@@ -243,70 +286,32 @@ export class Executor {
               logger.warning(`Max failures reached! Initiating state rollback to ${activeTask.rollbackUrl!}`);
               await context.browserContext.navigateTo(activeTask.rollbackUrl!);
 
-              // Reset failures and mark sub-task as failed for planner orchestration
+              // Reset failure count and force a planning run next step
               context.consecutiveFailures = 0;
               activeTask.status = 'failed';
-              navigatorDone = true; // force planner loop next step
+              navigatorDone = true;
             } else {
-              throw error; // Let outer limit handle if no rollback is available
+              throw error; // No rollback possible, escalate error
             }
           } else {
             throw error;
           }
         }
+
+        // Check if the current navigation sub-task is marked as done
         navigatorDone = navOutput?.result?.done ?? navigatorDone;
 
-        // Loop detection heuristic
-        const recentHistory = context.history.history.slice(-6);
-        if (recentHistory.length === 6) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const recentActions = recentHistory.map((h: any) => {
-            const url = h?.state?.url || 'unknown';
-            const actionPayload = h?.modelOutput?.action?.[0];
-            let actionStr = 'unknown';
-            if (actionPayload) {
-              const actionName = Object.keys(actionPayload)[0];
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const innerPayload = (actionPayload as any)[actionName];
-              actionStr = `${actionName}:${innerPayload?.index ?? innerPayload?.text ?? ''}`;
-            }
-            return `${url}|${actionStr}`;
-          });
-
-          const uniqueActions = new Set(recentActions);
-          // If we have very few unique actions over the last 6 steps, and we haven't already fired a loop warning recently:
-          if (uniqueActions.size <= 2) {
-            context.loopDetected = true;
-            logger.warning('Loop detected: Actions are repeating! Forcing planner re-evaluation.');
-            navigatorDone = true; // force planner loop next step
-
-            // To prevent getting stuck in a new meta-loop, inject an extra artificial pause
-            await new Promise(r => setTimeout(r, 2000));
-          }
+        // --- Phase 5: Monitoring & Persistence ---
+        // Check for repetitive loops and save progress
+        if (LoopDetector.detect(context)) {
+          context.loopDetected = true;
+          navigatorDone = true;
+          await new Promise(r => setTimeout(r, 2000));
         }
 
-        // Checkpoint the task every 10 steps
-        // The checkpoint is just AgentStepHistory serialized, plus general AgentContext
-        if (step > 0 && step % 10 === 0 && this.generalSettings?.replayHistoricalTasks) {
-          try {
-            const historyString = JSON.stringify({
-              history: this.context.history,
-              context: {
-                taskStack: this.context.taskStack,
-                completedSubTasks: this.context.completedSubTasks,
-                results: this.context.results,
-                scratchpad: this.context.scratchpad,
-                step: context.nSteps
-              }
-            });
-            await chatHistoryStore.storeAgentStepHistory(this.context.taskId, this.tasks[0], historyString);
-            logger.info(`Checkpoint saved securely at step ${step}.`);
-          } catch (e) {
-            logger.error(`Failed to save checkpoint: ${e}`);
-          }
-        }
+        // Periodic checkpoint to ensure task can be resumed after browser restart or crashes
+        await this.checkpointManager.saveCheckpoint(step, this.tasks[0]);
 
-        // If navigator indicates completion, the next periodic planner run will validate it
         if (navigatorDone) {
           logger.info('🔄 Navigator indicates completion - will be validated by next planner run');
         }
@@ -370,12 +375,20 @@ export class Executor {
 
 
 
+  /**
+   * Internal guard to determine if the execution loop should terminate.
+   * It checks for manual stops, handles pause states, and monitors consecutive failure limits.
+   * 
+   * @returns {Promise<boolean>} True if the loop should break.
+   */
   private async shouldStop(): Promise<boolean> {
+    // Immediate break if the stop signal was received
     if (this.context.stopped) {
       logger.info('Agent stopped');
       return true;
     }
 
+    // Spin-wait logic for handle pause state
     while (this.context.paused) {
       await new Promise(resolve => setTimeout(resolve, 200));
       if (this.context.stopped) {
@@ -383,6 +396,7 @@ export class Executor {
       }
     }
 
+    // Terminate if the agent is stuck in a failure-retry loop exceeding the maximum allowed limit
     if (this.context.consecutiveFailures >= this.context.options.maxFailures) {
       logger.error(`Stopping due to ${this.context.options.maxFailures} consecutive failures`);
       return true;
@@ -391,29 +405,47 @@ export class Executor {
     return false;
   }
 
+  /**
+   * Signals the executor to stop further actions and release resources.
+   */
   async cancel(): Promise<void> {
     this.context.stop();
   }
 
+  /**
+   * Resumes the executor from a paused state.
+   */
   async resume(): Promise<void> {
     this.context.resume();
   }
 
+  /**
+   * Resumes execution after incorporating direct human feedback.
+   * Direct input is useful when the agent is stuck or lacks specific credentials.
+   * 
+   * @param input The text provided by the user.
+   */
   async resumeWithInput(input: string): Promise<void> {
     const logger = createLogger('Executor:resumeWithInput');
     logger.info(`Injecting human input: ${input}`);
 
-    // Inject human response directly into the scratchpad for context
+    // Inject human response directly into the scratchpad so subsequent LLM calls see it.
     this.context.scratchpad += `\n[Human Input at Step ${this.context.nSteps}]: ${input}`;
 
-    // Unpause to allow the executor loop to continue
+    // Trigger the resume signal.
     await this.resume();
   }
 
+  /**
+   * Temporarily suspends the execution loop.
+   */
   async pause(): Promise<void> {
     this.context.pause();
   }
 
+  /**
+   * Cleans up internal browser resources (Playwright pages/contexts).
+   */
   async cleanup(): Promise<void> {
     try {
       await this.context.browserContext.cleanup();
@@ -441,62 +473,6 @@ export class Executor {
     skipFailures = true,
     delayBetweenActions = 2.0,
   ): Promise<ActionResult[]> {
-    const results: ActionResult[] = [];
-    const replayLogger = createLogger('Executor:replayHistory');
-
-    logger.info('replay task', this.tasks[0]);
-
-    try {
-      const historyFromStorage = await chatHistoryStore.loadAgentStepHistory(sessionId);
-      if (!historyFromStorage) {
-        throw new Error(t('exec_replay_historyNotFound'));
-      }
-
-      const history = JSON.parse(historyFromStorage.history) as AgentStepHistory;
-      if (history.history.length === 0) {
-        throw new Error(t('exec_replay_historyEmpty'));
-      }
-      logger.debug(`🔄 Replaying history: ${JSON.stringify(history, null, 2)}`);
-      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
-
-      for (let i = 0; i < history.history.length; i++) {
-        const historyItem = history.history[i];
-
-        // Check if execution should stop
-        if (this.context.stopped) {
-          replayLogger.info('Replay stopped by user');
-          break;
-        }
-
-        // Execute the history step with enhanced method that handles all the logic
-        const stepResults = await this.navigator.executeHistoryStep(
-          historyItem,
-          i,
-          history.history.length,
-          maxRetries,
-          delayBetweenActions * 1000,
-          skipFailures,
-        );
-
-        results.push(...stepResults);
-
-        // If stopped during execution, break the loop
-        if (this.context.stopped) {
-          break;
-        }
-      }
-
-      if (this.context.stopped) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_replay_cancel'));
-      } else {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, t('exec_replay_ok'));
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      replayLogger.error(`Replay failed: ${errorMessage}`);
-      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_replay_fail', [errorMessage]));
-    }
-
-    return results;
+    return this.replayManager.replayHistory(sessionId, this.tasks[0], maxRetries, skipFailures, delayBetweenActions);
   }
 }
