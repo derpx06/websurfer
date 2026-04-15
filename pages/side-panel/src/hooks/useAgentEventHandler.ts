@@ -9,6 +9,7 @@ interface UseAgentEventHandlerProps {
     setShowStopButton: (show: boolean) => void;
     setIsReplaying: (replaying: boolean) => void;
     setIsHistoricalSession: (historical: boolean) => void;
+    setLastScreenshot: (screenshot: string | null) => void;
     isReplayingRef: React.MutableRefObject<boolean>;
 }
 
@@ -27,6 +28,7 @@ export const useAgentEventHandler = ({
     setShowStopButton,
     setIsReplaying,
     setIsHistoricalSession,
+    setLastScreenshot,
     isReplayingRef,
 }: UseAgentEventHandlerProps) => {
 
@@ -57,12 +59,14 @@ export const useAgentEventHandler = ({
                     setInputEnabled(true);
                     setShowStopButton(false);
                     setIsReplaying(false);
+                    setLastScreenshot(null); // Clear sight on task completion
                     skip = false;
                 } else if (state === ExecutionState.TASK_CANCEL) {
                     setIsFollowUpMode(false);
                     setInputEnabled(true);
                     setShowStopButton(false);
                     setIsReplaying(false);
+                    setLastScreenshot(null); // Clear sight on task cancel
                     skip = false;
                 }
                 break;
@@ -71,6 +75,10 @@ export const useAgentEventHandler = ({
                 else if (state === ExecutionState.STEP_OK || state === ExecutionState.STEP_FAIL) skip = false;
                 break;
             case Actors.NAVIGATOR:
+                if (state === ExecutionState.SIGHT_UPDATE) {
+                    if (event.screenshot) setLastScreenshot(event.screenshot);
+                    return; // Don't append to message list
+                }
                 if (state === ExecutionState.STEP_START) displayProgress = true;
                 else if (state === ExecutionState.STEP_OK) displayProgress = false;
                 else if (state === ExecutionState.STEP_FAIL) { skip = false; displayProgress = false; }
@@ -86,7 +94,7 @@ export const useAgentEventHandler = ({
 
         if (!skip) appendMessage({ actor, content: content || '', timestamp });
         if (displayProgress) appendMessage({ actor, content: progressMessage, timestamp });
-    }, [appendMessage, setIsFollowUpMode, setInputEnabled, setShowStopButton, setIsReplaying, setIsHistoricalSession, isReplayingRef]);
+    }, [appendMessage, setIsFollowUpMode, setInputEnabled, setShowStopButton, setIsReplaying, setIsHistoricalSession, setLastScreenshot, isReplayingRef]);
 
     return { handleTaskState };
 };

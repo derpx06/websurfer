@@ -4,7 +4,7 @@ import { DEFAULT_INCLUDE_ATTRIBUTES } from '../browser/dom/views';
 import type { DOMHistoryElement } from '../browser/dom/history/view';
 import type MessageManager from './messages/service';
 import type { EventManager } from './event/manager';
-import { type Actors, type ExecutionState, AgentEvent } from './event/types';
+import { type Actors, type ExecutionState, AgentEvent, EventType } from './event/types';
 import { AgentStepHistory } from './history';
 
 /**
@@ -106,13 +106,20 @@ export class AgentContext {
     this.results = {};
   }
 
-  async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {
-    const event = new AgentEvent(actor, state, {
-      taskId: this.taskId,
-      step: this.nSteps,
-      maxSteps: this.options.maxSteps,
-      details: eventDetails,
-    });
+  async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string, screenshot?: string) {
+    const event = new AgentEvent(
+      actor,
+      state,
+      {
+        taskId: this.taskId,
+        step: this.nSteps,
+        maxSteps: this.options.maxSteps,
+        details: eventDetails,
+      },
+      Date.now(),
+      EventType.EXECUTION,
+      screenshot,
+    );
     await this.eventManager.emit(event);
   }
 

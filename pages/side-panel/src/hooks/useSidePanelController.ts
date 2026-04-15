@@ -28,6 +28,7 @@ export const useSidePanelController = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [lastScreenshot, setLastScreenshot] = useState<string | null>(null);
 
   // Refs for specific UI components
   const setInputTextRef = useRef<((text: string) => void) | null>(null);
@@ -77,6 +78,7 @@ export const useSidePanelController = () => {
     setIsReplaying,
     setIsHistoricalSession,
     setIsProcessingSpeech,
+    setLastScreenshot,
     setInputTextRef,
   });
 
@@ -181,6 +183,7 @@ export const useSidePanelController = () => {
     hasConfiguredModels,
     isRecording,
     isProcessingSpeech,
+    lastScreenshot,
     replayEnabled,
     messagesEndRef,
     setInputTextRef,

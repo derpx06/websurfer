@@ -12,6 +12,7 @@ interface UseAgentConnectionProps {
     setIsReplaying: (replaying: boolean) => void;
     setIsHistoricalSession: (historical: boolean) => void;
     setIsProcessingSpeech: (processing: boolean) => void;
+    setLastScreenshot: (screenshot: string | null) => void;
     setInputTextRef: React.MutableRefObject<((text: string) => void) | null>;
 }
 
@@ -32,6 +33,7 @@ export const useAgentConnection = ({
     setIsReplaying,
     setIsHistoricalSession,
     setIsProcessingSpeech,
+    setLastScreenshot,
     setInputTextRef,
 }: UseAgentConnectionProps) => {
     const portRef = useRef<chrome.runtime.Port | null>(null);
@@ -45,6 +47,7 @@ export const useAgentConnection = ({
         setShowStopButton,
         setIsReplaying,
         setIsHistoricalSession,
+        setLastScreenshot,
         isReplayingRef
     });
 

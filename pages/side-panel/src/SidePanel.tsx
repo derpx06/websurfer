@@ -4,6 +4,7 @@ import ChatInput from './components/ChatInput';
 import EmptyChat from './components/EmptyChat';
 import MessageList from './components/MessageList';
 import SidePanelHeader from './components/SidePanelHeader';
+import { AgentSight } from './components/AgentSight';
 import WelcomeScreen from './components/WelcomeScreen';
 import { useSidePanelController } from './hooks/useSidePanelController';
 import './SidePanel.css';
@@ -28,6 +29,7 @@ const SidePanel = () => {
     hasConfiguredModels,
     isRecording,
     isProcessingSpeech,
+    lastScreenshot,
     replayEnabled,
     messagesEndRef,
     setInputTextRef,
@@ -82,6 +84,9 @@ const SidePanel = () => {
 
             {hasConfiguredModels === true && (
               <div className="flex flex-1 flex-col overflow-hidden relative">
+                {/* Agent Sight: Live Preview Window */}
+                <AgentSight screenshot={lastScreenshot} isActive={showStopButton} />
+
                 {messages.length === 0 && (
                   <EmptyChat
                     isDarkMode={isDarkMode}

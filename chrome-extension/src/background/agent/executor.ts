@@ -309,8 +309,11 @@ export class Executor {
           await new Promise(r => setTimeout(r, 2000));
         }
 
-        // Periodic checkpoint to ensure task can be resumed after browser restart or crashes
+        // Periodic checkpoint 
         await this.checkpointManager.saveCheckpoint(step, this.tasks[0]);
+
+        // Agent Sight: Emit a thumbnail of the current browser state for the UI preview
+        await this.captureAndEmitSight();
 
         if (navigatorDone) {
           logger.info('🔄 Navigator indicates completion - will be validated by next planner run');
@@ -474,5 +477,27 @@ export class Executor {
     delayBetweenActions = 2.0,
   ): Promise<ActionResult[]> {
     return this.replayManager.replayHistory(sessionId, this.tasks[0], maxRetries, skipFailures, delayBetweenActions);
+  }
+
+  /**
+   * Captures a downscaled screenshot of the active tab and broadcasts it as a SIGHT_UPDATE event.
+   * This provides the UI with a real-time (but computationally cheap) preview of the agent's view.
+   */
+  private async captureAndEmitSight(): Promise<void> {
+    try {
+      const page = await this.context.browserContext.getCurrentPage();
+      const screenshot = await page.takeScreenshot(); // BrowserContext already handles basic capture
+      // For now, we relay the full screenshot, but in the future we can downscale here if needed.
+      if (screenshot) {
+        await this.context.emitEvent(
+          Actors.NAVIGATOR,
+          ExecutionState.SIGHT_UPDATE,
+          'Sight update',
+          screenshot,
+        );
+      }
+    } catch (error) {
+      logger.warning('Failed to capture agent sight update:', error);
+    }
   }
 }
