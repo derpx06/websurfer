@@ -387,14 +387,24 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     logger.info('Actions', actions);
 
     const browserContext = this.context.browserContext;
-    const browserState = await browserContext.getCachedState();
-    const cachedPathHashes = await calcBranchPathHashSet(browserState);
+    let browserState = await browserContext.getCachedState();
 
+    // 1. Initial State Sync: If state was cached more than 500ms ago, it might be stale.
+    // Refresh it once before starting the multi-action sequence to account for LLM thinking time.
+    const perceptionTime = browserContext.getLastStateCaptureTime();
+    if (Date.now() - perceptionTime > 500) {
+      logger.info('State might be stale after LLM thinking, refreshing for index recovery...');
+      browserState = await browserContext.getState(this.context.options.useVision);
+    }
+
+    const cachedPathHashes = await calcBranchPathHashSet(browserState);
     await browserContext.removeHighlight();
 
-    for (const [i, action] of actions.entries()) {
+    let currentActions = [...actions];
+
+    for (const [i, action] of currentActions.entries()) {
       const actionName = Object.keys(action)[0];
-      const actionArgs = action[actionName];
+      const actionArgs = action[actionName] as Record<string, unknown>;
       try {
         // emit start event
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, actionName);
@@ -410,70 +420,69 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         }
 
         const indexArg = actionInstance.getIndexArg(actionArgs);
-        if (i > 0 && indexArg !== null) {
-          const newState = await browserContext.getCachedState();
-          const newPathHashes = await calcBranchPathHashSet(newState);
-          // next action requires index but there are new elements on the page
-          if (!newPathHashes.isSubsetOf(cachedPathHashes)) {
-            const msg = `Something new appeared after action ${i} / ${actions.length}`;
-            logger.info(msg);
-            results.push(
-              new ActionResult({
-                extractedContent: msg,
-                includeInMemory: true,
-              }),
-            );
-            break;
+        if (indexArg !== null) {
+          // 2. Continuous Index Recovery:
+          // Check if the element we want to interact with is still at the same index.
+          // If not, try to find it by its historical properties and update the index.
+          const stepRecord = this.context.history.history[this.context.history.history.length - 1];
+          const historicalElement = stepRecord?.state.state?.selectorMap.get(indexArg);
+
+          if (historicalElement) {
+            const historyElement = HistoryTreeProcessor.convertDomElementToHistoryElement(historicalElement);
+            const refreshState = await browserContext.getCachedState();
+            const updatedAction = await this.updateActionIndices(historyElement, action, refreshState);
+            if (updatedAction) {
+              // Update local action reference for this step
+              currentActions[i] = updatedAction;
+            }
+          }
+
+          // Check for new elements if it's not the first action
+          if (i > 0) {
+            const newState = await browserContext.getCachedState();
+            const newPathHashes = await calcBranchPathHashSet(newState);
+            if (!newPathHashes.isSubsetOf(cachedPathHashes)) {
+              const msg = `Something new appeared after action ${i} / ${currentActions.length}`;
+              logger.info(msg);
+              results.push(new ActionResult({ extractedContent: msg, includeInMemory: true }));
+              break;
+            }
           }
         }
 
-        const result = await actionInstance.call(actionArgs);
+        // Execute the (potentially updated) action
+        const finalAction = currentActions[i];
+        const finalArgs = finalAction[Object.keys(finalAction)[0]];
+        const result = await actionInstance.call(finalArgs);
+
         if (result === undefined) {
           throw new Error(`Action ${actionName} returned undefined`);
         }
 
-        // if the action has an index argument, record the interacted element to the result
+        // Record interaction to history
         if (indexArg !== null) {
           const domElement = browserState.selectorMap.get(indexArg);
           if (domElement) {
             const interactedElement = HistoryTreeProcessor.convertDomElementToHistoryElement(domElement);
             result.interactedElement = interactedElement;
-            logger.info('Interacted element', interactedElement);
-            logger.info('Result', result);
           }
         }
         results.push(result);
 
-        // check if the task is paused or stopped
         if (this.context.paused || this.context.stopped) {
           return results;
         }
-        // Use smart stability check instead of blind sleep
         await waitForDomStability(this.context);
       } catch (error) {
         if (error instanceof URLNotAllowedError) {
           throw error;
         }
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error(
-          'doAction error',
-          actionName,
-          JSON.stringify(actionArgs, null, 2),
-          JSON.stringify(errorMessage, null, 2),
-        );
-        // unexpected error, emit event
+        logger.error('doAction error', actionName, JSON.stringify(actionArgs, null, 2), errorMessage);
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMessage);
         errCount++;
-        if (errCount > 3) {
-          throw new Error('Too many errors in actions');
-        }
-        results.push(
-          new ActionResult({
-            error: errorMessage,
-            isDone: false,
-            includeInMemory: true,
-          }),
-        );
+        if (errCount > 3) throw new Error('Too many errors in actions');
+        results.push(new ActionResult({ error: errorMessage, isDone: false, includeInMemory: true }));
       }
     }
     return results;

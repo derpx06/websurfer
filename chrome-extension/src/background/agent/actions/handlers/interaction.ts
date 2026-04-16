@@ -27,7 +27,7 @@ export async function handleClickElement(
     context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
     const page = await context.browserContext.getCurrentPage();
-    const state = await page.getState();
+    const state = await page.getCachedState();
 
     const elementNode = state?.selectorMap.get(input.index);
     if (!elementNode) {
@@ -63,10 +63,11 @@ export async function handleClickElement(
         context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
         return new ActionResult({ extractedContent: msg, includeInMemory: true });
     } catch (error) {
-        const msg = t('act_errors_elementNoLongerAvailable', [input.index.toString()]);
+        const errorDetail = error instanceof Error ? error.message : String(error);
+        const msg = `${t('act_errors_elementNoLongerAvailable', [input.index.toString()])} (${errorDetail})`;
         context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, msg);
         return new ActionResult({
-            error: error instanceof Error ? error.message : String(error),
+            error: errorDetail,
         });
     }
 }
@@ -82,7 +83,7 @@ export async function handleInputText(
     context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
     const page = await context.browserContext.getCurrentPage();
-    const state = await page.getState();
+    const state = await page.getCachedState();
 
     const elementNode = state?.selectorMap.get(input.index);
     if (!elementNode) {

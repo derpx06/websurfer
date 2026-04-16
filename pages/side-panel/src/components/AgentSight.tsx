@@ -38,7 +38,7 @@ export const AgentSight: React.FC<AgentSightProps> = ({ screenshot, isActive }) 
                 {/* Main Screenshot Display */}
                 {screenshot ? (
                     <img
-                        src={screenshot}
+                        src={screenshot.startsWith('data:') ? screenshot : `data:image/jpeg;base64,${screenshot}`}
                         alt="Agent View"
                         className="w-full h-full object-cover transition-opacity duration-500"
                     />

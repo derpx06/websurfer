@@ -76,8 +76,8 @@ export default memo(function MessageList({ messages, isDarkMode = false }: Messa
           {cycle.userMessage && (
             <div className="flex flex-col items-end mb-6">
               <div className={`max-w-[85%] px-4 py-3 rounded-2xl rounded-tr-none text-[14px] font-medium leading-relaxed font-inter shadow-sm ${isDarkMode
-                  ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white'
-                  : 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white'
+                ? 'bg-gradient-to-br from-indigo-600 to-indigo-700 text-white'
+                : 'bg-gradient-to-br from-indigo-500 to-indigo-600 text-white'
                 }`}>
                 {cycle.userMessage.content}
               </div>
@@ -155,10 +155,17 @@ function AnswerRow({ messages, isDarkMode }: { messages: Message[], isDarkMode: 
         </div>
 
         <div className="flex items-center gap-3 mt-3">
-          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight uppercase ${isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
-            <FaCheckCircle size={10} />
-            <span>Completed</span>
-          </div>
+          {messages.some(m => m.content.includes('❌') || m.content.toLowerCase().includes('fail') || m.content.includes('⚠️')) ? (
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight uppercase ${isDarkMode ? 'bg-red-500/10 text-red-400' : 'bg-red-50 text-red-600'}`}>
+              <FaCheckCircle size={10} className="rotate-45" />
+              <span>Failed</span>
+            </div>
+          ) : (
+            <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-tight uppercase ${isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
+              <FaCheckCircle size={10} />
+              <span>Completed</span>
+            </div>
+          )}
           <span className={`text-[10px] font-bold opacity-30 ${isDarkMode ? 'text-white' : 'text-gray-600'}`}>
             {formatTimeOnly(lastMsg.timestamp)}
           </span>
@@ -195,8 +202,8 @@ function ThinkBlock({ actor, messages, isActive, defaultOpen, isDarkMode }: { ac
         onClick={toggle}
       >
         <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ${isPlanner
-            ? (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600')
-            : (isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600')
+          ? (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-50 text-amber-600')
+          : (isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-50 text-indigo-600')
           }`}>
           {isPlanner ? <BsCpuFill size={16} /> : <FaRobot size={16} />}
         </div>
@@ -237,8 +244,8 @@ function ThinkBlock({ actor, messages, isActive, defaultOpen, isDarkMode }: { ac
                 <div className="flex gap-3 group/step animate-in fade-in slide-in-from-left-2 duration-300" key={i}>
                   <div className="flex flex-col items-center">
                     <div className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-all ${type === 'done'
-                        ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
-                        : 'bg-indigo-500 text-white animate-pulse'
+                      ? (isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-50 text-emerald-600')
+                      : 'bg-indigo-500 text-white animate-pulse'
                       }`}>
                       {type === 'done' ? <FaCheckCircle size={10} /> : <div className="w-1.5 h-1.5 rounded-full bg-white"></div>}
                     </div>
@@ -246,8 +253,8 @@ function ThinkBlock({ actor, messages, isActive, defaultOpen, isDarkMode }: { ac
                   </div>
                   <div className="flex-grow pb-1">
                     <p className={`text-[13px] leading-snug font-medium ${type === 'run'
-                        ? (isDarkMode ? 'text-white' : 'text-indigo-600')
-                        : (isDarkMode ? 'text-gray-400' : 'text-gray-600')
+                      ? (isDarkMode ? 'text-white' : 'text-indigo-600')
+                      : (isDarkMode ? 'text-gray-400' : 'text-gray-600')
                       }`}>
                       {step.content}
                     </p>

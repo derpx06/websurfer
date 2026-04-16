@@ -182,7 +182,10 @@ export const useTaskExecution = ({
                 if (wasHandled) return;
             }
 
-            if (isHistoricalSession) return;
+            if (isHistoricalSession) {
+                setIsHistoricalSession(false);
+                setIsFollowUpMode(true);
+            }
 
             try {
                 const tabs = await chrome.tabs.query({ active: true, currentWindow: true });

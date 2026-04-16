@@ -166,3 +166,14 @@ chrome.runtime.onConnect.addListener(port => {
     });
   }
 });
+
+// One-off message handler for UI-to-Background requests (like tab content)
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'get_tab_content') {
+    browserContext.getTabContent(message.tabId)
+      .then(content => sendResponse(content))
+      .catch(error => sendResponse({ error: error.message }));
+    return true; // Keep channel open for async response
+  }
+  return false;
+});

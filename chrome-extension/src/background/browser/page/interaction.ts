@@ -67,28 +67,46 @@ export class InteractionManager {
      * Attempts to locate an element using more robust methods if selectors fail.
      */
     private async robustLocate(
-        frame: PuppeteerPage | Frame,
+        page: PuppeteerPage | Frame,
         element: DOMElementNode
     ): Promise<ElementHandle<Element> | null> {
-        const tagName = element.tagName?.toLowerCase() || '*';
-        const text = element.attributes?.text || element.attributes?.value || '';
+        const tagName = element.tagName;
+        const text = element.attributes.text || element.attributes.value || '';
+        const attr = element.attributes || {};
 
-        return await frame.evaluateHandle((tag: string, textContent: string, attr: any) => {
+        return await page.evaluateHandle((tag: string | null, textContent: string, attributes: Record<string, string>) => {
             function findInShadow(root: Node | ShadowRoot): Element | null {
                 const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
                 let node = walker.nextNode() as Element | null;
 
                 while (node) {
-                    if (node.tagName.toLowerCase() === tag) {
-                        // Check text content or attribute match
-                        if (textContent && node.textContent?.trim().includes(textContent.trim())) {
-                            return node;
-                        }
-                        // Check specific attributes if provided
-                        if (attr.id && node.id === attr.id) return node;
-                        if (attr.name && (node as any).name === attr.name) return node;
+                    const nodeTag = node.tagName.toLowerCase();
+                    const tagMatch = (tag && nodeTag === tag.toLowerCase()) || tag === '*';
+
+                    // 1. Check ID (Highest confidence)
+                    if (attributes.id && node.id === attributes.id) return node;
+
+                    // 2. Check Name/Role/Aria-Label (High confidence)
+                    if (tagMatch) {
+                        if (attributes.name && node.getAttribute('name') === attributes.name) return node;
+                        if (attributes.role && node.getAttribute('role') === attributes.role) return node;
+                        if (attributes['aria-label'] && node.getAttribute('aria-label') === attributes['aria-label']) return node;
+                        if (attributes.placeholder && node.getAttribute('placeholder') === attributes.placeholder) return node;
+                        if (attributes.type && node.getAttribute('type') === attributes.type) return node;
                     }
 
+                    // 3. Text content match for actionable elements
+                    if (tagMatch && textContent) {
+                        const directText = node.textContent?.trim() || '';
+                        if (directText.includes(textContent.trim())) {
+                            // If it's a perfect match or a high-confidence tag, return it
+                            if (nodeTag === 'button' || nodeTag === 'a' || nodeTag === 'span') {
+                                return node;
+                            }
+                        }
+                    }
+
+                    // Recursive search in shadow DOM
                     if (node.shadowRoot) {
                         const found = findInShadow(node.shadowRoot);
                         if (found) return found;
@@ -98,23 +116,39 @@ export class InteractionManager {
                 return null;
             }
             return findInShadow(document.body);
-        }, tagName, text, element.attributes) as ElementHandle<Element> | null;
+        }, tagName, text, attr) as ElementHandle<Element> | null;
     }
 
     async scrollIntoViewIfNeeded(element: ElementHandle<Element>): Promise<void> {
-        // scrollIntoView is synchronous in the browser — one call is enough.
-        // No polling loop needed; saves up to 1000ms per interaction.
         try {
-            await element.evaluate((el: Element) => {
+            const result = await element.evaluate((el: Element) => {
                 const rect = el.getBoundingClientRect();
                 const inViewport =
                     rect.width > 0 && rect.height > 0 &&
                     rect.top >= 0 &&
                     rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+
                 if (!inViewport) {
                     el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
                 }
+
+                // Check for occlusion (is there an element on top?)
+                const style = window.getComputedStyle(el);
+                if (style.visibility === 'hidden' || style.opacity === '0') return 'hidden';
+
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                const elementAtPoint = document.elementFromPoint(centerX, centerY);
+                const isCovered = elementAtPoint && !el.contains(elementAtPoint) && !elementAtPoint.contains(el);
+
+                return isCovered ? 'covered' : 'ok';
             });
+
+            if (result === 'covered') {
+                logger.warning('Element might be covered by another element at its center point');
+            } else if (result === 'hidden') {
+                logger.warning('Element is hidden or has 0 opacity');
+            }
         } catch {
             // If evaluate fails (detached frame, etc.) just proceed
         }

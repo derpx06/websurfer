@@ -3,6 +3,13 @@ import { FaMicrophone, FaPaperclip } from 'react-icons/fa';
 import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { AttachmentBar, RecordingOverlay } from './chat-input/Visuals';
 import { ChatActionButtons, ShortcutHint } from './chat-input/Controls';
+import { TabMentionsDropdown } from './chat-input/TabMentionsDropdown';
+
+interface Mention {
+  id: number;
+  title: string;
+  url: string;
+}
 
 interface ChatInputProps {
   onSendMessage: (text: string, displayText?: string) => void;
@@ -39,6 +46,11 @@ export default function ChatInput({
 }: ChatInputProps) {
   const [text, setText] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [mentions, setMentions] = useState<Mention[]>([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionQuery, setMentionQuery] = useState('');
+  const [cursorPos, setCursorPos] = useState(0);
+
   const isSendButtonDisabled = useMemo(
     () => disabled || (text.trim() === '' && attachedFiles.length === 0),
     [disabled, text, attachedFiles],
@@ -58,9 +70,52 @@ export default function ChatInput({
   }, []);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
+    const value = e.target.value;
+    const position = e.target.selectionStart;
+    setText(value);
+    setCursorPos(position);
+
+    // Detect @ mention trigger
+    const lastAtPos = value.lastIndexOf('@', position - 1);
+    if (lastAtPos !== -1 && (lastAtPos === 0 || /\s/.test(value[lastAtPos - 1]))) {
+      const query = value.slice(lastAtPos + 1, position);
+      if (!/\s/.test(query)) {
+        setMentionQuery(query);
+        setShowMentions(true);
+      } else {
+        setShowMentions(false);
+      }
+    } else {
+      setShowMentions(false);
+    }
+
     requestAnimationFrame(adjustTextareaHeight);
   };
+
+  const handleMentionSelect = useCallback((tab: any) => {
+    const lastAtPos = text.lastIndexOf('@', cursorPos - 1);
+    const before = text.slice(0, lastAtPos);
+    const after = text.slice(cursorPos);
+    const mentionText = `@${tab.title}`;
+
+    setText(`${before}${mentionText} ${after}`);
+    setMentions(prev => {
+      // Avoid duplicate mentions in tracking state
+      if (prev.some(m => m.id === tab.id)) return prev;
+      return [...prev, { id: tab.id, title: tab.title, url: tab.url }];
+    });
+
+    setShowMentions(false);
+
+    // Set focus back to textarea
+    setTimeout(() => {
+      if (textareaRef.current) {
+        const newPos = lastAtPos + mentionText.length + 1;
+        textareaRef.current.focus();
+        textareaRef.current.setSelectionRange(newPos, newPos);
+      }
+    }, 0);
+  }, [text, cursorPos]);
 
   useEffect(() => {
     if (setContent) setContent(setText);
@@ -71,13 +126,44 @@ export default function ChatInput({
   }, [adjustTextareaHeight]);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault();
       const trimmedText = text.trim();
 
       if (trimmedText || attachedFiles.length > 0) {
         let messageContent = trimmedText;
         let displayContent = trimmedText;
+
+        // Add context for mentioned tabs
+        if (mentions.length > 0) {
+          const activeMentions = mentions.filter(m => text.includes(`@${m.title}`));
+
+          if (activeMentions.length > 0) {
+            // Fetch content for each mention
+            const enrichedMentions = await Promise.all(activeMentions.map(async (m) => {
+              try {
+                // We use chrome.runtime.sendMessage for a one-off request
+                return new Promise((resolve) => {
+                  chrome.runtime.sendMessage({ type: 'get_tab_content', tabId: m.id }, (response) => {
+                    if (response && response.content) {
+                      resolve({ ...m, content: response.content });
+                    } else {
+                      resolve({ ...m, content: '[Could not retrieve tab content]' });
+                    }
+                  });
+                });
+              } catch (err) {
+                return { ...m, content: '[Error retrieving tab content]' };
+              }
+            })) as (Mention & { content: string })[];
+
+            const mentionedTabsContext = enrichedMentions
+              .map(m => `\n\n<nano_tab_reference type="tab" id="${m.id}" title="${m.title}" url="${m.url}">\n${m.content}\n</nano_tab_reference>`)
+              .join('\n');
+
+            messageContent = `${messageContent}\n\n<nano_mentions>${mentionedTabsContext}</nano_mentions>`;
+          }
+        }
 
         if (attachedFiles.length > 0) {
           const fileContents = attachedFiles
@@ -95,6 +181,8 @@ export default function ChatInput({
         onSendMessage(messageContent, displayContent);
         setText('');
         setAttachedFiles([]);
+        setMentions([]);
+        setShowMentions(false);
         if (textareaRef.current) textareaRef.current.style.height = 'auto';
       }
     },
@@ -141,7 +229,16 @@ export default function ChatInput({
       <form onSubmit={handleSubmit} className="relative group/form">
         <RecordingOverlay isRecording={isRecording} />
 
-        <div className={`flex flex-col rounded-[2rem] border transition-all duration-500 overflow-hidden ${isDarkMode
+        {showMentions && (
+          <TabMentionsDropdown
+            searchQuery={mentionQuery}
+            onSelect={handleMentionSelect}
+            onClose={() => setShowMentions(false)}
+            isDarkMode={isDarkMode}
+          />
+        )}
+
+        <div className={`flex flex-col rounded-[2rem] border transition-all duration-500 overflow-hidden relative ${isDarkMode
           ? 'bg-slate-900/45 border-white/15 shadow-[0_24px_45px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl focus-within:border-cyan-400/45 focus-within:bg-slate-900/55 focus-within:shadow-[0_25px_55px_-20px_rgba(0,0,0,0.9),0_0_25px_rgba(56,189,248,0.2)]'
           : 'bg-white/55 border-slate-200/70 backdrop-blur-2xl shadow-[0_20px_40px_-20px_rgba(15,23,42,0.35)] focus-within:border-indigo-400/70 focus-within:bg-white/70 focus-within:shadow-[0_24px_50px_-18px_rgba(15,23,42,0.32),0_0_20px_rgba(99,102,241,0.15)]'
           } ${disabled ? 'opacity-50 grayscale' : ''}`}>
@@ -210,7 +307,7 @@ export default function ChatInput({
         </div>
 
         <ShortcutHint isDarkMode={isDarkMode} disabled={disabled} />
-      </form>
-    </div>
+      </form >
+    </div >
   );
 }

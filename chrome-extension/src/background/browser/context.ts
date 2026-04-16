@@ -413,10 +413,49 @@ export default class BrowserContext {
     return browserState;
   }
 
+  public async getTabContent(tabId: number): Promise<{ title: string; url: string; content: string }> {
+    const tab = await safeGetTab(tabId);
+    if (!tab) {
+      throw new Error(`Tab ${tabId} not found`);
+    }
+
+    try {
+      // Use scripting to get the body text
+      const scriptResults = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+          return {
+            content: document.body.innerText.slice(0, 10000), // Limit content size
+          };
+        },
+      });
+
+      const result = scriptResults[0]?.result;
+
+      return {
+        title: tab.title || '',
+        url: tab.url || '',
+        content: result?.content || '',
+      };
+    } catch (error) {
+      logger.error(`Failed to get tab content for ${tabId}:`, error);
+      return {
+        title: tab.title || '',
+        url: tab.url || '',
+        content: '[Failed to extract content from this tab]',
+      };
+    }
+  }
+
   public async removeHighlight(): Promise<void> {
     const page = await this.getCurrentPage();
     if (page) {
       await page.removeHighlight();
     }
+  }
+
+  public getLastStateCaptureTime(): number {
+    const page = this._attachedPages.get(this._currentTabId || -1);
+    return page ? page.getLastStateUpdateTime() : 0;
   }
 }

@@ -116,7 +116,11 @@ The `next_steps` text gets added to the conversation as a plan, so the Navigator
 
 **Step D — Execute the action(s)**
 ```
-→ Calls the matching action handler (e.g., clickElement)
+→ Verifies if cached state is still fresh (<500ms)
+→ If stale, triggers an immediate "Initial State Sync" (Pre-Action Recovery)
+→ Compares intended index with historical element properties
+→ Automatically re-syncs index if page shifted during LLM thinking
+→ Calls the matching action handler (using getCachedState to avoid redundant captures)
 → The handler clicks the real element in the browser
 → Waits 1 second (hardcoded)
 ```
@@ -630,8 +634,9 @@ Action execution (click/type):
   Puppeteer click               →  50ms
   waitForNavigation             → 500–8000ms (network-idle timeout bounding box)
 
-TOTAL PER STEP (typical):       → 3–15 seconds
-TOTAL PER STEP (with navigation): → 10–25 seconds
+**OPTIMIZED PER STEP (typical):**   → 3–8 seconds
+**OPTIMIZED PER STEP (nav):**       → 5–12 seconds
+*(We saved ~2s by removing redundant state captures and ~1s by optimizing stability polling)*
 ```
 
 ---

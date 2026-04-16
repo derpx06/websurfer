@@ -167,6 +167,16 @@ export class TaskManager {
                     return this.currentPort!.postMessage({ type: 'success', msg: t('bg_cmd_nohighlight_ok') });
                 }
 
+                case 'get_tab_content': {
+                    if (!message.tabId) return this.currentPort!.postMessage({ type: 'error', error: 'Missing tabId' });
+                    try {
+                        const content = await this.browserContext.getTabContent(message.tabId);
+                        return this.currentPort!.postMessage({ type: 'get_tab_content_result', tabId: message.tabId, ...content });
+                    } catch (error) {
+                        return this.currentPort!.postMessage({ type: 'error', error: error instanceof Error ? error.message : 'Failed to get tab content' });
+                    }
+                }
+
                 case 'replay': {
                     // Triggers a historic replay of actions from a saved session.
                     if (!message.tabId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTabId') });

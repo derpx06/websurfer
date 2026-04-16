@@ -125,15 +125,14 @@ export class BrowserStateHistory {
   title: string;
   tabs: TabInfo[];
   interactedElements: (DOMHistoryElement | null)[];
-  // screenshot is too large to store in the history
-  // screenshot: string | null;
+  state: BrowserState | null;
 
   constructor(state?: BrowserState, interactedElements?: (DOMHistoryElement | null)[]) {
     this.url = state?.url || '';
     this.title = state?.title || '';
     this.tabs = state?.tabs || [];
     this.interactedElements = interactedElements ?? [];
-    // this.screenshot = state.screenshot;
+    this.state = state || null;
   }
 }
 

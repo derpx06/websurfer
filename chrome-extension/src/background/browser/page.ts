@@ -100,6 +100,10 @@ export default class Page {
     return this._validWebPage && this._lifecycle.puppeteerPage !== null;
   }
 
+  public getLastStateUpdateTime(): number {
+    return this._lastStateUpdateTime;
+  }
+
   async attachPuppeteer(): Promise<boolean> {
     if (!this._validWebPage) return false;
     if (this._lifecycle.puppeteerPage) return true;
@@ -821,10 +825,7 @@ export default class Page {
       });
       // Only animate cursor delay when highlights are visible (purely cosmetic)
       if (this._config.displayHighlights) {
-        // @ts-ignore
-        if (window._websurferCursor) {
-          await new Promise(resolve => setTimeout(resolve, 150));
-        }
+        await new Promise(resolve => setTimeout(resolve, 150));
       }
 
       // Get element properties to determine input method
@@ -919,10 +920,7 @@ export default class Page {
       });
       // Only animate cursor delay when highlights are visible (purely cosmetic)
       if (this._config.displayHighlights) {
-        // @ts-ignore
-        if (window._websurferCursor) {
-          await new Promise(resolve => setTimeout(resolve, 150));
-        }
+        await new Promise(resolve => setTimeout(resolve, 150));
       }
 
       // Use vision or standard click

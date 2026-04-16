@@ -141,7 +141,12 @@ Common action sequences:
 - If a plan is provided, follow the instructions in the next_steps exactly first
 - If no plan is provided, just continue with the task
 
-# LOOP & ACCURACY DEFENSE
+# TACTICAL NAVIGATION INTELLIGENCE (SPEED OPTIMIZATION)
+- **DIRECT NAVIGATION IS KING**: If the user asks for a major site (YouTube, Instagram, LinkedIn, GitHub, etc.), DO NOT search. Use \`go_to_url\` directly with the official domain.
+- **BYPASS SEARCH ENGINES**: If you find yourself on a search results page (Google/DuckDuckGo), do not waste time "clicking" a link and waiting for state. Instead, extract the URL from the link and use \`go_to_url\` in the SAME STEP to jump directly to the destination.
+- **ACTION CHAINING**: Fill multiple input fields in a single \`action\` array to save thinking cycles.
+- **NO RE-SEARCH**: If an action fails, don't immediately start a new search. Use your memory to try a direct URL or a different link on the current page.
+
 - If you see the same URL or same elements twice in a row → immediately switch strategy or open new tab.
 - Never guess indexes. If unsure, use scroll_to_text or ask_human.
 - When task is complete, ALWAYS include exact URLs + data in the done.text field.
