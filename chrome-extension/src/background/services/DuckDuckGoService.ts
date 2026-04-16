@@ -25,15 +25,24 @@ export class DuckDuckGoService {
         try {
             const searchUrl = `https://lite.duckduckgo.com/lite/?q=${encodeURIComponent(query)}`;
 
+            // Use a small jitter to avoid perfect request timing
+            await new Promise(r => setTimeout(r, Math.random() * 500 + 200));
+
             const response = await fetch(searchUrl, {
                 headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9',
+                    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    'Upgrade-Insecure-Requests': '1',
                 }
             });
 
             if (!response.ok) {
+                if (response.status === 429) {
+                    throw new Error('DuckDuckGo Rate Limit Exceeded. Please try again later.');
+                }
                 throw new Error(`Failed to fetch from DuckDuckGo: ${response.statusText}`);
             }
 

@@ -32,19 +32,22 @@ const SidePanelHeader = ({
         {/* BRAND IDENTITY - RECALIBRATED PRECISION */}
         <div className="flex items-center gap-3.5 group cursor-pointer" onClick={showHistory ? onBackToChat : undefined}>
           <div className="relative">
-            <div className={`flex items-center justify-center w-10 h-10 rounded-[14px] transition-all duration-700 group-hover:scale-105 ${isDarkMode
-              ? 'bg-gradient-to-br from-indigo-600 via-indigo-600 to-cyan-400 ring-1 ring-white/20 shadow-[0_8px_16px_-4px_rgba(99,102,241,0.5)]'
-              : 'bg-gradient-to-br from-indigo-500 to-indigo-600 ring-1 ring-indigo-400/20 shadow-md shadow-indigo-200'
+            <div className={`flex items-center justify-center w-10 h-10 rounded-[12px] transition-all duration-700 group-hover:scale-105 ${isDarkMode
+              ? 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-cyan-400 ring-1 ring-white/20 shadow-[0_4px_12px_rgba(99,102,241,0.4),inset_0_0_8px_rgba(255,255,255,0.1)]'
+              : 'bg-gradient-to-br from-indigo-500 to-indigo-600 ring-1 ring-indigo-400/20 shadow-md shadow-indigo-100'
               }`}>
-              <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="6" />
-                <circle cx="12" cy="12" r="2.5" className="fill-white" />
+              <svg className="w-[22px] h-[22px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="7" className="opacity-90" />
+                <circle cx="12" cy="12" r="1.5" className="fill-white" />
               </svg>
             </div>
-            {/* Live Status Indicator - Precision Placement */}
+            {/* Live Status Indicator - Premium Glow */}
             <div className="absolute -top-1 -right-1 flex">
-              <span className="absolute inline-flex h-4 w-4 animate-ping rounded-full bg-emerald-400 opacity-60"></span>
-              <span className="relative inline-flex h-4 w-4 rounded-full bg-emerald-500 border-[2.5px] border-websurfer-bg shadow-sm ring-1 ring-black/5"></span>
+              <span className={`absolute inline-flex h-4 w-4 animate-ping rounded-full opacity-60 ${isDarkMode ? 'bg-emerald-400' : 'bg-emerald-300'}`}></span>
+              <span className={`relative inline-flex h-4 w-4 rounded-full border-[2px] shadow-[0_0_8px_rgba(16,185,129,0.5)] ${isDarkMode
+                ? 'bg-emerald-500 border-[#0a0f1e]'
+                : 'bg-emerald-500 border-white'
+                }`}></span>
             </div>
           </div>
 

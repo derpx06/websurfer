@@ -237,13 +237,15 @@ export class ChatModelRateLimitError extends Error {
 
 export function isRateLimitError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
+  // If it's already our specialized error, it's definitely a rate limit
+  if (error.name === 'ChatModelRateLimitError') return true;
+
   const msg = error.message.toLowerCase();
+  // Check for common LLM provider rate limit strings
   return (
-    msg.includes('429') ||
+    (msg.includes('429') && (msg.includes('api') || msg.includes('model') || msg.includes('request'))) ||
     msg.includes('too many requests') ||
-    msg.includes('rate limit') ||
-    msg.includes('quota') ||
-    msg.includes('credit') ||
+    (msg.includes('rate limit') && !msg.includes('duckduckgo')) ||
     msg.includes('insufficient_quota') ||
     msg.includes('limit_reached')
   );

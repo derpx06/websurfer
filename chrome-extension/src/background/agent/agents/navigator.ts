@@ -170,7 +170,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     let actionResults: ActionResult[] = [];
 
     try {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_START, 'Navigating...');
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_START, 'Processing step...');
 
       const messageManager = this.context.messageManager;
       // Get browser state (this will call getState once and cache it)
@@ -233,10 +233,10 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
 
       // Signal step failure to UI before throwing/returning
       let finalErrorMessage = errorMessage;
-      if (isRateLimitError(error)) {
+      if (isRateLimitError(error) && !errorMessage.includes('DuckDuckGo')) {
         finalErrorMessage = 'API Rate Limit Exceeded (429). Please try again in a few moments.';
       }
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, `Navigation failed: ${finalErrorMessage}`);
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, `Execution failed: ${finalErrorMessage}`);
 
       // Check if this is a specialized error type to throw
       if (isAuthenticationError(error)) {
