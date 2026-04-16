@@ -9,14 +9,19 @@ const AZURE_API_VERSION = '2025-04-01-preview';
 // Zod schemas for validation and defaults
 export const ProviderConfigSchema = z.object({
   name: z.string().optional(),
-  type: z.nativeEnum(ProviderTypeEnum).optional(),
-  apiKey: z.string(),
+  type: z.string().optional(), // Be lenient with types
+  apiKey: z.string().optional().default(''),
   baseUrl: z.string().optional(),
   modelNames: z.array(z.string()).optional(),
-  createdAt: z.number().default(() => Date.now()),
+  createdAt: z.any().optional().transform(v => {
+    const n = Number(v);
+    return isNaN(n) ? Date.now() : n;
+  }),
   azureDeploymentNames: z.array(z.string()).optional(),
   azureApiVersion: z.string().optional(),
-});
+}).passthrough();
+
+
 
 export const LLMKeyRecordSchema = z.object({
   providers: z.record(z.string(), ProviderConfigSchema),

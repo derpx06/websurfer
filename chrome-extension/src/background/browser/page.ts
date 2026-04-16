@@ -821,7 +821,10 @@ export default class Page {
       });
       // Only animate cursor delay when highlights are visible (purely cosmetic)
       if (this._config.displayHighlights) {
-        await new Promise(resolve => setTimeout(resolve, 150));
+        // @ts-ignore
+        if (window._websurferCursor) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
       }
 
       // Get element properties to determine input method
@@ -916,7 +919,10 @@ export default class Page {
       });
       // Only animate cursor delay when highlights are visible (purely cosmetic)
       if (this._config.displayHighlights) {
-        await new Promise(resolve => setTimeout(resolve, 150));
+        // @ts-ignore
+        if (window._websurferCursor) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
       }
 
       // Use vision or standard click

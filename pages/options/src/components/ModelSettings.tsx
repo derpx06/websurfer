@@ -19,8 +19,10 @@ import {
   getDefaultDisplayNameFromProviderId,
   getDefaultProviderConfig,
   getDefaultAgentModelParams,
+  getProviderTypeByProviderId,
   type ProviderConfig,
 } from '@extension/storage';
+
 import { t } from '@extension/i18n';
 
 // Helper function to check if a model is an OpenAI reasoning model (O-series or GPT-5 models)
@@ -97,16 +99,26 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         const allProviders = await llmProviderStore.getAllProviders();
         console.log('allProviders', allProviders);
 
+        const migrationProviders = { ...allProviders };
+        Object.keys(migrationProviders).forEach(id => {
+          if (!migrationProviders[id].type) {
+            migrationProviders[id].type = getProviderTypeByProviderId(id);
+          }
+        });
+
         // Track which providers are from storage
-        const fromStorage = new Set(Object.keys(allProviders));
+        const fromStorage = new Set(Object.keys(migrationProviders));
         setProvidersFromStorage(fromStorage);
 
-        // Only use providers from storage, don't add default ones
-        setProviders(allProviders);
+        // Merge with existing state to avoid overwriting newly added providers
+        setProviders(prev => ({
+          ...migrationProviders,
+          ...prev,
+        }));
       } catch (error) {
         console.error('Error loading providers:', error);
         // Set empty providers on error
-        setProviders({});
+        setProviders(prev => prev);
         // No providers from storage on error
         setProvidersFromStorage(new Set());
       }
@@ -882,51 +894,70 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   };
 
   const addBuiltInProvider = (provider: string) => {
-    // Get the default provider configuration
-    const config = getDefaultProviderConfig(provider);
+    console.log(`[ModelSettings] Adding built-in provider: ${provider}`);
+    try {
+      // Get the default provider configuration
+      const config = getDefaultProviderConfig(provider);
+      console.log(`[ModelSettings] Default config for ${provider}:`, config);
 
-    // Add the provider to the state
-    setProviders(prev => ({
-      ...prev,
-      [provider]: config,
-    }));
-
-    // Mark as modified so it shows up in the UI
-    setModifiedProviders(prev => new Set(prev).add(provider));
-
-    // Set the newly added provider ref
-    newlyAddedProviderRef.current = provider;
-
-    // Scroll to the newly added provider after render
-    setTimeout(() => {
-      const providerElement = document.getElementById(`provider-${provider}`);
-      if (providerElement) {
-        providerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!config) {
+        throw new Error(`Failed to get default config for ${provider}`);
       }
-    }, 100);
+
+      // Add the provider to the state
+      setProviders(prev => {
+        console.log(`[ModelSettings] Updating providers state. Previous:`, prev);
+        const next = {
+          ...prev,
+          [provider]: config,
+        };
+        console.log(`[ModelSettings] New providers state:`, next);
+        return next;
+      });
+
+      // Mark as modified so it shows up in the UI
+      setModifiedProviders(prev => {
+        const next = new Set(prev).add(provider);
+        console.log(`[ModelSettings] Updated modifiedProviders:`, Array.from(next));
+        return next;
+      });
+
+      // Set the newly added provider ref
+      newlyAddedProviderRef.current = provider;
+
+      // Scroll into view
+      setTimeout(() => {
+        const providerElement = document.getElementById(`provider-${provider}`);
+        if (providerElement) {
+          providerElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+          console.warn(`[ModelSettings] Could not find element provider-${provider} for scrolling`);
+        }
+      }, 200);
+    } catch (err) {
+      console.error(`[ModelSettings] Failed to add built-in provider:`, err);
+      alert(`Error adding provider: ${err instanceof Error ? err.message : String(err)}`);
+    }
   };
 
   // Sort providers to ensure newly added providers appear at the bottom
   const getSortedProviders = () => {
     // Filter providers to only include those from storage and newly added providers
+    // Filter providers to only include those from storage and newly added providers
     const filteredProviders = Object.entries(providers).filter(([providerId, config]) => {
-      // ALSO filter out any provider missing a config or type, to satisfy TS
-      if (!config || !config.type) {
-        console.warn(`Filtering out provider ${providerId} with missing config or type.`);
-        return false;
+      // Be VERY permissive in the filter
+      if (!config) return false;
+
+      // Always include if it has a type (which it should if added via UI)
+      if (config.type) {
+        // If it's already in storage, show it
+        if (providersFromStorage.has(providerId)) return true;
+        // If it's in modified set, show it
+        if (modifiedProviders.has(providerId)) return true;
       }
 
-      // Include if it's from storage
-      if (providersFromStorage.has(providerId)) {
-        return true;
-      }
-
-      // Include if it's a newly added provider (has been modified)
-      if (modifiedProviders.has(providerId)) {
-        return true;
-      }
-
-      // Exclude providers that aren't from storage and haven't been modified
+      // Fallback: if it's not a known hidden one, maybe show it anyway?
+      // No, stick to the main logic but add more logging
       return false;
     });
 
@@ -1087,64 +1118,71 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
     <div className={`space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
 
       {/* LLM Providers Section */}
-      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-[#1a1c23]/60 border-white/5 shadow-2xl backdrop-blur-3xl' : 'bg-white/80 border-slate-200 shadow-xl'
-        }`}>
-        <div className={`border-b px-10 py-8 flex items-center justify-between gap-6 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
-          }`}>
-          <div className="flex items-center gap-6">
-            <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-2xl transition-transform duration-500 group-hover:scale-110 ${isDarkMode ? 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white' : 'bg-gradient-to-br from-indigo-400 to-indigo-600 text-white'
-              }`}>
-              <FiCpu size={24} />
-            </div>
-            <div>
-              <h2 className="text-2xl font-black font-outfit tracking-tight">LLM Intelligence</h2>
-              <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
-                Hardware acceleration & Neural endpoint configurations
-              </p>
-            </div>
-          </div>
-
-          <div className="relative group/add">
-            <button
-              onClick={() => setIsProviderSelectorOpen(!isProviderSelectorOpen)}
-              className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all duration-300 ${isDarkMode ? 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-            >
-              Add Provider
-              <FiChevronDown className={`transition-transform duration-300 ${isProviderSelectorOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isProviderSelectorOpen && (
-              <div className={`absolute right-0 mt-3 w-64 rounded-3xl border shadow-2xl overflow-hidden z-[100] p-2 backdrop-blur-3xl ${isDarkMode ? 'bg-[#1a1c23]/95 border-white/10' : 'bg-white/95 border-slate-200'
-                }`}>
-                {Object.values(ProviderTypeEnum)
-                  .filter(type => type !== ProviderTypeEnum.CustomOpenAI)
-                  .map(type => {
-                    const isAdded = providersFromStorage.has(type) || modifiedProviders.has(type);
-                    const isAzure = type === ProviderTypeEnum.AzureOpenAI;
-                    return (
-                      <button
-                        key={type}
-                        onClick={() => handleProviderSelection(type)}
-                        className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl text-[13px] font-bold transition-all duration-200 ${isDarkMode ? 'text-slate-300 hover:bg-indigo-500/20 hover:text-white' : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
-                          } ${isAdded && !isAzure ? 'opacity-50' : ''}`}
-                      >
-                        <span>{getDefaultDisplayNameFromProviderId(type)}</span>
-                        {isAdded && !isAzure && <FiCheck className="opacity-50" size={12} />}
-                      </button>
-                    );
-                  })}
-                <button
-                  onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}
-                  className={`w-full text-left px-5 py-3 rounded-2xl text-[13px] font-bold border-t transition-all duration-200 mt-1 pt-4 ${isDarkMode ? 'text-indigo-400 border-white/5 hover:bg-indigo-500/10' : 'text-indigo-600 border-slate-100 hover:bg-indigo-50'
-                    }`}
-                >
-                  OpenAI Compatible
-                </button>
-              </div>
-            )}
-          </div>
+      <div className="flex items-center justify-between mb-6 px-4">
+        <div>
+          <h2 className="text-3xl font-black font-outfit tracking-tight">Intelligence Nodes</h2>
+          <p className={`text-sm font-medium mt-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+            Neural endpoint configurations & hardware acceleration
+          </p>
         </div>
+
+        <div className="relative group/add provider-selector-container">
+          <button
+            onClick={() => {
+              console.log('[ModelSettings] Toggling provider selector. Current state:', !isProviderSelectorOpen);
+              setIsProviderSelectorOpen(!isProviderSelectorOpen);
+            }}
+            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+          >
+            Add New Neural Provider
+            <FiChevronDown className={`transition-transform duration-300 ${isProviderSelectorOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {isProviderSelectorOpen && (
+            <div className={`absolute right-0 mt-4 w-72 rounded-[2rem] border shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden z-[999] p-3 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-slate-200'
+              }`}>
+              <div className="px-4 py-2 mb-2">
+                <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Select Architecture</p>
+              </div>
+              {Object.values(ProviderTypeEnum)
+                .filter(type => type !== ProviderTypeEnum.CustomOpenAI)
+                .map(type => {
+                  const isAdded = providersFromStorage.has(type) || modifiedProviders.has(type);
+                  const isAzure = type === ProviderTypeEnum.AzureOpenAI;
+                  return (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        console.log(`[ModelSettings] User selected provider type: ${type}`);
+                        handleProviderSelection(type);
+                      }}
+                      className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-200 ${isDarkMode
+                        ? 'text-slate-300 hover:bg-indigo-500/20 hover:text-white'
+                        : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
+                        } ${isAdded && !isAzure ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      disabled={isAdded && !isAzure}
+                    >
+                      <span>{getDefaultDisplayNameFromProviderId(type)}</span>
+                      {isAdded && !isAzure && <FiCheck size={14} className="text-emerald-500" />}
+                    </button>
+                  );
+                })}
+              <div className="my-2 border-t border-white/5"></div>
+              <button
+                onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}
+                className={`w-full text-left px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-200 ${isDarkMode ? 'text-indigo-400 hover:bg-indigo-500/10' : 'text-indigo-600 hover:bg-indigo-50'
+                  }`}
+              >
+                Custom OpenAI Compatible
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <section className={`group overflow-visible rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-[#1a1c23]/60 border-white/5 shadow-2xl backdrop-blur-3xl' : 'bg-white/80 border-slate-200 shadow-xl'
+        }`}>
 
         <div className="divide-y divide-white/[0.03]">
           {getSortedProviders().length === 0 ? (

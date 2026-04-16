@@ -125,7 +125,15 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Check if this is an authentication error
+
+      // Ensure we signal the step failure to the UI before throwing specific errors
+      let finalErrorMessage = errorMessage;
+      if (isRateLimitError(error)) {
+        finalErrorMessage = 'API Rate Limit Exceeded (429). Please try again in a few moments.';
+      }
+      this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_FAIL, `Planning failed: ${finalErrorMessage}`);
+
+      // Check if this is a specialized error type to throw
       if (isAuthenticationError(error)) {
         throw new ChatModelAuthError(errorMessage, error);
       } else if (isBadRequestError(error)) {
@@ -135,13 +143,12 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
       } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       } else if (isRateLimitError(error)) {
-        throw new ChatModelRateLimitError('API Rate Limit Exceeded (429). Please try again in a few moments.', error);
+        throw new ChatModelRateLimitError(finalErrorMessage, error);
       } else if (isPaymentRequiredError(error)) {
         throw new ChatModelPaymentRequiredError(errorMessage, error);
       }
 
       logger.error(`Planning failed: ${errorMessage}`);
-      this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_FAIL, `Planning failed: ${errorMessage}`);
       return {
         id: this.id,
         error: errorMessage,

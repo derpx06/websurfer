@@ -17,12 +17,18 @@ export const AttachmentBar: React.FC<AttachmentBarProps> = ({ attachedFiles, onR
     if (attachedFiles.length === 0) return null;
 
     return (
-        <div className={`flex flex-wrap gap-2 px-4 pt-4 pb-1 border-b ${isDarkMode ? 'border-white/5 bg-black/20' : 'border-gray-50 bg-gray-50/30'}`}>
+        <div className={`flex flex-wrap gap-2 px-5 pt-5 pb-2 ${isDarkMode ? 'bg-black/10' : 'bg-slate-50/50'}`}>
             {attachedFiles.map((file, index) => (
-                <div key={index} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-[800] tracking-tight transition-all hover:scale-105 ${isDarkMode ? 'bg-indigo-500/20 text-indigo-300 ring-1 ring-white/5' : 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100/50'}`}>
-                    <FaPaperclip className="opacity-70" size={10} />
-                    <span className="truncate max-w-[140px] uppercase">{file.name}</span>
-                    <button type="button" onClick={() => onRemoveFile(index)} className="ml-1 hover:text-red-500 transition-colors p-0.5 rounded-full hover:bg-black/10">✕</button>
+                <div key={index} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-[11px] font-black tracking-tight transition-all hover:scale-105 group/file ${isDarkMode ? 'bg-indigo-500/10 text-indigo-300 ring-1 ring-white/5 hover:bg-indigo-500/20' : 'bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100/50 hover:bg-indigo-100'}`}>
+                    <FaPaperclip className="opacity-50 group-hover/file:rotate-12 transition-transform" size={10} />
+                    <span className="truncate max-w-[140px] uppercase font-outfit">{file.name}</span>
+                    <button
+                        type="button"
+                        onClick={() => onRemoveFile(index)}
+                        className="ml-1 hover:text-red-500 transition-colors p-0.5 rounded-full hover:bg-black/10 flex items-center justify-center w-4 h-4"
+                    >
+                        <span className="text-[10px]">✕</span>
+                    </button>
                 </div>
             ))}
         </div>

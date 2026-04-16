@@ -42,10 +42,9 @@ export class InvalidInputError extends Error {
  * Represents a discrete, executable task that the agent can perform in the browser.
  * Each action is associated with a Zod schema for input validation and metadata for prompting.
  */
-export class Action {
+export class Action<T = any> {
     constructor(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        private readonly handler: (input: any) => Promise<ActionResult>,
+        private readonly handler: (input: T) => Promise<ActionResult>,
         public readonly schema: ActionSchema,
         // Whether this action has an index argument
         public readonly hasIndex: boolean = false,
@@ -66,15 +65,14 @@ export class Action {
             Object.keys((schema as z.ZodObject<Record<string, z.ZodTypeAny>>).shape || {}).length === 0;
 
         if (isEmptySchema) {
-            return await this.handler({});
+            return await this.handler({} as T);
         }
 
         const parsedArgs = this.schema.schema.safeParse(input);
         if (!parsedArgs.success) {
-            const errorMessage = parsedArgs.error.message;
-            throw new InvalidInputError(errorMessage);
+            throw new InvalidInputError(parsedArgs.error.message);
         }
-        return await this.handler(parsedArgs.data);
+        return await this.handler(parsedArgs.data as T);
     }
 
     /**
@@ -88,27 +86,25 @@ export class Action {
      * Generates a descriptive prompt for the LLM explaining how to use this action.
      */
     prompt(): string {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const schemaShape = (this.schema.schema as z.ZodObject<any>).shape || {};
         const schemaProperties = Object.entries(schemaShape).map(([key, value]) => {
             const zodValue = value as z.ZodTypeAny;
-            return `'${key}': {'type': '${zodValue.description}', ${zodValue.isOptional() ? "'optional': true" : "'required': true"}}`;
+            const requiredStr = zodValue.isOptional() ? 'optional' : 'required';
+            return `'${key}': {'type': '${zodValue.description || 'any'}', 'status': '${requiredStr}'}`;
         });
 
-        const schemaStr =
-            schemaProperties.length > 0 ? `{${this.name()}: {${schemaProperties.join(', ')}}}` : `{${this.name()}: {}}`;
+        const actionBody = schemaProperties.length > 0
+            ? `{${schemaProperties.join(', ')}}`
+            : '{}';
 
-        return `${this.schema.description}:\n${schemaStr}`;
+        return `${this.schema.description}:\n{'${this.name()}': ${actionBody}}`;
     }
 
     /**
      * Extracts the 'index' argument from the input if applicable.
      */
     getIndexArg(input: unknown): number | null {
-        if (!this.hasIndex) {
-            return null;
-        }
-        if (input && typeof input === 'object' && 'index' in input) {
+        if (this.hasIndex && input && typeof input === 'object' && 'index' in input) {
             return (input as { index: number }).index;
         }
         return null;
@@ -118,10 +114,7 @@ export class Action {
      * Updates the 'index' argument in the input if applicable.
      */
     setIndexArg(input: unknown, newIndex: number): boolean {
-        if (!this.hasIndex) {
-            return false;
-        }
-        if (input && typeof input === 'object') {
+        if (this.hasIndex && input && typeof input === 'object') {
             (input as { index: number }).index = newIndex;
             return true;
         }

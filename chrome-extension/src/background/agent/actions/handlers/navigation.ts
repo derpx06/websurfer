@@ -5,12 +5,14 @@ import {
     goToUrlActionSchema,
     goBackActionSchema,
     searchGoogleActionSchema,
+    searchDuckDuckGoActionSchema,
     openTabActionSchema,
     closeTabActionSchema,
     switchTabActionSchema
 } from '../schemas';
 import { z } from 'zod';
 import { normalizeNavigationUrl } from '../base';
+import { DuckDuckGoService, type SearchResult } from '../../../services/DuckDuckGoService';
 
 /**
  * Navigates the current tab to a specified URL.
@@ -42,7 +44,7 @@ export async function handleSearchGoogle(
     const intent = input.intent || t('act_searchGoogle_start', [input.query]);
     context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-    await context.browserContext.navigateTo(`https://www.google.com/search?q=${input.query}`);
+    await context.browserContext.navigateTo(`https://www.google.com/search?q=${encodeURIComponent(input.query)}`);
 
     const msg2 = t('act_searchGoogle_ok', [input.query]);
     context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
@@ -50,6 +52,49 @@ export async function handleSearchGoogle(
         extractedContent: msg2,
         includeInMemory: true,
     });
+}
+
+/**
+ * Performs a search on DuckDuckGo and returns results directly to the agent.
+ */
+export async function handleSearchDuckDuckGo(
+    context: AgentContext,
+    input: z.infer<typeof searchDuckDuckGoActionSchema.schema>
+): Promise<ActionResult> {
+    const intent = input.intent || t('act_searchDuckDuckGo_start', [input.query]) || `Searching DuckDuckGo for: ${input.query}`;
+    context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
+
+    try {
+        const results = await DuckDuckGoService.search(input.query);
+
+        if (results.length === 0) {
+            const noResultsMsg = `No results found for: ${input.query}`;
+            context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, noResultsMsg);
+            return new ActionResult({
+                extractedContent: noResultsMsg,
+                includeInMemory: true,
+            });
+        }
+
+        const formattedResults = results
+            .map((r: SearchResult, i: number) => `${i + 1}. ${r.title}\n   URL: ${r.url}\n   Snippet: ${r.description}`)
+            .join('\n\n');
+
+        const successMsg = `Found ${results.length} results for: ${input.query}`;
+        context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, successMsg);
+
+        return new ActionResult({
+            extractedContent: `Search Results for "${input.query}":\n\n${formattedResults}`,
+            includeInMemory: true,
+        });
+    } catch (error) {
+        const errorMsg = `Search failed: ${error instanceof Error ? error.message : String(error)}`;
+        context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMsg);
+        return new ActionResult({
+            extractedContent: errorMsg,
+            includeInMemory: true,
+        });
+    }
 }
 
 /**

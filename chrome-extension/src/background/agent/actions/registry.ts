@@ -30,6 +30,7 @@ export class ActionRegistry {
             // Navigation Actions
             new Action(input => navigationHandlers.handleGoToUrl(context, input), schemas.goToUrlActionSchema),
             new Action(input => navigationHandlers.handleSearchGoogle(context, input), schemas.searchGoogleActionSchema),
+            new Action(input => navigationHandlers.handleSearchDuckDuckGo(context, input), schemas.searchDuckDuckGoActionSchema),
             new Action(input => navigationHandlers.handleGoBack(context, input), schemas.goBackActionSchema),
             new Action(input => navigationHandlers.handleOpenTab(context, input), schemas.openTabActionSchema),
             new Action(input => navigationHandlers.handleSwitchTab(context, input), schemas.switchTabActionSchema),

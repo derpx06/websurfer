@@ -20,16 +20,16 @@ const logger = createLogger('NavigationStrategy');
 export class NavigationStrategy implements ExecutionStrategy<NavigatorResult> {
     constructor(private readonly navigator: NavigatorAgent) { }
 
-    async execute(context: AgentContext): Promise<AgentOutput<NavigatorResult> | null> {
+    async execute(context: AgentContext): Promise<AgentOutput<NavigatorResult> | undefined> {
         try {
             if (context.paused || context.stopped) {
-                return null;
+                return undefined;
             }
 
             const navOutput = await this.navigator.execute();
 
             if (context.paused || context.stopped) {
-                return null;
+                return undefined;
             }
 
             context.nSteps++;
@@ -58,7 +58,7 @@ export class NavigationStrategy implements ExecutionStrategy<NavigatorResult> {
             if (context.consecutiveFailures >= context.options.maxFailures) {
                 throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
             }
-            return null;
+            return undefined;
         }
     }
 }

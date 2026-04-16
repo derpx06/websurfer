@@ -50,12 +50,19 @@ export const ChatActionButtons: React.FC<ChatActionButtonsProps> = ({
         <button
             type="submit"
             disabled={isSendButtonDisabled}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-black transition-all duration-300 uppercase tracking-widest ${isSendButtonDisabled
-                ? (isDarkMode ? 'bg-white/5 text-slate-600' : 'bg-gray-100 text-gray-400')
-                : 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg hover:shadow-indigo-500/30 transform hover:-translate-y-0.5 active:translate-y-0 group/send'
-                }`}>
-            <span>Send</span>
-            <BsSendFill size={12} className={`transition-all duration-500 ${!isSendButtonDisabled ? 'group-hover/send:translate-x-1 group-hover/send:-translate-y-1' : ''}`} />
+            className={`flex items-center gap-3 px-6 py-2.5 rounded-xl text-[13px] font-black transition-all duration-500 uppercase tracking-widest shadow-2xl relative overflow-hidden group/send ${isSendButtonDisabled
+                ? (isDarkMode ? 'bg-white/5 text-slate-600' : 'bg-slate-100 text-slate-400')
+                : 'bg-gradient-to-br from-cyan-500 via-indigo-500 to-indigo-600 text-white hover:shadow-[0_0_30px_rgba(34,211,238,0.4)] hover:-translate-y-0.5 active:translate-y-0 active:scale-95'
+                }`}
+            style={{ fontFamily: "'Outfit', sans-serif" }}>
+            <span className="relative z-10 transition-colors duration-300">Send</span>
+            <BsSendFill
+                size={14}
+                className={`relative z-10 transition-all duration-500 ${!isSendButtonDisabled ? 'group-hover/send:translate-x-1 group-hover/send:-translate-y-1 group-hover/send:scale-110' : ''}`}
+            />
+            {!isSendButtonDisabled && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover/send:translate-x-full transition-transform duration-1000" />
+            )}
         </button>
     );
 };
@@ -69,12 +76,12 @@ export const ShortcutHint: React.FC<ShortcutHintProps> = ({ isDarkMode, disabled
     if (disabled) return null;
 
     return (
-        <div className="flex items-center justify-center gap-2 mt-2 opacity-60">
-            <div className="flex items-center gap-1">
-                <span className={`flex items-center justify-center min-w-[18px] h-[18px] px-0.5 rounded border text-[9px] font-black ${isDarkMode ? 'bg-white/5 border-white/10 text-slate-500' : 'bg-white border-gray-100 text-gray-400'}`}>⌘</span>
-                <span className={`flex items-center justify-center h-[18px] px-1.5 rounded border text-[9px] font-black ${isDarkMode ? 'bg-white/5 border-white/10 text-slate-500' : 'bg-white border-gray-100 text-gray-400'}`}>ENTER</span>
+        <div className="flex items-center justify-center gap-3 mt-4 opacity-70 hover:opacity-100 transition-opacity duration-500">
+            <div className="flex items-center gap-1.5 grayscale-0 opacity-100 transition-all duration-500">
+                <span className={`flex items-center justify-center min-w-[20px] h-[20px] px-1 rounded-md border text-[10px] font-black font-mono shadow-sm ${isDarkMode ? 'bg-white/10 border-white/20 text-slate-300' : 'bg-white border-slate-300 text-slate-600'}`}>⌘</span>
+                <span className={`flex items-center justify-center h-[20px] px-2 rounded-md border text-[10px] font-black font-mono shadow-sm ${isDarkMode ? 'bg-white/10 border-white/20 text-slate-300' : 'bg-white border-slate-300 text-slate-600'}`}>ENTER</span>
             </div>
-            <span className={`text-[8px] font-black uppercase tracking-[0.1em] ${isDarkMode ? 'text-slate-600' : 'text-gray-300'}`}>automate</span>
+            <span className={`text-[10px] font-black uppercase tracking-[0.2em] font-outfit ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>navigate & automate</span>
         </div>
     );
 };

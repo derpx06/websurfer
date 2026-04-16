@@ -191,162 +191,45 @@ export class Executor {
       this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_START, this.context.taskId);
       void analytics.trackTaskStart(this.context.taskId);
 
-      let step = 0;
-      let latestPlanOutput: AgentOutput<PlannerOutput> | null = null;
+      let latestPlanOutput: AgentOutput<PlannerOutput> | undefined = undefined;
       let navigatorDone = false;
 
       // Main Iterative Loop
-      for (step = 0; step < allowedMaxSteps; step++) {
-        context.stepInfo = {
-          stepNumber: context.nSteps,
-          maxSteps: context.options.maxSteps,
-        };
+      for (let step = context.nSteps; step < allowedMaxSteps; step++) {
+        context.nSteps = step;
+        context.stepInfo = { stepNumber: step, maxSteps: allowedMaxSteps };
 
-        // --- Phase 1: Tab Stability Check ---
-        // Ensure the browser tab is stable and has a valid URL before proceeding
-        const tabId = this.context.browserContext.currentTabId;
-        if (tabId) {
-          let stableUrl = null;
-          for (let retry = 0; retry < 5; retry++) {
-            stableUrl = await safeGetTabUrl(tabId);
-            if (stableUrl) break;
-            logger.info(`Tab ${tabId} URL is undefined (navigating?), retrying in 500ms... (${retry + 1}/5)`);
-            await new Promise(resolve => setTimeout(resolve, 500));
-          }
-        }
-
+        await this.ensureTabStability();
         logger.info(`🔄 Step ${step + 1} / ${allowedMaxSteps}`);
 
-        // Stop check: Handles manual stops, pauses, or failure limits
-        if (await this.shouldStop()) {
-          break;
-        }
+        if (await this.shouldStop()) break;
 
-        // --- Phase 2: Planning & Strategy ---
-        // The Planner is invoked periodically or when a sub-task is marked done
-        if (this.planningStrategy && (context.nSteps % context.options.planningInterval === 0 || navigatorDone || context.loopDetected)) {
+        // Planning Phase
+        const isPlanningStep = context.nSteps % context.options.planningInterval === 0 || navigatorDone || context.loopDetected;
+        if (this.planningStrategy && isPlanningStep) {
           navigatorDone = false;
-
-          let wasLoopDetected = false;
-          if (context.loopDetected) {
-            logger.info('Running planner due to loop detection!');
-            wasLoopDetected = true;
-          }
-
-          // Add current browser state to memory if needed to provide better context to the model
-          if (this.tasks.length > 1 || context.nSteps > 0) {
-            await this.navigator.addStateMessageToMemory();
-            context.stateMessageAdded = true;
-          }
-
-          // Reset loop flag after state message captures it
-          if (wasLoopDetected) {
-            context.loopDetected = false;
-          }
-
-          // Run the planning strategy to get the next optimal sub-task
-          latestPlanOutput = await this.planningStrategy.execute(context);
-
-          // If the Planner decides the task is finished, exit the loop
-          if (latestPlanOutput?.result?.done) {
-            break;
-          }
-
-          // Stop if the planner returns a terminal error
-          if (latestPlanOutput?.error) {
-            throw new Error(latestPlanOutput.error);
-          }
+          latestPlanOutput = await this.performPlanning();
+          if (latestPlanOutput?.result?.done) break;
+          if (latestPlanOutput?.error) throw new Error(latestPlanOutput.error);
         }
 
-        // --- Phase 3: Checkpoint Preparation ---
-        // Update rollback URLs for sub-tasks to enable state recovery on failure
-        const pendingTasks = context.taskStack.filter(t => t.status !== 'done');
-        if (pendingTasks.length > 0) {
-          const activeTask = pendingTasks[pendingTasks.length - 1];
-          if (!activeTask.rollbackUrl) {
-            const browserState = await context.browserContext.getCachedState();
-            if (browserState && browserState.url) {
-              activeTask.rollbackUrl = browserState.url;
-              logger.info(`Set rollbackUrl for current sub-task: ${activeTask.rollbackUrl}`);
-            }
-          }
-        }
+        this.updateRollbackUrls();
 
-        // --- Phase 4: Execution (Navigation) ---
-        // The Navigator translates plans into actual browser actions
-        let navOutput;
+        // Navigation Phase
         try {
-          navOutput = await this.navigationStrategy.execute(context);
+          const navOutput = await this.navigationStrategy.execute(context);
+          navigatorDone = navOutput?.result?.done ?? navigatorDone;
         } catch (error) {
-          // Special handling for consecutive failures - attempt to rollback to previous sub-task state
-          if (error instanceof MaxFailuresReachedError) {
-            const currentPending = context.taskStack.filter(t => t.status !== 'done');
-            if (currentPending.length > 0 && currentPending[currentPending.length - 1].rollbackUrl) {
-              const activeTask = currentPending[currentPending.length - 1];
-              logger.warning(`Max failures reached! Initiating state rollback to ${activeTask.rollbackUrl!}`);
-              await context.browserContext.navigateTo(activeTask.rollbackUrl!);
-
-              // Reset failure count and force a planning run next step
-              context.consecutiveFailures = 0;
-              activeTask.status = 'failed';
-              navigatorDone = true;
-            } else {
-              throw error; // No rollback possible, escalate error
-            }
-          } else {
-            throw error;
-          }
+          navigatorDone = await this.handleNavigationError(error);
         }
 
-        // Check if the current navigation sub-task is marked as done
-        navigatorDone = navOutput?.result?.done ?? navigatorDone;
-
-        // --- Phase 5: Monitoring & Persistence ---
-        // Check for repetitive loops and save progress
-        if (LoopDetector.detect(context)) {
-          context.loopDetected = true;
-          navigatorDone = true;
-          await new Promise(r => setTimeout(r, 2000));
-        }
-
-        // Periodic checkpoint 
-        await this.checkpointManager.saveCheckpoint(step, this.tasks[0]);
-
-        // Agent Sight: Emit a thumbnail of the current browser state for the UI preview
-        await this.captureAndEmitSight();
-
+        await this.monitorProgress(step);
         if (navigatorDone) {
           logger.info('🔄 Navigator indicates completion - will be validated by next planner run');
         }
       }
 
-      // Determine task completion status
-      const isCompleted = latestPlanOutput?.result?.done === true;
-
-      if (isCompleted) {
-        // Emit final answer if available, otherwise use task ID
-        const finalMessage = this.context.finalAnswer || this.context.taskId;
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, finalMessage);
-
-        // Track task completion
-        void analytics.trackTaskComplete(this.context.taskId);
-      } else if (step >= allowedMaxSteps) {
-        logger.error('❌ Task failed: Max steps reached');
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_maxStepsReached'));
-
-        // Track task failure with specific error category
-        const maxStepsError = new MaxStepsReachedError(t('exec_errors_maxStepsReached'));
-        const errorCategory = analytics.categorizeError(maxStepsError);
-        void analytics.trackTaskFailed(this.context.taskId, errorCategory);
-      } else if (this.context.stopped) {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
-
-        // Track task cancellation
-        void analytics.trackTaskCancelled(this.context.taskId);
-      } else {
-        this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t('exec_task_pause'));
-        // Note: We don't track pause as it's not a final state
-      }
+      await this.emitFinalResult(latestPlanOutput ?? undefined, allowedMaxSteps);
     } catch (error) {
       if (error instanceof RequestCancelledError) {
         this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
@@ -406,6 +289,113 @@ export class Executor {
     }
 
     return false;
+  }
+
+  /**
+   * Phase 1: Ensures the browser tab is stable and has a valid URL.
+   */
+  private async ensureTabStability(): Promise<void> {
+    const tabId = this.context.browserContext.currentTabId;
+    if (!tabId) return;
+
+    for (let retry = 0; retry < 5; retry++) {
+      const stableUrl = await safeGetTabUrl(tabId);
+      if (stableUrl) return;
+      logger.info(`Tab ${tabId} URL is undefined (navigating?), retrying in 500ms... (${retry + 1}/5)`);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+  }
+
+  /**
+   * Phase 2: Coordinates the planning strategy to determine the next task goal.
+   */
+  private async performPlanning(): Promise<AgentOutput<PlannerOutput> | undefined> {
+    if (!this.planningStrategy) return;
+
+    const wasLoopDetected = this.context.loopDetected;
+    if (wasLoopDetected) {
+      logger.info('Running planner due to loop detection!');
+      this.context.loopDetected = false;
+    }
+
+    if (this.tasks.length > 1 || this.context.nSteps > 0) {
+      await this.navigator.addStateMessageToMemory();
+      this.context.stateMessageAdded = true;
+    }
+
+    return await this.planningStrategy.execute(this.context);
+  }
+
+  /**
+   * Phase 3: Updates rollback points for sub-tasks to enable recovery from consecutive failures.
+   */
+  private async updateRollbackUrls(): Promise<void> {
+    const pendingTasks = this.context.taskStack.filter(t => t.status !== 'done');
+    if (pendingTasks.length === 0) return;
+
+    const activeTask = pendingTasks[pendingTasks.length - 1];
+    if (!activeTask.rollbackUrl) {
+      const browserState = await this.context.browserContext.getCachedState();
+      if (browserState?.url) {
+        activeTask.rollbackUrl = browserState.url;
+        logger.info(`Set rollbackUrl for current sub-task: ${activeTask.rollbackUrl}`);
+      }
+    }
+  }
+
+  /**
+   * Phase 4: Handles errors occurring during the navigation phase, including state rollbacks.
+   */
+  private async handleNavigationError(error: unknown): Promise<boolean> {
+    if (error instanceof MaxFailuresReachedError) {
+      const currentPending = this.context.taskStack.filter(t => t.status !== 'done');
+      if (currentPending.length > 0 && currentPending[currentPending.length - 1].rollbackUrl) {
+        const activeTask = currentPending[currentPending.length - 1];
+        logger.warning(`Max failures reached! Initiating state rollback to ${activeTask.rollbackUrl!}`);
+        await this.context.browserContext.navigateTo(activeTask.rollbackUrl!);
+
+        this.context.consecutiveFailures = 0;
+        activeTask.status = 'failed';
+        return true; // Mark as done for this step to force a re-plan
+      }
+    }
+    throw error;
+  }
+
+  /**
+   * Phase 5: Monitors execution for repetitive loops and persists current progress via checkpoints.
+   */
+  private async monitorProgress(step: number): Promise<void> {
+    if (LoopDetector.detect(this.context)) {
+      this.context.loopDetected = true;
+      await new Promise(r => setTimeout(r, 2000));
+    }
+
+    await this.checkpointManager.saveCheckpoint(step, this.tasks[0]);
+    await this.captureAndEmitSight();
+  }
+
+  /**
+   * Finalizes the execution by emitting events and tracking results in analytics.
+   */
+  private async emitFinalResult(latestPlanOutput: AgentOutput<PlannerOutput> | undefined, maxSteps: number): Promise<void> {
+    const isCompleted = latestPlanOutput?.result?.done === true;
+
+    if (isCompleted) {
+      const finalMessage = this.context.finalAnswer || this.context.taskId;
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_OK, finalMessage);
+      void analytics.trackTaskComplete(this.context.taskId);
+    } else if (this.context.nSteps >= maxSteps) {
+      logger.error('❌ Task failed: Max steps reached');
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_FAIL, t('exec_errors_maxStepsReached'));
+      const error = new MaxStepsReachedError(t('exec_errors_maxStepsReached'));
+      void analytics.trackTaskFailed(this.context.taskId, analytics.categorizeError(error));
+    } else if (this.context.stopped) {
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_CANCEL, t('exec_task_cancel'));
+      void analytics.trackTaskCancelled(this.context.taskId);
+    } else {
+      this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_PAUSE, t('exec_task_pause'));
+    }
   }
 
   /**

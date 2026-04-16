@@ -71,6 +71,7 @@ function createOpenAIChatModel(
     const args: any = {
         model: modelConfig.modelName,
         apiKey: providerConfig.apiKey,
+        maxRetries: 0,
         configuration: {
             baseURL: providerConfig.baseUrl,
             defaultHeaders: extraFetchOptions?.headers,
@@ -124,6 +125,7 @@ function createAzureChatModel(providerConfig: ProviderConfig, modelConfig: Model
         azureOpenAIApiKey: apiKey,
         azureOpenAIApiVersion: azureApiVersion,
         model: deploymentName,
+        maxRetries: 0,
     };
 
     if (isOSeries) {
@@ -168,6 +170,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 apiKey: providerConfig.apiKey,
                 maxTokens: DEFAULT_MAX_TOKENS,
                 temperature,
+                maxRetries: 0,
             });
 
         case ProviderTypeEnum.DeepSeek:
@@ -176,6 +179,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 apiKey: providerConfig.apiKey,
                 temperature,
                 topP,
+                maxRetries: 0,
             }) as BaseChatModel;
 
         case ProviderTypeEnum.Gemini:
@@ -184,6 +188,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 apiKey: providerConfig.apiKey,
                 temperature,
                 topP,
+                maxRetries: 0,
             });
 
         case ProviderTypeEnum.Grok:
@@ -193,6 +198,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 temperature,
                 topP,
                 maxTokens: DEFAULT_MAX_TOKENS,
+                maxRetries: 0,
             } as any) as BaseChatModel;
 
         case ProviderTypeEnum.Groq:
@@ -202,6 +208,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 temperature,
                 topP,
                 maxTokens: DEFAULT_MAX_TOKENS,
+                maxRetries: 0,
             });
 
         case ProviderTypeEnum.Cerebras:
@@ -211,6 +218,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 temperature,
                 topP,
                 maxTokens: DEFAULT_MAX_TOKENS,
+                maxRetries: 0,
             });
 
         case ProviderTypeEnum.Ollama:
@@ -221,6 +229,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 topP,
                 temperature,
                 maxTokens: DEFAULT_MAX_TOKENS,
+                maxRetries: 0,
                 numCtx: 64000, // Optimized context window for agent stability
             } as any);
 
@@ -239,6 +248,7 @@ export function createChatModel(providerConfig: ProviderConfig, modelConfig: Mod
                 topP,
                 temperature,
                 maxTokens: DEFAULT_MAX_TOKENS,
+                maxRetries: 0,
                 configuration: { baseURL: providerConfig.baseUrl },
             });
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { OrbVisual } from './welcome/OrbVisual';
 
 interface EmptyChatProps {
     onSelectPrompt: (text: string) => void;
@@ -7,157 +8,81 @@ interface EmptyChatProps {
 
 const EmptyChat: React.FC<EmptyChatProps> = ({ onSelectPrompt, isDarkMode }) => {
     return (
-        <div className={`relative flex flex-col h-full overflow-y-auto overflow-x-hidden p-6 ${isDarkMode ? 'text-gray-100' : 'text-gray-900'} scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-400/20`}>
-
-            {/* Background Ambient Effects */}
-            <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-                <div className={`absolute -top-[10%] -right-[10%] w-[80%] h-[50%] rounded-full blur-[130px] opacity-25 ${isDarkMode ? 'bg-indigo-600' : 'bg-indigo-200'}`}></div>
-                <div className={`absolute -bottom-[20%] -left-[10%] w-[90%] h-[60%] rounded-full blur-[150px] opacity-15 ${isDarkMode ? 'bg-cyan-600' : 'bg-cyan-200'}`}></div>
+        <div className="relative h-full w-full overflow-hidden">
+            {/* Background Studio Lighting */}
+            <div className="absolute inset-0 z-0 pointer-events-none select-none">
+                <div className={`absolute inset-0 opacity-[0.14] ${isDarkMode
+                    ? 'bg-[radial-gradient(circle_at_0%_0%,rgba(99,102,241,0.5),transparent_40%),radial-gradient(circle_at_100%_100%,rgba(34,211,238,0.4),transparent_50%)]'
+                    : 'bg-[radial-gradient(circle_at_0%_0%,rgba(165,180,252,0.4),transparent_40%),radial-gradient(circle_at_100%_100%,rgba(165,243,252,0.3),transparent_50%)]'
+                    }`}></div>
+                <div className={`absolute inset-0 ${isDarkMode ? 'opacity-[0.03]' : 'opacity-[0.01]'} bg-[url("https://www.transparenttextures.com/patterns/carbon-fibre.png")]`}></div>
             </div>
 
-            <div className="relative z-10 flex flex-col flex-1 pb-4">
-                {/* HERO SECTION */}
-                <div className="flex flex-col items-center text-center mt-6 mb-8 transition-all duration-700">
-                    <div className="relative mb-6 group">
+            {/* Content Layer - Optimized Precision */}
+            <div className={`relative z-10 flex flex-col h-full overflow-y-auto overflow-x-hidden p-6 ${isDarkMode ? 'text-slate-100' : 'text-slate-900'} scrollbar-none`}>
+                <div className="relative z-10 flex flex-col flex-1 pb-16">
 
-                        {/* Premium Orbital Backdrop - Static & Subtle */}
-                        <div className="absolute inset-0 z-0 opacity-5">
-                            {/* Primary Orbit */}
-                            <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 rounded-full border border-indigo-500`}></div>
-                            {/* Secondary Orbit */}
-                            <div className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full border border-cyan-500`}></div>
+                    {/* HERO SECTION - RECALIBRATED */}
+                    <div className="flex flex-col items-center text-center mt-6 mb-10 transition-all duration-1000 animate-rise">
+                        <div className="mb-6 relative scale-90">
+                            <div className={`absolute inset-0 blur-[60px] opacity-25 scale-125 transition-all duration-[2s] group-hover:opacity-40 ${isDarkMode ? 'bg-indigo-500' : 'bg-indigo-300/30'}`}></div>
+                            <div className="relative z-10">
+                                <OrbVisual isDarkMode={isDarkMode} />
+                            </div>
                         </div>
 
-                        {/* Glow and Logo Container - High-Fidelity Professional Design */}
-                        <div className={`absolute inset-0 rounded-full blur-[60px] scale-125 opacity-20 ${isDarkMode ? 'bg-indigo-500' : 'bg-indigo-300'} animate-[pulse_8s_ease-in-out_infinite]`}></div>
-                        <div className={`relative flex items-center justify-center w-24 h-24 rounded-full border shadow-[0_0_50px_rgba(99,102,241,0.15)] backdrop-blur-3xl transition-all duration-1000 group-hover:scale-105 ${isDarkMode ? 'bg-[#1e293b]/60 border-white/10 text-indigo-400' : 'bg-white/90 border-indigo-100 text-indigo-600'}`}>
-                            <svg className="w-14 h-14 transition-all duration-1000" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                {/* Globe Sphere - Sophisticated Precise Look */}
-                                <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="0.5" className="opacity-20" />
-                                <circle cx="32" cy="32" r="22" stroke="currentColor" strokeWidth="0.8" className="opacity-25" />
-                                <ellipse cx="32" cy="32" rx="7" ry="22" stroke="currentColor" strokeWidth="1" className="opacity-30" />
+                        <h1 className="text-[30px] font-black tracking-[-0.04em] mb-2 font-outfit leading-tight drop-shadow-sm">
+                            Your AI <span className="bg-clip-text text-transparent bg-gradient-to-br from-indigo-500 via-cyan-400 to-indigo-600 animate-shimmer bg-[length:200%_auto]">Browser Agent</span>
+                        </h1>
+                        <p className={`max-w-[280px] text-[15px] font-medium leading-relaxed tracking-tight ${isDarkMode ? 'text-slate-400/90' : 'text-slate-500'} font-outfit`}>
+                            Describe a mission. WebSurfer handles the rest.
+                        </p>
+                    </div>
 
-                                <circle cx="32" cy="32" r="4.5" fill="currentColor" />
-                                <circle cx="32" cy="32" r="14" stroke="currentColor" strokeWidth="0.8" strokeDasharray="4 4" className="opacity-40 animate-[spin_60s_linear_infinite]" />
-
-                                {/* Dynamic Intelligence Nodes */}
-                                <circle cx="32" cy="4" r="1.5" fill="currentColor" className="animate-pulse" />
-                                <circle cx="32" cy="60" r="1.5" fill="currentColor" />
-                                <circle cx="4" cy="32" r="1.5" fill="currentColor" />
-                                <circle cx="60" cy="32" r="1.5" fill="currentColor" />
-                            </svg>
+                    {/* MISSION TILES - PREMIUM GRID */}
+                    <div className="w-full px-1">
+                        <div className="flex items-center gap-4 mb-6">
+                            <div className={`h-[1px] flex-grow ${isDarkMode ? 'bg-white/10' : 'bg-slate-200/60'}`}></div>
+                            <h3 className={`text-[10px] font-black uppercase tracking-[0.4em] ${isDarkMode ? 'text-indigo-400/80' : 'text-indigo-600/60'}`}>Tactical Intelligence</h3>
+                            <div className={`h-[1px] flex-grow ${isDarkMode ? 'bg-white/10' : 'bg-slate-200/60'}`}></div>
                         </div>
-                    </div>
 
-                    <h1 className="text-[32px] font-[900] tracking-tight mb-3 font-outfit leading-none">
-                        Your AI <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 via-indigo-400 to-cyan-400">Browser Agent</span>
-                    </h1>
-                    <p className={`max-w-[300px] text-[14px] font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-gray-600'} font-inter`}>
-                        I automate your complex web workflows<br />autonomously with precision.
-                    </p>
-                </div>
+                        <div className="grid grid-cols-2 gap-3.5">
+                            {[
+                                { title: 'Market Alpha', desc: 'Find SF Series A rounds', prompt: 'Research the latest Series A funding rounds in San Francisco on TechCrunch' },
+                                { title: 'Global Search', desc: 'Search web with DuckDuckGo', prompt: 'Search DuckDuckGo for: "Latest advancements in browser-based AI agents"' },
+                                { title: 'Hardware Scout', desc: 'Cheapest RTX 4090 deals', prompt: 'Find the cheapest RTX 4090 currently in stock across Amazon, Best Buy, and Newegg' },
+                                { title: 'Data Extraction', desc: 'Pricing tables to MD', prompt: 'Extract pricing plans from this page as markdown' },
+                                { title: 'Social Audit', desc: 'Export all lead emails', prompt: 'Extract all email addresses and social media profiles found on this page' },
+                                { title: 'Fact Checker', desc: 'Verify claims vs PRs', prompt: 'Fact check the technical claims in this article against official press releases' },
+                            ].map((item, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => onSelectPrompt(item.prompt)}
+                                    className={`group/tile relative flex flex-col items-start text-left p-5 rounded-[28px] border transition-all duration-500 hover:-translate-y-1.5 ${isDarkMode
+                                        ? 'bg-slate-900/45 border-white/10 hover:bg-slate-900/60 hover:border-indigo-500/40 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.8),0_0_20px_rgba(99,102,241,0.15)] shadow-xl'
+                                        : 'bg-indigo-50/50 border-indigo-100/60 hover:bg-white hover:border-indigo-300 hover:shadow-[0_15px_35px_-10px_rgba(99,102,241,0.15)]'
+                                        } backdrop-blur-xl`}>
+                                    <h4 className={`text-[14.5px] font-black tracking-tight font-outfit mb-2 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.title}</h4>
+                                    <p className={`text-[12px] font-semibold tracking-tight leading-[1.6] mb-8 ${isDarkMode ? 'text-slate-300/80 group-hover/tile:text-slate-100' : 'text-slate-600 group-hover/tile:text-slate-700'} transition-colors duration-300`}>
+                                        {item.desc}
+                                    </p>
 
-                {/* QUICK ACTIONS */}
-                <div className="w-full max-w-sm mx-auto mb-6">
-                    <div className="flex items-center gap-3 mb-4 px-1">
-                        <div className={`h-[1px] flex-grow ${isDarkMode ? 'bg-white/10' : 'bg-gray-100'}`}></div>
-                        <h3 className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Quick Capabilities</h3>
-                        <div className={`h-[1px] flex-grow ${isDarkMode ? 'bg-white/10' : 'bg-gray-100'}`}></div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                        {[
-                            {
-                                id: 'sum',
-                                title: 'Summarize',
-                                desc: 'Insights',
-                                icon: <><circle cx="11" cy="11" r="7" /><path d="m21 21-4.35-4.35" /></>,
-                                color: 'blue',
-                                prompt: 'Search and summarize the latest news about '
-                            },
-                            {
-                                id: 'fill',
-                                title: 'Automate',
-                                desc: 'Forms',
-                                icon: <><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" /></>,
-                                color: 'emerald',
-                                prompt: 'Fill out the form on this page with '
-                            },
-                            {
-                                id: 'extract',
-                                title: 'Scrape',
-                                desc: 'Data',
-                                icon: <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />,
-                                color: 'violet',
-                                prompt: 'Extract all data from the current page and '
-                            },
-                            {
-                                id: 'shot',
-                                title: 'Capture',
-                                desc: 'Screen',
-                                icon: <><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></>,
-                                color: 'amber',
-                                prompt: 'Navigate to and take a screenshot of '
-                            }
-                        ].map((action) => (
-                            <button
-                                key={action.id}
-                                onClick={() => onSelectPrompt(action.prompt)}
-                                className={`group flex flex-col items-start p-5 rounded-[24px] border transition-all duration-300 text-left hover:-translate-y-1.5 ${isDarkMode
-                                    ? 'bg-[#1e293b]/40 border-white/10 hover:bg-white/10 hover:border-indigo-500/30 shadow-2xl shadow-black/20'
-                                    : 'bg-white border-gray-100 hover:border-indigo-100 hover:shadow-[0_25px_50px_rgba(0,0,0,0.06)] shadow-sm'
-                                    }`}>
-                                <div className={`p-2.5 rounded-xl mb-4 transition-transform group-hover:scale-110 duration-300 ${isDarkMode
-                                    ? `bg-${action.color}-500/10 text-${action.color}-400`
-                                    : `bg-${action.color}-50 text-${action.color}-600`
-                                    }`}>
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                                        {action.icon}
-                                    </svg>
-                                </div>
-                                <div className="text-[15px] font-[800] font-outfit mb-0.5 leading-tight">{action.title}</div>
-                                <div className={`text-[11px] font-semibold leading-snug tracking-tight ${isDarkMode ? 'text-slate-400' : 'text-gray-500'} font-inter`}>{action.desc}</div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {/* EXAMPLES */}
-                <div className="w-full max-w-sm mx-auto">
-                    <h3 className={`text-[10px] font-bold uppercase tracking-[0.2em] mb-3 pl-1 ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>Recommended Workflows</h3>
-
-                    <div className="space-y-3">
-                        {[
-                            { color: 'amber', label: 'Market Intelligence', text: 'Summarize top Hacker News', prompt: 'Go to Hacker News and summarize the top 5 stories' },
-                            { color: 'emerald', label: 'Development', text: 'Trending Python repos on GitHub', prompt: 'Search GitHub for trending Python repos this week and list them' },
-                            { color: 'indigo', label: 'Travel Planning', text: 'Cheapest flights to Bangalore', prompt: 'Find the cheapest flight from Mumbai to Bangalore next Friday' },
-                            { color: 'sky', label: 'Communication', text: 'Check inbox for unread priority', prompt: 'Check my inbox and tell me if I have any unread important messages' }
-                        ].map((example, idx) => (
-                            <button
-                                key={idx}
-                                className={`group w-full flex items-center justify-between px-5 py-4 rounded-2xl border transition-all duration-300 ${isDarkMode
-                                    ? 'bg-[#1e293b]/30 border-white/5 hover:bg-[#2e3b52] hover:border-indigo-500/40 hover:shadow-xl'
-                                    : 'bg-gray-50/50 border-transparent hover:bg-white hover:border-indigo-200 hover:shadow-lg'
-                                    }`}
-                                onClick={() => onSelectPrompt(example.prompt)}>
-                                <div className="flex flex-col items-start gap-1">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <div className={`w-[2.5px] h-3.5 rounded-full bg-${example.color}-500 opacity-60`}></div>
-                                        <span className={`text-[10px] font-[800] uppercase tracking-wider ${isDarkMode ? 'text-slate-500' : 'text-gray-400'}`}>{example.label}</span>
+                                    <div className={`absolute bottom-4 right-4 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-500 ${isDarkMode
+                                        ? 'bg-white/5 text-white/40 group-hover/tile:bg-indigo-500 group-hover/tile:text-white group-hover/tile:shadow-[0_0_15px_rgba(99,102,241,0.4)]'
+                                        : 'bg-white text-slate-400 group-hover/tile:bg-indigo-500 group-hover/tile:text-white group-hover/tile:shadow-[0_0_12px_rgba(99,102,241,0.3)]'
+                                        }`}>
+                                        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M5 12h14M12 5l7 7-7 7" />
+                                        </svg>
                                     </div>
-                                    <span className={`text-[14px] font-bold truncate max-w-[240px] ${isDarkMode ? 'text-gray-300' : 'text-gray-800'}`}>{example.text}</span>
-                                </div>
-                                <div className={`flex items-center justify-center w-8 h-8 rounded-full transition-all duration-300 group-hover:scale-110 ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-500 group-hover:text-white' : 'bg-white text-indigo-500 group-hover:bg-indigo-500 group-hover:text-white'}`}>
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
-                                        <path d="M9 18l6-6-6-6" />
-                                    </svg>
-                                </div>
-                            </button>
-                        ))}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div >
+        </div>
     );
 };
 

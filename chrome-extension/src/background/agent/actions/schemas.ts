@@ -26,6 +26,16 @@ export const searchGoogleActionSchema: ActionSchema = {
   }),
 };
 
+export const searchDuckDuckGoActionSchema: ActionSchema = {
+  name: 'search_duckduckgo',
+  description:
+    'Search DuckDuckGo and return top results (Title, URL, Snippet) without navigating. Use this when you need to discover reliable links or compare sources; avoid using it when a direct URL is already known.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    query: z.string(),
+  }),
+};
+
 export const goToUrlActionSchema: ActionSchema = {
   name: 'go_to_url',
   description: 'Navigate to URL in the current tab',

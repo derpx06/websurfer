@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseAgent, type BaseAgentOptions, type ExtraAgentOptions } from './base';
 import { createLogger } from '@src/background/log';
-import { ActionResult, type AgentOutput } from '../types';
+import { ActionResult, type AgentContext, type AgentOutput } from '../types';
 import type { Action } from '../actions/builder';
 import { buildDynamicActionSchema } from '../actions/builder';
 import { agentBrainSchema } from '../types';
@@ -230,7 +230,15 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     } catch (error) {
       this.removeLastStateMessageFromMemory();
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Check if this is an authentication error
+
+      // Signal step failure to UI before throwing/returning
+      let finalErrorMessage = errorMessage;
+      if (isRateLimitError(error)) {
+        finalErrorMessage = 'API Rate Limit Exceeded (429). Please try again in a few moments.';
+      }
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, `Navigation failed: ${finalErrorMessage}`);
+
+      // Check if this is a specialized error type to throw
       if (isAuthenticationError(error)) {
         throw new ChatModelAuthError(errorMessage, error);
       } else if (isBadRequestError(error)) {
@@ -242,16 +250,14 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
       } else if (isRateLimitError(error)) {
-        throw new ChatModelRateLimitError('API Rate Limit Exceeded (429). Please try again in a few moments.', error);
+        throw new ChatModelRateLimitError(finalErrorMessage, error);
       } else if (isPaymentRequiredError(error)) {
         throw new ChatModelPaymentRequiredError(errorMessage, error);
       } else if (error instanceof URLNotAllowedError) {
         throw error;
       }
 
-      const errorString = `Navigation failed: ${errorMessage}`;
-      logger.error(errorString);
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, errorString);
+      logger.error(`Navigation failed: ${errorMessage}`);
       agentOutput.error = errorMessage;
       return agentOutput;
     } finally {
@@ -285,7 +291,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
    * Add the state message to the memory
    */
   public async addStateMessageToMemory() {
-    if (this.context.stateMessageAdded) {
+    if (this.context.stateMessageAdded && this.context.messageManager.getMessages().some(m => m.getType() === 'human' && (m.content as string).includes('Current Page State:'))) {
       return;
     }
 
@@ -442,8 +448,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         if (this.context.paused || this.context.stopped) {
           return results;
         }
-        // Brief pause for JS event loop to flush after action (reduced from 1000ms)
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Use smart stability check instead of blind sleep
+        await waitForDomStability(this.context);
       } catch (error) {
         if (error instanceof URLNotAllowedError) {
           throw error;
@@ -689,5 +695,31 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     }
 
     return action;
+  }
+}
+
+/**
+ * Smart DOM stability check that polls for mutations to settle.
+ * Saves ~1s per action compared to hardcoded sleeps.
+ */
+async function waitForDomStability(context: AgentContext, maxWait = 1000): Promise<void> {
+  const page = await context.browserContext.getCurrentPage();
+  if (!page || !page.attached) {
+    await new Promise(r => setTimeout(r, 150));
+    return;
+  }
+  const start = Date.now();
+  let lastDomHash = '';
+  let stableSince = Date.now();
+  while (Date.now() - start < maxWait) {
+    await new Promise(r => setTimeout(r, 50));
+    // @ts-ignore - Accessing internal lifecycle for raw puppeteer access to avoid redundant state captures
+    const currentHash = await page['_lifecycle'].puppeteerPage?.evaluate(() => String(document.querySelectorAll('*').length)) ?? '';
+    if (currentHash === lastDomHash) {
+      if (Date.now() - stableSince >= 150) break;
+    } else {
+      lastDomHash = currentHash;
+      stableSince = Date.now();
+    }
   }
 }

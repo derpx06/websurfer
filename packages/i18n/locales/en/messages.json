@@ -559,6 +559,24 @@
       }
     }
   },
+  "act_searchDuckDuckGo_start": {
+    "message": "Searching for \"$QUERY$\" in DuckDuckGo",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "weather today"
+      }
+    }
+  },
+  "act_searchDuckDuckGo_ok": {
+    "message": "Searched for \"$QUERY$\" in DuckDuckGo",
+    "placeholders": {
+      "query": {
+        "content": "$1",
+        "example": "weather today"
+      }
+    }
+  },
   "act_goToUrl_start": {
     "message": "Navigating to $URL$",
     "placeholders": {

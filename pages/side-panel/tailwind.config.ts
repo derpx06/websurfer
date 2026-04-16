@@ -66,7 +66,25 @@ export default {
         breathe: {
           '0%,100%': { 'box-shadow': '0 0 0 6px rgba(56,189,248,0.04), 0 0 24px rgba(56,189,248,0.22), inset 0 0 18px rgba(56,189,248,0.10)' },
           '50%': { 'box-shadow': '0 0 0 8px rgba(56,189,248,0.06), 0 0 38px rgba(56,189,248,0.32), inset 0 0 24px rgba(56,189,248,0.16)' },
-        }
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition: '200% center' },
+        },
+        'orbit-x': {
+          '0%, 100%': { transform: 'translateX(-130px)' },
+          '50%': { transform: 'translateX(130px)' },
+        },
+        'orbit-y': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '25%': { transform: 'translateY(-40px)' },
+          '50%': { transform: 'translateY(0)' },
+          '75%': { transform: 'translateY(40px)' },
+        },
+        'float-capsule': {
+          '0%, 100%': { transform: 'translateY(0) rotate(0deg)' },
+          '50%': { transform: 'translateY(-4px) rotate(1deg)' },
+        },
       },
       animation: {
         progress: 'progress 1.5s infinite ease-in-out',
@@ -76,7 +94,12 @@ export default {
         'drift-reverse': 'drift 18s ease-in-out infinite alternate-reverse',
         rise: 'rise 0.55s cubic-bezier(0.16,1,0.3,1) both',
         breathe: 'breathe 4s ease-in-out infinite',
+        shimmer: 'shimmer 6s linear infinite',
+        'orbit-x': 'orbit-x 15s ease-in-out infinite',
+        'orbit-y': 'orbit-y 15s ease-in-out infinite',
+        'float-capsule': 'float-capsule 3s ease-in-out infinite',
       },
+
     },
   },
 } as Config;

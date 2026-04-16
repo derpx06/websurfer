@@ -20,7 +20,7 @@ const logger = createLogger('PlanningStrategy');
 export class PlanningStrategy implements ExecutionStrategy<PlannerOutput> {
     constructor(private readonly planner: PlannerAgent) { }
 
-    async execute(context: AgentContext): Promise<AgentOutput<PlannerOutput> | null> {
+    async execute(context: AgentContext): Promise<AgentOutput<PlannerOutput> | undefined> {
         try {
             // Add current browser state to memory if needed
             // (This logic will be coordinated by the Executor to avoid redundant DOM captures)
@@ -59,7 +59,7 @@ export class PlanningStrategy implements ExecutionStrategy<PlannerOutput> {
             if (context.consecutiveFailures >= context.options.maxFailures) {
                 throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
             }
-            return null;
+            return undefined;
         }
     }
 }

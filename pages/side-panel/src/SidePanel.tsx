@@ -99,28 +99,34 @@ const SidePanel = () => {
                 )}
 
                 {messages.length > 0 && (
-                  <div className="ws-body">
+                  <div className="ws-body ws-body--floating-input">
                     <MessageList messages={messages} isDarkMode={isDarkMode} />
                     <div ref={messagesEndRef} />
                   </div>
                 )}
 
-                <div className={`border-t ${isDarkMode ? 'border-sky-900' : 'border-sky-100'} p-2 shadow-sm backdrop-blur-sm z-10`}>
-                  <ChatInput
-                    onSendMessage={handleSendMessage}
-                    onStopTask={handleStopTask}
-                    onMicClick={handleMicClick}
-                    isRecording={isRecording}
-                    isProcessingSpeech={isProcessingSpeech}
-                    disabled={!inputEnabled || isHistoricalSession}
-                    showStopButton={showStopButton}
-                    setContent={setter => {
-                      setInputTextRef.current = setter;
-                    }}
-                    isDarkMode={isDarkMode}
-                    historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
-                    onReplay={handleReplay}
-                  />
+                <div
+                  className={`pointer-events-none absolute inset-x-0 bottom-0 z-20 px-2 pb-2 pt-8 ${isDarkMode
+                    ? 'bg-gradient-to-t from-[#020617]/95 via-[#020617]/60 to-transparent'
+                    : 'bg-gradient-to-t from-white/95 via-white/65 to-transparent'
+                    }`}>
+                  <div className="pointer-events-auto">
+                    <ChatInput
+                      onSendMessage={handleSendMessage}
+                      onStopTask={handleStopTask}
+                      onMicClick={handleMicClick}
+                      isRecording={isRecording}
+                      isProcessingSpeech={isProcessingSpeech}
+                      disabled={!inputEnabled || isHistoricalSession}
+                      showStopButton={showStopButton}
+                      setContent={setter => {
+                        setInputTextRef.current = setter;
+                      }}
+                      isDarkMode={isDarkMode}
+                      historicalSessionId={isHistoricalSession && replayEnabled ? currentSessionId : null}
+                      onReplay={handleReplay}
+                    />
+                  </div>
                 </div>
               </div>
             )}
