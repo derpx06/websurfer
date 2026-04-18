@@ -8,8 +8,7 @@ window.buildDomTree = (
     startHighlightIndex: 0,
   },
 ) => {
-  const { showHighlightElements, focusHighlightIndex, viewportExpansion, startHighlightIndex, startId, debugMode } =
-    args;
+  const { showHighlightElements, focusHighlightIndex, viewportExpansion, startHighlightIndex, startId } = args;
   // Make sure to do highlight elements always, but we can hide the highlights if needed
   const doHighlightElements = true;
 
@@ -732,8 +731,8 @@ window.buildDomTree = (
 
     // check whether element has event listeners by window.getEventListeners
     try {
-      if (typeof getEventListeners === 'function') {
-        const listeners = getEventListeners(element);
+      if (typeof window.getEventListeners === 'function') {
+        const listeners = window.getEventListeners(element);
         const mouseEvents = ['click', 'mousedown', 'mouseup', 'dblclick'];
         for (const eventType of mouseEvents) {
           if (listeners[eventType] && listeners[eventType].length > 0) {

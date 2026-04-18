@@ -28,8 +28,7 @@ export const searchGoogleActionSchema: ActionSchema = {
 
 export const searchDuckDuckGoActionSchema: ActionSchema = {
   name: 'search_duckduckgo',
-  description:
-    'Search DuckDuckGo and return top results (Title, URL, Snippet) without navigating. Use this when you need to discover reliable links or compare sources; avoid using it when a direct URL is already known.',
+  description: 'Search the query in DuckDuckGo and return top results.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     query: z.string(),
@@ -119,6 +118,24 @@ export const cacheContentActionSchema: ActionSchema = {
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     content: z.string().default('').describe('content to cache'),
+  }),
+};
+
+export const askHumanActionSchema: ActionSchema = {
+  name: 'ask_human',
+  description: 'Pause execution and ask the user for clarification or input.',
+  schema: z.object({
+    question: z.string().describe('question to ask the user'),
+  }),
+};
+
+export const appendResultActionSchema: ActionSchema = {
+  name: 'append_result',
+  description: 'Append a value to a named result key in the shared context.',
+  schema: z.object({
+    intent: z.string().default('').describe('purpose of this action'),
+    key: z.string().describe('result key'),
+    value: z.union([z.string(), z.number(), z.boolean(), z.record(z.string(), z.any()), z.array(z.any())]),
   }),
 };
 
@@ -221,24 +238,5 @@ export const waitActionSchema: ActionSchema = {
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     seconds: z.number().int().default(3).describe('amount of seconds'),
-  }),
-};
-
-export const appendResultActionSchema: ActionSchema = {
-  name: 'append_result',
-  description: 'Append a value to a results key for structured data accumulation',
-  schema: z.object({
-    intent: z.string().default('').describe('purpose of this action'),
-    key: z.string().describe('the key in the results object'),
-    value: z.any().describe('the value to append'),
-  }),
-};
-
-export const askHumanActionSchema: ActionSchema = {
-  name: 'ask_human',
-  description: 'Ask the human user a question for clarification, permission, or manual input from the UI. This pauses the agent execution completely.',
-  schema: z.object({
-    intent: z.string().default('').describe('purpose of this action'),
-    question: z.string().describe('The question you want to ask the user'),
   }),
 };

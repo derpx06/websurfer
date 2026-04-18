@@ -1,12 +1,21 @@
-import { Executor } from '../agent/executor';
+import type { Executor } from '../agent/executor';
 import { createLogger } from '../log';
-import BrowserContext from '../browser/context';
+import type BrowserContext from '../browser/context';
 import { t } from '@extension/i18n';
 import { DEFAULT_AGENT_OPTIONS } from '../agent/types';
 import { ExecutorFactory } from './factory';
 import { StatusNotifier } from './notifier';
 
 const logger = createLogger('background/task/manager');
+
+interface TaskManagerMessage {
+    type: string;
+    task?: string;
+    taskId?: string;
+    tabId?: number;
+    input?: string;
+    historySessionId?: string;
+}
 
 /**
  * TaskManager acts as the primary orchestrator for the lifecycle of background tasks.
@@ -39,7 +48,7 @@ export class TaskManager {
      * 
      * @param message The deserialized message object from the port.
      */
-    public async handleMessage(message: any) {
+    public async handleMessage(message: TaskManagerMessage) {
         // Port check: All background-to-UI communication relies on a healthy, active port.
         if (!this.currentPort) {
             logger.warning('Received message but no port is connected');
@@ -54,6 +63,7 @@ export class TaskManager {
 
                 case 'new_task': {
                     if (!message.task) return this.currentPort!.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
+                    if (!message.taskId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTaskId') });
                     if (!message.tabId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
 
                     logger.info('new_task', message.tabId, message.task);
@@ -181,6 +191,7 @@ export class TaskManager {
                     // Triggers a historic replay of actions from a saved session.
                     if (!message.tabId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
                     if (!message.taskId) return this.currentPort!.postMessage({ type: 'error', error: t('bg_errors_noTaskId') });
+                    if (!message.task) return this.currentPort!.postMessage({ type: 'error', error: t('bg_cmd_newTask_noTask') });
                     if (!message.historySessionId)
                         return this.currentPort!.postMessage({ type: 'error', error: t('bg_cmd_replay_noHistory') });
 

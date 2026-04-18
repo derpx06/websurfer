@@ -29,6 +29,6 @@ export class NavigatorPrompt extends BasePrompt {
   }
 
   async getUserMessage(context: AgentContext): Promise<HumanMessage> {
-    return await this.buildBrowserStateUserMessage(context, true);
+    return await this.buildBrowserStateUserMessage(context);
   }
 }

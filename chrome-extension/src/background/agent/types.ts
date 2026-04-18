@@ -4,13 +4,9 @@ import { DEFAULT_INCLUDE_ATTRIBUTES } from '../browser/dom/views';
 import type { DOMHistoryElement } from '../browser/dom/history/view';
 import type MessageManager from './messages/service';
 import type { EventManager } from './event/manager';
-import { type Actors, type ExecutionState, AgentEvent, EventType } from './event/types';
+import { type Actors, type ExecutionState, AgentEvent } from './event/types';
 import { AgentStepHistory } from './history';
 
-/**
- * Configuration options for the Agent's execution behavior.
- * Controls the limits on steps, actions, retries, and vision usage.
- */
 export interface AgentOptions {
   maxSteps: number;
   maxActionsPerStep: number;
@@ -37,19 +33,6 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
   planningInterval: 3,
 };
 
-export interface SubTask {
-  goal: string;
-  status: 'pending' | 'running' | 'done' | 'failed';
-  result?: string;
-  steps: number;
-  rollbackUrl?: string; // Phase 4 Memory Rollback
-}
-
-/**
- * AgentContext maintains the live, mutable state of a running agent task.
- * It tracks the execution lifecycle (paused, stopped), step counts,
- * failure rates, and the logical task stack for sub-goal management.
- */
 export class AgentContext {
   controller: AbortController;
   taskId: string;
@@ -66,14 +49,10 @@ export class AgentContext {
   stateMessageAdded: boolean;
   history: AgentStepHistory;
   finalAnswer: string | null;
+  taskStack: Array<{ goal: string; status: string; result?: string }>;
+  completedSubTasks: Array<{ goal: string; status: string; result?: string }>;
+  results: Record<string, unknown>;
   scratchpad: string;
-
-  // Advanced Long-Running Task State (Recursive planning)
-  taskStack: SubTask[];
-  completedSubTasks: SubTask[];
-  loopDetected: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  results: Record<string, any>;
 
   constructor(
     taskId: string,
@@ -98,28 +77,19 @@ export class AgentContext {
     this.stateMessageAdded = false;
     this.history = new AgentStepHistory();
     this.finalAnswer = null;
-    this.scratchpad = '(empty — use cache_content to save notes)';
-
     this.taskStack = [];
     this.completedSubTasks = [];
-    this.loopDetected = false;
     this.results = {};
+    this.scratchpad = '(empty)';
   }
 
-  async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string, screenshot?: string) {
-    const event = new AgentEvent(
-      actor,
-      state,
-      {
-        taskId: this.taskId,
-        step: this.nSteps,
-        maxSteps: this.options.maxSteps,
-        details: eventDetails,
-      },
-      Date.now(),
-      EventType.EXECUTION,
-      screenshot,
-    );
+  async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {
+    const event = new AgentEvent(actor, state, {
+      taskId: this.taskId,
+      step: this.nSteps,
+      maxSteps: this.options.maxSteps,
+      details: eventDetails,
+    });
     await this.eventManager.emit(event);
   }
 
@@ -133,7 +103,7 @@ export class AgentContext {
 
   async stop() {
     this.stopped = true;
-    this.controller.abort();
+    setTimeout(() => this.controller.abort(), 300);
   }
 }
 

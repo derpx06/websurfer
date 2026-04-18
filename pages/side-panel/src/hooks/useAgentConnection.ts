@@ -1,11 +1,12 @@
 import { useCallback, useRef } from 'react';
-import { Actors } from '@extension/storage';
+import { Actors, type Message } from '@extension/storage';
 import { EventType } from '../types/event';
+import type { AgentEvent } from '../types/event';
 import { t } from '@extension/i18n';
 import { useAgentEventHandler } from './useAgentEventHandler';
 
 interface UseAgentConnectionProps {
-    appendMessage: (message: any) => void;
+    appendMessage: (message: Message) => void;
     setIsFollowUpMode: (mode: boolean) => void;
     setInputEnabled: (enabled: boolean) => void;
     setShowStopButton: (show: boolean) => void;
@@ -15,6 +16,12 @@ interface UseAgentConnectionProps {
     setLastScreenshot: (screenshot: string | null) => void;
     setInputTextRef: React.MutableRefObject<((text: string) => void) | null>;
 }
+
+type RuntimeMessage = {
+    type?: string;
+    error?: string;
+    text?: string;
+};
 
 /**
  * useAgentConnection manages a robust, long-lived communication channel (Chrome Port)
@@ -66,17 +73,18 @@ export const useAgentConnection = ({
         if (portRef.current) return;
         try {
             portRef.current = chrome.runtime.connect({ name: 'side-panel-connection' });
-            portRef.current.onMessage.addListener((message: any) => {
-                if (message?.type === EventType.EXECUTION) handleTaskState(message);
-                else if (message?.type === 'error') {
-                    appendMessage({ actor: Actors.SYSTEM, content: message.error || t('errors_unknown'), timestamp: Date.now() });
+            portRef.current.onMessage.addListener((message: unknown) => {
+                const runtimeMessage = (message ?? {}) as RuntimeMessage;
+                if (runtimeMessage.type === EventType.EXECUTION) handleTaskState(message as AgentEvent);
+                else if (runtimeMessage.type === 'error') {
+                    appendMessage({ actor: Actors.SYSTEM, content: runtimeMessage.error || t('errors_unknown'), timestamp: Date.now() });
                     setInputEnabled(true);
                     setShowStopButton(false);
-                } else if (message?.type === 'speech_to_text_result') {
-                    if (message.text && setInputTextRef.current) setInputTextRef.current(message.text);
+                } else if (runtimeMessage.type === 'speech_to_text_result') {
+                    if (runtimeMessage.text && setInputTextRef.current) setInputTextRef.current(runtimeMessage.text);
                     setIsProcessingSpeech(false);
-                } else if (message?.type === 'speech_to_text_error') {
-                    appendMessage({ actor: Actors.SYSTEM, content: message.error || t('chat_stt_recognitionFailed'), timestamp: Date.now() });
+                } else if (runtimeMessage.type === 'speech_to_text_error') {
+                    appendMessage({ actor: Actors.SYSTEM, content: runtimeMessage.error || t('chat_stt_recognitionFailed'), timestamp: Date.now() });
                     setIsProcessingSpeech(false);
                 }
             });
@@ -105,7 +113,7 @@ export const useAgentConnection = ({
         }
     }, [handleTaskState, appendMessage, stopConnection, setInputEnabled, setShowStopButton, setIsProcessingSpeech, setInputTextRef]);
 
-    const sendMessage = useCallback((message: any) => {
+    const sendMessage = useCallback((message: Record<string, unknown>) => {
         if (portRef.current?.name !== 'side-panel-connection') throw new Error('No valid connection available');
         portRef.current.postMessage(message);
     }, []);

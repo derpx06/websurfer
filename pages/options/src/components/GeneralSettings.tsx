@@ -1,3 +1,4 @@
+/* eslint-disable jsx-a11y/label-has-associated-control */
 import { useState, useEffect } from 'react';
 import { type GeneralSettingsConfig, generalSettingsStore, DEFAULT_GENERAL_SETTINGS } from '@extension/storage';
 import { t } from '@extension/i18n';
@@ -35,17 +36,17 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
     onChange: (checked: boolean) => void,
     accentColor: string = 'indigo'
   ) => (
-    <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-8 transition-all duration-300 ${isDarkMode ? 'hover:bg-white/[0.02] border-b border-white/5 last:border-0' : 'hover:bg-slate-50 border-b border-slate-100 last:border-0'
+    <div className={`flex flex-col items-start justify-between gap-6 p-8 transition-all duration-300 sm:flex-row sm:items-center ${isDarkMode ? 'border-b border-white/5 last:border-0 hover:bg-white/[0.02]' : 'border-b border-slate-100 last:border-0 hover:bg-slate-50'
       }`}>
       <div className="flex-1 pr-6">
-        <h3 className={`text-lg font-black font-outfit uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
+        <h3 className={`font-outfit text-lg font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
         <p className={`mt-1.5 text-[13px] font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{desc}</p>
       </div>
-      <label className="relative inline-flex items-center cursor-pointer flex-shrink-0 group">
-        <input type="checkbox" className="sr-only peer" checked={checked} onChange={e => onChange(e.target.checked)} />
-        <div className={`w-14 h-8 bg-white/5 border border-white/10 peer-focus:outline-none rounded-full peer transition-all duration-300 
-          peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] 
-          after:bg-white/20 after:rounded-full after:h-6 after:w-6 after:transition-all after:shadow-2xl after:backdrop-blur-md
+      <label className="group relative inline-flex shrink-0 cursor-pointer items-center">
+        <input type="checkbox" className="peer sr-only" checked={checked} onChange={e => onChange(e.target.checked)} />
+        <div className={`peer h-8 w-14 rounded-full border border-white/10 bg-white/5 transition-all duration-300 after:absolute 
+          after:left-[4px] after:top-[4px] after:size-6 after:rounded-full after:bg-white/20 after:shadow-2xl 
+          after:backdrop-blur-md after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none
           ${isDarkMode ? `peer-checked:bg-${accentColor}-500/80` : `peer-checked:bg-${accentColor}-500`} 
           peer-checked:after:bg-white peer-checked:after:after:shadow-indigo-500/50`}>
         </div>
@@ -62,10 +63,10 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
     max: number,
     step: number = 1
   ) => (
-    <div className={`flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-8 transition-all duration-300 ${isDarkMode ? 'hover:bg-white/[0.02] border-b border-white/5 last:border-0' : 'hover:bg-slate-50 border-b border-slate-100 last:border-0'
+    <div className={`flex flex-col items-start justify-between gap-6 p-8 transition-all duration-300 sm:flex-row sm:items-center ${isDarkMode ? 'border-b border-white/5 last:border-0 hover:bg-white/[0.02]' : 'border-b border-slate-100 last:border-0 hover:bg-slate-50'
       }`}>
       <div className="flex-1 pr-6">
-        <h3 className={`text-lg font-black font-outfit uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
+        <h3 className={`font-outfit text-lg font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{title}</h3>
         <p className={`mt-1.5 text-[13px] font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>{desc}</p>
       </div>
       <input
@@ -75,29 +76,29 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
         step={step}
         value={value}
         onChange={e => onChange(Number.parseInt(e.target.value, 10))}
-        className={`w-32 text-center rounded-2xl border transition-all duration-300 
+        className={`w-32 rounded-2xl border text-center transition-all duration-300 
           ${isDarkMode ? 'border-white/10 bg-white/5 text-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
             : 'border-slate-200 bg-white text-slate-900 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10'} 
-          px-5 py-4 text-base font-black font-mono focus:outline-none shadow-2xl`}
+          px-5 py-4 font-mono text-base font-black shadow-2xl focus:outline-none`}
       />
     </div>
   );
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="animate-in fade-in slide-in-from-bottom-4 space-y-12 duration-700">
 
       {/* Execution Limits Section */}
-      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-[#1a1c23]/60 border-white/5 shadow-2xl backdrop-blur-3xl' : 'bg-white border-slate-200 shadow-xl'
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'border-white/5 bg-[#1a1c23]/60 shadow-2xl backdrop-blur-3xl' : 'border-slate-200 bg-white shadow-xl'
         }`}>
-        <div className={`border-b px-10 py-8 flex items-center gap-6 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
+        <div className={`flex items-center gap-6 border-b px-10 py-8 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
           }`}>
-          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'
+          <div className={`flex size-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-amber-500/20 text-amber-400' : 'bg-amber-100 text-amber-600'
             }`}>
             <FiSettings size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">System Runtime</h2>
-            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>
+            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">System Runtime</h2>
+            <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>
               Safety thresholds and autonomous limits
             </p>
           </div>
@@ -113,17 +114,17 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
       </section>
 
       {/* Intelligence & Vision Section */}
-      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-indigo-600/5 border-indigo-500/20 shadow-2xl backdrop-blur-3xl' : 'bg-white shadow-xl border-slate-200'
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'border-indigo-500/20 bg-indigo-600/5 shadow-2xl backdrop-blur-3xl' : 'border-slate-200 bg-white shadow-xl'
         }`}>
-        <div className={`border-b px-10 py-8 flex items-center gap-6 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
+        <div className={`flex items-center gap-6 border-b px-10 py-8 transition-colors duration-500 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'
           }`}>
-          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'
+          <div className={`flex size-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-indigo-500/20 text-indigo-400' : 'bg-indigo-100 text-indigo-600'
             }`}>
             <FiShield size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">Cognitive Bio-Feedback</h2>
-            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">Cognitive Bio-Feedback</h2>
+            <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
               Neural monitoring and visualization systems
             </p>
           </div>

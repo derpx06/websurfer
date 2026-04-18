@@ -82,6 +82,12 @@ export const useAgentEventHandler = ({
                 if (state === ExecutionState.STEP_START) displayProgress = true;
                 else if (state === ExecutionState.STEP_OK) displayProgress = false;
                 else if (state === ExecutionState.STEP_FAIL) { skip = false; displayProgress = false; }
+                else if (state === ExecutionState.ACT_ASK_HUMAN) {
+                    setIsFollowUpMode(true);
+                    setInputEnabled(true);
+                    setShowStopButton(false);
+                    skip = false;
+                }
                 else if (state === ExecutionState.ACT_START && content !== 'cache_content') skip = false;
                 else if (state === ExecutionState.ACT_OK) skip = !isReplayingRef.current;
                 else if (state === ExecutionState.ACT_FAIL) skip = false;

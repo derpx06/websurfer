@@ -47,7 +47,7 @@ const SidePanel = () => {
 
   return (
     <div>
-      <div className={`flex flex-col h-screen overflow-hidden relative ${isDarkMode ? 'theme-dark' : 'theme-light'}`}>
+      <div className={`relative flex h-screen flex-col overflow-hidden ${isDarkMode ? 'theme-dark' : 'theme-light'}`}>
         <SidePanelHeader
           isDarkMode={isDarkMode}
           showHistory={showHistory}
@@ -83,7 +83,7 @@ const SidePanel = () => {
             )}
 
             {hasConfiguredModels === true && (
-              <div className="flex flex-1 flex-col overflow-hidden relative">
+              <div className="relative flex flex-1 flex-col overflow-hidden">
                 {/* Agent Sight: Live Preview Window */}
                 <AgentSight screenshot={lastScreenshot} isActive={showStopButton} />
 

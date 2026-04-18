@@ -1,15 +1,12 @@
 import { ActionResult, type AgentContext } from '../../types';
 import { t } from '@extension/i18n';
-import { createLogger } from '@src/background/log';
 import { ExecutionState, Actors } from '../../event/types';
-import {
+import type {
     sendKeysActionSchema,
     getDropdownOptionsActionSchema,
     selectDropdownOptionActionSchema
 } from '../schemas';
-import { z } from 'zod';
-
-const logger = createLogger('Action:Form');
+import type { z } from 'zod';
 
 /**
  * Sends a sequence of keys (including special keys like Enter, Tab) to the current page.
@@ -57,7 +54,7 @@ export async function handleGetDropdownOptions(
                 return `${opt.index}: text=${encodedText}`;
             });
 
-            let msg = formattedOptions.join('\n') + '\n' + t('act_getDropdownOptions_useExactText');
+            const msg = formattedOptions.join('\n') + '\n' + t('act_getDropdownOptions_useExactText');
             context.emitEvent(
                 Actors.NAVIGATOR,
                 ExecutionState.ACT_OK,

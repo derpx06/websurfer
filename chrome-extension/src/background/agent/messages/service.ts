@@ -1,5 +1,4 @@
 import { type BaseMessage, AIMessage, HumanMessage, type SystemMessage, ToolMessage } from '@langchain/core/messages';
-import { type BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { MessageHistory, MessageMetadata } from '@src/background/agent/messages/views';
 import { createLogger } from '@src/background/log';
 import {
@@ -355,69 +354,22 @@ export default class MessageManager {
 
   /**
    * Counts the tokens in the text
-   * Uses a regex-based estimator which is more accurate than simple character counting
+   * Rough estimate, no tokenizer provided for now
    * @param text - The text to count the tokens
    * @returns The number of tokens in the text
    */
   private _countTextTokens(text: string): number {
-    if (!text) return 0;
-    // Match words and punctuation. Roughly 0.75 tokens per "word" unit.
-    const tokens = text.match(/\w+|[^\w\s]+/g);
-    return tokens ? Math.ceil(tokens.length * 1.3) : 0;
+    return Math.floor(text.length / this.settings.estimatedCharactersPerToken);
   }
 
   /**
-   * Summarizes older history to free up context space
+   * Cuts the last message if the total tokens exceed the max input tokens
+   *
+   * Get current message list, potentially trimmed to max tokens
    */
-  private async compressHistory(llm: BaseChatModel): Promise<void> {
-    // Keep the first few messages (system, init) and the last few
-    const MIN_MESSAGES_TO_KEEP = 5;
-    if (this.history.messages.length <= MIN_MESSAGES_TO_KEEP + 2) {
-      throw new Error('History too short to compress');
-    }
-
-    // Messages to compress are between initials and last 2
-    const toCompress = this.history.messages.slice(MIN_MESSAGES_TO_KEEP, -2).map(m => m.message);
-    const summaryPrompt = `Summarize these agent steps as a brief status: 
-    what was done, what worked, what the current state is.
-    Keep to 400 tokens max.\n\n${JSON.stringify(toCompress)}`;
-
-    logger.info('Compressing history...');
-    const result = await llm.invoke([new HumanMessage(summaryPrompt)]);
-    const summary = result.content;
-
-    // Remove the old messages
-    this.history.messages.splice(MIN_MESSAGES_TO_KEEP, this.history.messages.length - MIN_MESSAGES_TO_KEEP - 2);
-
-    // Add compression marker
-    const marker = new HumanMessage({
-      content: `[Compressed history]: ${summary}`,
-    });
-
-    // Insert at the compression point
-    this.addMessageWithTokens(marker, 'compressed', MIN_MESSAGES_TO_KEEP);
-    logger.info('History compressed successfully');
-  }
-
-  /**
-   * Cuts the last message if the total tokens exceed the max input tokens.
-   * If history compression is enabled/possible, it will try that first.
-   */
-  public async cutMessages(llm?: BaseChatModel): Promise<void> {
+  public cutMessages(): void {
     let diff = this.history.totalTokens - this.settings.maxInputTokens;
     if (diff <= 0) return;
-
-    // Try compression first if we have an LLM and enough messages
-    if (llm && this.history.messages.length > 10) {
-      try {
-        await this.compressHistory(llm);
-        // Re-check after compression
-        diff = this.history.totalTokens - this.settings.maxInputTokens;
-        if (diff <= 0) return;
-      } catch (e) {
-        logger.warning('Failed to compress history, falling back to truncation', e);
-      }
-    }
 
     const lastMsg = this.history.messages[this.history.messages.length - 1];
 

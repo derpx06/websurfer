@@ -46,5 +46,5 @@ export type StorageConfig<D = string> = {
   /**
    * Optional Zod schema for data validation and defaults.
    */
-  schema?: z.ZodType<D, any, any>;
+  schema?: z.ZodType<D, z.ZodTypeDef, unknown>;
 };

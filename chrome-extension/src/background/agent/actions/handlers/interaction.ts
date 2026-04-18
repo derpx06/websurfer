@@ -2,17 +2,11 @@ import { ActionResult, type AgentContext } from '../../types';
 import { t } from '@extension/i18n';
 import { createLogger } from '@src/background/log';
 import { ExecutionState, Actors } from '../../event/types';
-import {
+import type {
     clickElementActionSchema,
     inputTextActionSchema,
-    scrollToPercentActionSchema,
-    scrollToTopActionSchema,
-    scrollToBottomActionSchema,
-    previousPageActionSchema,
-    nextPageActionSchema,
-    scrollToTextActionSchema
-} from '../schemas';
-import { z } from 'zod';
+    scrollToPercentActionSchema} from '../schemas';
+import type { z } from 'zod';
 
 const logger = createLogger('Action:Interaction');
 

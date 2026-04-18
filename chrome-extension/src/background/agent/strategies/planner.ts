@@ -10,7 +10,7 @@ import {
     MaxFailuresReachedError,
     RequestCancelledError,
 } from '../agents/errors';
-import { PlannerAgent, type PlannerOutput } from '../agents/planner';
+import type { PlannerAgent, PlannerOutput } from '../agents/planner';
 import { URLNotAllowedError } from '../../browser/views';
 import type { AgentContext, AgentOutput } from '../types';
 import type { ExecutionStrategy } from './types';

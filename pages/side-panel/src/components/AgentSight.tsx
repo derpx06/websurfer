@@ -29,21 +29,21 @@ export const AgentSight: React.FC<AgentSightProps> = ({ screenshot, isActive }) 
     if (!screenshot && !isActive) return null;
 
     return (
-        <div className={`relative group transition-all duration-500 ease-in-out ${isExpanded ? 'fixed inset-4 z-50' : 'mx-4 my-2'
+        <div className={`group relative transition-all duration-500 ease-in-out ${isExpanded ? 'fixed inset-4 z-50' : 'mx-4 my-2'
             }`}>
             <div className={`
-        relative overflow-hidden rounded-xl border border-white/20 bg-black/40 backdrop-blur-md shadow-2xl
-        ${isExpanded ? 'w-full h-full' : 'h-48 w-full'}
+        relative overflow-hidden rounded-xl border border-white/20 bg-black/40 shadow-2xl backdrop-blur-md
+        ${isExpanded ? 'size-full' : 'h-48 w-full'}
       `}>
                 {/* Main Screenshot Display */}
                 {screenshot ? (
                     <img
                         src={screenshot.startsWith('data:') ? screenshot : `data:image/jpeg;base64,${screenshot}`}
                         alt="Agent View"
-                        className="w-full h-full object-cover transition-opacity duration-500"
+                        className="size-full object-cover transition-opacity duration-500"
                     />
                 ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-white/40 space-y-2">
+                    <div className="flex h-full flex-col items-center justify-center space-y-2 text-white/40">
                         <HiOutlineViewGrid size={32} className="animate-pulse" />
                         <span className="text-sm font-medium">Waiting for view...</span>
                     </div>
@@ -51,17 +51,17 @@ export const AgentSight: React.FC<AgentSightProps> = ({ screenshot, isActive }) 
 
                 {/* Live Indicator Overlay */}
                 {isActive && (
-                    <div className="absolute top-3 left-3 flex items-center space-x-2 bg-black/60 backdrop-blur-sm px-2 py-1 rounded-full border border-white/10">
-                        <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">Live Agent Sight</span>
+                    <div className="absolute left-3 top-3 flex items-center space-x-2 rounded-full border border-white/10 bg-black/60 px-2 py-1 backdrop-blur-sm">
+                        <div className="size-2 animate-pulse rounded-full bg-red-500" />
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-white">Live Agent Sight</span>
                     </div>
                 )}
 
                 {/* Controls Overlay */}
-                <div className="absolute top-3 right-3 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="absolute right-3 top-3 flex space-x-2 opacity-0 transition-opacity group-hover:opacity-100">
                     <button
                         onClick={() => setIsExpanded(!isExpanded)}
-                        className="p-1.5 bg-white/10 hover:bg-white/20 backdrop-blur-md rounded-lg border border-white/20 text-white transition-colors"
+                        className="rounded-lg border border-white/20 bg-white/10 p-1.5 text-white backdrop-blur-md transition-colors hover:bg-white/20"
                         title={isExpanded ? "Collapse" : "Expand View"}
                     >
                         <HiOutlineExternalLink size={16} />
@@ -69,13 +69,15 @@ export const AgentSight: React.FC<AgentSightProps> = ({ screenshot, isActive }) 
                 </div>
 
                 {/* Glass Edge Highlights */}
-                <div className="absolute inset-0 pointer-events-none ring-1 ring-inset ring-white/10 rounded-xl" />
+                <div className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-inset ring-white/10" />
             </div>
 
             {/* Backdrop for expanded view */}
             {isExpanded && (
-                <div
-                    className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-40 transition-opacity ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                <button
+                    type="button"
+                    aria-label="Collapse expanded agent view"
+                    className={`fixed inset-0 z-40 bg-black/80 backdrop-blur-sm transition-opacity ${isExpanded ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
                     onClick={() => setIsExpanded(false)}
                 />
             )}

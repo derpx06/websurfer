@@ -1,6 +1,9 @@
 import { useCallback } from 'react';
-import { Actors, chatHistoryStore } from '@extension/storage';
+import { Actors, chatHistoryStore, type Message } from '@extension/storage';
 import { t } from '@extension/i18n';
+
+type OutgoingMessage = Record<string, unknown>;
+type UiMessage = Pick<Message, 'actor' | 'content' | 'timestamp'>;
 
 interface UseTaskExecutionProps {
     portRef: React.MutableRefObject<chrome.runtime.Port | null>;
@@ -8,11 +11,11 @@ interface UseTaskExecutionProps {
     replayEnabled: boolean;
     isHistoricalSession: boolean;
     isFollowUpMode: boolean;
-    appendMessage: (message: any, sessionId?: string) => void;
-    setMessages: (messages: any[]) => void;
+    appendMessage: (message: UiMessage, sessionId?: string) => void;
+    setMessages: (messages: Message[]) => void;
     createNewSession: (title: string) => Promise<string>;
     setupConnection: () => void;
-    sendMessage: (message: any) => void;
+    sendMessage: (message: OutgoingMessage) => void;
     setInputEnabled: (enabled: boolean) => void;
     setShowStopButton: (show: boolean) => void;
     setIsFollowUpMode: (mode: boolean) => void;

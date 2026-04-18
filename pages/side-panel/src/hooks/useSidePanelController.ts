@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Actors, chatHistoryStore } from '@extension/storage';
-import { t } from '@extension/i18n';
+import { chatHistoryStore } from '@extension/storage';
 
 import { useTheme } from './useTheme';
 import { useConfig } from './useConfig';
@@ -35,7 +34,7 @@ export const useSidePanelController = () => {
 
   // Use specialized hooks
   const { isDarkMode } = useTheme();
-  const { hasConfiguredModels, replayEnabled, loadGeneralSettings, checkModelConfiguration } = useConfig();
+  const { hasConfiguredModels, replayEnabled } = useConfig();
   const {
     favoritePrompts,
     handleBookmarkUpdateTitle,
@@ -48,7 +47,6 @@ export const useSidePanelController = () => {
     messages,
     setMessages,
     currentSessionId,
-    setCurrentSessionId,
     sessionIdRef,
     chatSessions,
     isFollowUpMode,
@@ -98,7 +96,6 @@ export const useSidePanelController = () => {
     handleSendMessage,
     handleStopTask,
     handleReplay,
-    handleCommand
   } = useTaskExecution({
     portRef,
     sessionIdRef,

@@ -26,7 +26,7 @@ abstract class BasePrompt {
    * @param context - The agent context
    * @returns HumanMessage from LangChain
    */
-  async buildBrowserStateUserMessage(context: AgentContext, isolatedSubTask = false): Promise<HumanMessage> {
+  async buildBrowserStateUserMessage(context: AgentContext): Promise<HumanMessage> {
     const browserState = await context.browserContext.getState(context.options.useVision);
     const rawElementsText = browserState.elementTree.clickableElementsToString(context.options.includeAttributes);
 
@@ -67,27 +67,9 @@ abstract class BasePrompt {
     const otherTabs = browserState.tabs
       .filter(tab => tab.id !== browserState.tabId)
       .map(tab => `- {id: ${tab.id}, url: ${tab.url}, title: ${tab.title}}`);
-    let subTaskStr = '';
-    const pendingTasks = context.taskStack.filter(t => t.status !== 'done');
-    if (isolatedSubTask) {
-      subTaskStr = `Active Sub-Task: ${pendingTasks.length > 0 ? pendingTasks[pendingTasks.length - 1].goal : 'none'}`;
-    } else {
-      subTaskStr = `Pending sub-tasks: ${pendingTasks.map(t => `- ${t.goal}`).join('\n') || 'none'}\nCompleted sub-tasks: ${context.completedSubTasks.map(t => `- ${t.goal}`).join('\n') || 'none'}`;
-    }
-
     const stateDescription = `
 [Task history memory ends]
 [Current state starts here]
-[Agent scratchpad]:
-${context.scratchpad}
-
-[Sub-Tasks Stack]:
-${subTaskStr}
-
-[Accumulated Results]:
-${Object.keys(context.results).length > 0 ? JSON.stringify(context.results, null, 2) : '(empty — use append_result)'}
-${context.loopDetected ? '\n[WARNING: LOOP DETECTED. You are repeating the same actions over and over. Break the cycle!]\n' : ''}
-
 The following is one-time information - if you need to remember it write it to memory:
 Current tab: ${currentTab}
 Other available tabs:

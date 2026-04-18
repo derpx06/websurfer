@@ -4,7 +4,7 @@ export const LLM_FORBIDDEN_ERROR_MESSAGE =
 export const EXTENSION_CONFLICT_ERROR_MESSAGE = `
   Cannot access a chrome-extension:// URL of different extension.
   
-  This is likely due to conflicting extensions. Please use WebSurfer in a new profile.`;
+  This is likely due to conflicting extensions. Please use Nanobrowser in a new profile.`;
 
 /**
  * Custom error class for chat model authentication errors
@@ -58,6 +58,32 @@ export class ChatModelForbiddenError extends Error {
   }
 }
 
+export class ChatModelRateLimitError extends Error {
+  constructor(
+    message: string,
+    public readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'ChatModelRateLimitError';
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ChatModelRateLimitError);
+    }
+  }
+}
+
+export class ChatModelPaymentRequiredError extends Error {
+  constructor(
+    message: string,
+    public readonly cause?: unknown,
+  ) {
+    super(message);
+    this.name = 'ChatModelPaymentRequiredError';
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, ChatModelPaymentRequiredError);
+    }
+  }
+}
+
 /**
  * Custom error class for chat model bad request errors (400)
  */
@@ -78,37 +104,6 @@ export class ChatModelBadRequestError extends Error {
     // Maintains proper stack trace for where our error was thrown
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, ChatModelBadRequestError);
-    }
-  }
-
-  /**
-   * Returns a string representation of the error
-   */
-  toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
-  }
-}
-
-/**
- * Custom error class for chat model payment required errors (402)
- */
-export class ChatModelPaymentRequiredError extends Error {
-  /**
-   * Creates a new ChatModelPaymentRequiredError
-   *
-   * @param message - The error message
-   * @param cause - The original error that caused this error
-   */
-  constructor(
-    message: string,
-    public readonly cause?: unknown,
-  ) {
-    super(message);
-    this.name = 'ChatModelPaymentRequiredError';
-
-    // Maintains proper stack trace for where our error was thrown
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ChatModelPaymentRequiredError);
     }
   }
 
@@ -167,19 +162,6 @@ export function isForbiddenError(error: unknown): boolean {
 }
 
 /**
- * Checks if an error is related to 402 Payment Required
- *
- * @param error - The error to check
- * @returns boolean indicating if it's a 402 Payment Required error
- */
-export function isPaymentRequiredError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-
-  const errorMessage = error.message || '';
-  return errorMessage.includes(' 402') || errorMessage.toLowerCase().includes('payment required');
-}
-
-/**
  * Checks if an error is related to 400 Bad Request
  *
  * @param error - The error to check
@@ -220,35 +202,6 @@ export function isBadRequestError(error: unknown): boolean {
 export function isAbortedError(error: unknown): boolean {
   if (!(error instanceof Error)) return false;
   return error.name === 'AbortError' || error.message.includes('Aborted');
-}
-
-export class ChatModelRateLimitError extends Error {
-  constructor(message: string, public readonly cause?: unknown) {
-    super(message);
-    this.name = 'ChatModelRateLimitError';
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ChatModelRateLimitError);
-    }
-  }
-  toString(): string {
-    return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
-  }
-}
-
-export function isRateLimitError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  // If it's already our specialized error, it's definitely a rate limit
-  if (error.name === 'ChatModelRateLimitError') return true;
-
-  const msg = error.message.toLowerCase();
-  // Check for common LLM provider rate limit strings
-  return (
-    (msg.includes('429') && (msg.includes('api') || msg.includes('model') || msg.includes('request'))) ||
-    msg.includes('too many requests') ||
-    (msg.includes('rate limit') && !msg.includes('duckduckgo')) ||
-    msg.includes('insufficient_quota') ||
-    msg.includes('limit_reached')
-  );
 }
 
 /**

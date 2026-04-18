@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { FaGlobe, FaWindowMaximize } from 'react-icons/fa';
 
-interface Tab {
+export interface Tab {
     id?: number;
     title?: string;
     url?: string;
@@ -82,10 +82,10 @@ export const TabMentionsDropdown: React.FC<TabMentionsDropdownProps> = ({
     return (
         <div
             ref={dropdownRef}
-            className={`absolute bottom-full left-0 mb-3 w-72 max-h-64 overflow-y-auto rounded-2xl border p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 animate-in fade-in slide-in-from-bottom-2 ${isDarkMode
-                ? 'bg-slate-900/90 border-white/10 text-white'
-                : 'bg-white/90 border-slate-200 text-slate-900'
-                } z-[100] theme-scrollbar`}
+            className={`animate-in fade-in slide-in-from-bottom-2 absolute bottom-full left-0 mb-3 max-h-64 w-72 overflow-y-auto rounded-2xl border p-2 shadow-2xl backdrop-blur-3xl transition-all duration-300 ${isDarkMode
+                ? 'border-white/10 bg-slate-900/90 text-white'
+                : 'border-slate-200 bg-white/90 text-slate-900'
+                } theme-scrollbar z-[100]`}
         >
             <div className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                 Mention Tab
@@ -96,21 +96,21 @@ export const TabMentionsDropdown: React.FC<TabMentionsDropdownProps> = ({
                         key={tab.id}
                         onClick={() => onSelect(tab)}
                         onMouseEnter={() => setSelectedIndex(index)}
-                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-200 ${index === selectedIndex
+                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200 ${index === selectedIndex
                             ? isDarkMode ? 'bg-indigo-500/30 text-white shadow-lg shadow-indigo-500/10' : 'bg-indigo-50 text-indigo-700'
                             : 'hover:bg-slate-400/5'
                             }`}
                     >
-                        <div className={`flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
+                        <div className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}>
                             {tab.favIconUrl ? (
-                                <img src={tab.favIconUrl} className="w-4 h-4" alt="" />
+                                <img src={tab.favIconUrl} className="size-4" alt="" />
                             ) : (
                                 <FaGlobe size={14} className={isDarkMode ? 'text-slate-400' : 'text-slate-500'} />
                             )}
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <div className="text-[13px] font-bold truncate leading-tight">{tab.title}</div>
-                            <div className={`text-[11px] truncate mt-0.5 opacity-60 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{tab.url}</div>
+                        <div className="min-w-0 flex-1">
+                            <div className="truncate text-[13px] font-bold leading-tight">{tab.title}</div>
+                            <div className={`mt-0.5 truncate text-[11px] opacity-60 ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>{tab.url}</div>
                         </div>
                         {index === selectedIndex && (
                             <FaWindowMaximize size={12} className="text-white/40" />

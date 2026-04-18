@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { ActionResult } from '@src/background/agent/types';
-import { ActionSchema } from './schemas';
+import type { ActionResult } from '@src/background/agent/types';
+import type { ActionSchema } from './schemas';
 
 /**
  * Normalizes navigation URLs by adding missing schemes.
@@ -42,7 +42,7 @@ export class InvalidInputError extends Error {
  * Represents a discrete, executable task that the agent can perform in the browser.
  * Each action is associated with a Zod schema for input validation and metadata for prompting.
  */
-export class Action<T = any> {
+export class Action<T = unknown> {
     constructor(
         private readonly handler: (input: T) => Promise<ActionResult>,
         public readonly schema: ActionSchema,
@@ -86,7 +86,7 @@ export class Action<T = any> {
      * Generates a descriptive prompt for the LLM explaining how to use this action.
      */
     prompt(): string {
-        const schemaShape = (this.schema.schema as z.ZodObject<any>).shape || {};
+        const schemaShape = (this.schema.schema as z.ZodObject<z.ZodRawShape>).shape || {};
         const schemaProperties = Object.entries(schemaShape).map(([key, value]) => {
             const zodValue = value as z.ZodTypeAny;
             const requiredStr = zodValue.isOptional() ? 'optional' : 'required';

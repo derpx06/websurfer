@@ -2,7 +2,7 @@ import { ActionResult, type AgentContext } from '../../types';
 import { t } from '@extension/i18n';
 import { createLogger } from '@src/background/log';
 import { ExecutionState, Actors } from '../../event/types';
-import {
+import type {
     scrollToPercentActionSchema,
     scrollToTopActionSchema,
     scrollToBottomActionSchema,
@@ -10,7 +10,7 @@ import {
     nextPageActionSchema,
     scrollToTextActionSchema
 } from '../schemas';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 const logger = createLogger('Action:Scrolling');
 

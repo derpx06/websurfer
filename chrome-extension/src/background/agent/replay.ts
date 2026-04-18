@@ -1,4 +1,3 @@
-import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import type { ActionResult, AgentContext } from './types';
 import { createLogger } from '@src/background/log';
 import { chatHistoryStore } from '@extension/storage/lib/chat';

@@ -2,7 +2,7 @@ import type { Page as PuppeteerPage } from 'puppeteer-core/lib/esm/puppeteer/api
 import type { ElementHandle } from 'puppeteer-core/lib/esm/puppeteer/api/ElementHandle.js';
 import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/api/Frame.js';
 import { createLogger } from '@src/background/log';
-import { DOMElementNode } from '../dom/views';
+import type { DOMElementNode } from '../dom/views';
 import { type BrowserContextConfig } from '../views';
 
 const logger = createLogger('InteractionManager');
@@ -51,7 +51,6 @@ export class InteractionManager {
             }
 
             if (elementHandle) {
-                // @ts-ignore - Puppeteer types can be tricky
                 if (!(await elementHandle.isHidden())) {
                     await this.scrollIntoViewIfNeeded(elementHandle as ElementHandle<Element>);
                 }

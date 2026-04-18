@@ -1,5 +1,5 @@
 import { Executor } from '../agent/executor';
-import BrowserContext from '../browser/context';
+import type BrowserContext from '../browser/context';
 import {
     agentModelStore,
     AgentNameEnum,

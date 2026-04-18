@@ -1,7 +1,7 @@
 import { ActionResult, type AgentContext } from '../../types';
 import { t } from '@extension/i18n';
 import { ExecutionState, Actors } from '../../event/types';
-import {
+import type {
     goToUrlActionSchema,
     goBackActionSchema,
     searchGoogleActionSchema,
@@ -10,7 +10,7 @@ import {
     closeTabActionSchema,
     switchTabActionSchema
 } from '../schemas';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { normalizeNavigationUrl } from '../base';
 import { DuckDuckGoService, type SearchResult } from '../../../services/DuckDuckGoService';
 

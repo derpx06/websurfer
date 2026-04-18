@@ -1,16 +1,6 @@
 import 'webextension-polyfill';
-import {
-  connect,
-  ExtensionTransport,
-  type HTTPRequest,
-  type HTTPResponse,
-  type ProtocolType,
-  type KeyInput,
-} from 'puppeteer-core/lib/esm/puppeteer/puppeteer-core-browser.js';
-import type { Browser } from 'puppeteer-core/lib/esm/puppeteer/api/Browser.js';
-import type { Page as PuppeteerPage } from 'puppeteer-core/lib/esm/puppeteer/api/Page.js';
+import { type KeyInput } from 'puppeteer-core/lib/esm/puppeteer/puppeteer-core-browser.js';
 import type { ElementHandle } from 'puppeteer-core/lib/esm/puppeteer/api/ElementHandle.js';
-import type { Frame } from 'puppeteer-core/lib/esm/puppeteer/api/Frame.js';
 import {
   getClickableElements as _getClickableElements,
   removeHighlights as _removeHighlights,
@@ -817,9 +807,9 @@ export default class Page {
         const rect = el.getBoundingClientRect();
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-        // @ts-ignore
+        // @ts-expect-error injected at runtime by extension page helpers
         if (window._websurferCursor) {
-          // @ts-ignore
+          // @ts-expect-error injected at runtime by extension page helpers
           window._websurferCursor.move(x, y);
         }
       });
@@ -912,9 +902,9 @@ export default class Page {
         const rect = el.getBoundingClientRect();
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
-        // @ts-ignore
+        // @ts-expect-error injected at runtime by extension page helpers
         if (window._websurferCursor) {
-          // @ts-ignore
+          // @ts-expect-error injected at runtime by extension page helpers
           window._websurferCursor.click(x, y);
         }
       });

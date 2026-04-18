@@ -4,6 +4,7 @@ import { AiOutlineLoading3Quarters } from 'react-icons/ai';
 import { AttachmentBar, RecordingOverlay } from './chat-input/Visuals';
 import { ChatActionButtons, ShortcutHint } from './chat-input/Controls';
 import { TabMentionsDropdown } from './chat-input/TabMentionsDropdown';
+import type { Tab } from './chat-input/TabMentionsDropdown';
 
 interface Mention {
   id: number;
@@ -92,17 +93,24 @@ export default function ChatInput({
     requestAnimationFrame(adjustTextareaHeight);
   };
 
-  const handleMentionSelect = useCallback((tab: any) => {
+  const handleMentionSelect = useCallback((tab: Tab) => {
+    if (tab.id === undefined || !tab.title || !tab.url) {
+      setShowMentions(false);
+      return;
+    }
+    const tabId = tab.id;
+    const tabTitle = tab.title;
+    const tabUrl = tab.url;
     const lastAtPos = text.lastIndexOf('@', cursorPos - 1);
     const before = text.slice(0, lastAtPos);
     const after = text.slice(cursorPos);
-    const mentionText = `@${tab.title}`;
+    const mentionText = `@${tabTitle}`;
 
     setText(`${before}${mentionText} ${after}`);
     setMentions(prev => {
       // Avoid duplicate mentions in tracking state
-      if (prev.some(m => m.id === tab.id)) return prev;
-      return [...prev, { id: tab.id, title: tab.title, url: tab.url }];
+      if (prev.some(m => m.id === tabId)) return prev;
+      return [...prev, { id: tabId, title: tabTitle, url: tabUrl }];
     });
 
     setShowMentions(false);
@@ -226,7 +234,7 @@ export default function ChatInput({
 
   return (
     <div className="relative px-2 pb-1 pt-0 transition-all duration-500">
-      <form onSubmit={handleSubmit} className="relative group/form">
+      <form onSubmit={handleSubmit} className="group/form relative">
         <RecordingOverlay isRecording={isRecording} />
 
         {showMentions && (
@@ -238,9 +246,9 @@ export default function ChatInput({
           />
         )}
 
-        <div className={`flex flex-col rounded-[2rem] border transition-all duration-500 overflow-hidden relative ${isDarkMode
-          ? 'bg-slate-900/45 border-white/15 shadow-[0_24px_45px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl focus-within:border-cyan-400/45 focus-within:bg-slate-900/55 focus-within:shadow-[0_25px_55px_-20px_rgba(0,0,0,0.9),0_0_25px_rgba(56,189,248,0.2)]'
-          : 'bg-white/55 border-slate-200/70 backdrop-blur-2xl shadow-[0_20px_40px_-20px_rgba(15,23,42,0.35)] focus-within:border-indigo-400/70 focus-within:bg-white/70 focus-within:shadow-[0_24px_50px_-18px_rgba(15,23,42,0.32),0_0_20px_rgba(99,102,241,0.15)]'
+        <div className={`relative flex flex-col overflow-hidden rounded-[2rem] border transition-all duration-500 ${isDarkMode
+          ? 'border-white/15 bg-slate-900/45 shadow-[0_24px_45px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl focus-within:border-cyan-400/45 focus-within:bg-slate-900/55 focus-within:shadow-[0_25px_55px_-20px_rgba(0,0,0,0.9),0_0_25px_rgba(56,189,248,0.2)]'
+          : 'border-slate-200/70 bg-white/55 shadow-[0_20px_40px_-20px_rgba(15,23,42,0.35)] backdrop-blur-2xl focus-within:border-indigo-400/70 focus-within:bg-white/70 focus-within:shadow-[0_24px_50px_-18px_rgba(15,23,42,0.32),0_0_20px_rgba(99,102,241,0.15)]'
           } ${disabled ? 'opacity-50 grayscale' : ''}`}>
 
           <AttachmentBar attachedFiles={attachedFiles} onRemoveFile={handleRemoveFile} isDarkMode={isDarkMode} />
@@ -253,11 +261,11 @@ export default function ChatInput({
             disabled={disabled}
             rows={1}
             style={{ border: 'none', outline: 'none', boxShadow: 'none' }}
-            className={`w-full px-5 py-5 bg-transparent border-0 focus:border-0 focus:ring-0 focus:outline-none text-[15px] theme-scrollbar font-inter font-medium tracking-tight resize-none leading-relaxed transform transition-all duration-300 ${isDarkMode ? 'text-white placeholder-slate-400/80' : 'text-slate-900 placeholder-slate-500'}`}
+            className={`theme-scrollbar font-inter w-full resize-none border-0 bg-transparent p-5 text-[15px] font-medium leading-relaxed tracking-tight transition-all duration-300 focus:border-0 focus:outline-none focus:ring-0${isDarkMode ? 'text-white placeholder:text-slate-400/80' : 'text-slate-900 placeholder:text-slate-500'}`}
             placeholder={attachedFiles.length > 0 ? 'Add a message...' : "Unleash your agent. What's the mission today?"}
           />
 
-          <div className={`h-[1px] w-full ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`} />
+          <div className={`h-px w-full ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`} />
 
           <div className="flex items-center justify-between px-3 py-3.5">
             <div className="flex items-center gap-1">
@@ -265,23 +273,23 @@ export default function ChatInput({
                 type="button"
                 onClick={handleFileSelect}
                 disabled={disabled}
-                className={`p-2.5 rounded-xl transition-all duration-300 ${isDarkMode ? 'text-slate-400 hover:bg-white/5 hover:text-cyan-400 active:scale-90' : 'text-slate-400 hover:bg-slate-100 hover:text-indigo-600 active:scale-90'}`}
+                className={`rounded-xl p-2.5 transition-all duration-300 ${isDarkMode ? 'text-slate-400 hover:bg-white/5 hover:text-cyan-400 active:scale-90' : 'text-slate-400 hover:bg-slate-100 hover:text-indigo-600 active:scale-90'}`}
                 title="Attach files">
                 <FaPaperclip size={13} />
               </button>
               <input ref={fileInputRef} type="file" multiple onChange={handleFileChange} className="hidden" />
 
               {onMicClick && (
-                <div className="relative group/mic">
+                <div className="group/mic relative">
                   {isRecording && (
-                    <div className="absolute inset-0 rounded-2xl bg-red-500/20 animate-ping"></div>
+                    <div className="absolute inset-0 animate-ping rounded-2xl bg-red-500/20"></div>
                   )}
                   <button
                     type="button"
                     onClick={onMicClick}
                     disabled={disabled || isProcessingSpeech}
-                    className={`relative p-2.5 rounded-xl transition-all duration-500 z-10 ${isRecording
-                      ? 'text-white bg-gradient-to-br from-red-500 to-red-600 shadow-[0_0_20px_rgba(239,68,68,0.4)] scale-110'
+                    className={`relative z-10 rounded-xl p-2.5 transition-all duration-500 ${isRecording
+                      ? 'scale-110 bg-gradient-to-br from-red-500 to-red-600 text-white shadow-[0_0_20px_rgba(239,68,68,0.4)]'
                       : isDarkMode ? 'text-slate-400 hover:bg-white/5 hover:text-violet-400 active:scale-90' : 'text-slate-400 hover:bg-slate-100 hover:text-indigo-600 active:scale-90'
                       }`}>
                     {isProcessingSpeech ?

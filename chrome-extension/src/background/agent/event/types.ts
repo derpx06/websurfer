@@ -46,9 +46,6 @@ export enum ExecutionState {
   ACT_OK = 'act.ok',
   ACT_FAIL = 'act.fail',
   ACT_ASK_HUMAN = 'act.ask_human',
-
-  // Sight/Vision updates
-  SIGHT_UPDATE = 'sight.update',
 }
 
 export interface EventData {
@@ -74,8 +71,7 @@ export class AgentEvent {
     public data: EventData,
     public timestamp: number = Date.now(),
     public type: EventType = EventType.EXECUTION,
-    public screenshot?: string,
-  ) { }
+  ) {}
 }
 
 // The type of callback for event subscribers

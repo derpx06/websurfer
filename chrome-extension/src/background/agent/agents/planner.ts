@@ -12,12 +12,8 @@ import {
   isAuthenticationError,
   isBadRequestError,
   isForbiddenError,
-  isRateLimitError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
-  ChatModelRateLimitError,
-  isPaymentRequiredError,
-  ChatModelPaymentRequiredError,
 } from './errors';
 import { filterExternalContent } from '../messages/utils';
 const logger = createLogger('PlannerAgent');
@@ -35,7 +31,6 @@ export const plannerOutputSchema = z.object({
     }),
   ]),
   next_steps: z.string(),
-  sub_tasks: z.array(z.string()).optional(),
   final_answer: z.string(),
   reasoning: z.string(),
   web_task: z.union([
@@ -103,17 +98,6 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
         next_steps,
       };
 
-      if (cleanedPlan.sub_tasks && cleanedPlan.sub_tasks.length > 0) {
-        for (let i = cleanedPlan.sub_tasks.length - 1; i >= 0; i--) {
-          this.context.taskStack.push({
-            goal: cleanedPlan.sub_tasks[i],
-            status: 'pending',
-            steps: 0
-          });
-        }
-        logger.info(`Pushed ${cleanedPlan.sub_tasks.length} sub-tasks to the context stack.`);
-      }
-
       // If task is done, emit the final answer; otherwise emit next steps
       const eventMessage = cleanedPlan.done ? cleanedPlan.final_answer : cleanedPlan.next_steps;
       this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_OK, eventMessage);
@@ -125,15 +109,7 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-
-      // Ensure we signal the step failure to the UI before throwing specific errors
-      let finalErrorMessage = errorMessage;
-      if (isRateLimitError(error)) {
-        finalErrorMessage = 'API Rate Limit Exceeded (429). Please try again in a few moments.';
-      }
-      this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_FAIL, `Planning failed: ${finalErrorMessage}`);
-
-      // Check if this is a specialized error type to throw
+      // Check if this is an authentication error
       if (isAuthenticationError(error)) {
         throw new ChatModelAuthError(errorMessage, error);
       } else if (isBadRequestError(error)) {
@@ -142,13 +118,10 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
         throw new RequestCancelledError(errorMessage);
       } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
-      } else if (isRateLimitError(error)) {
-        throw new ChatModelRateLimitError(finalErrorMessage, error);
-      } else if (isPaymentRequiredError(error)) {
-        throw new ChatModelPaymentRequiredError(errorMessage, error);
       }
 
       logger.error(`Planning failed: ${errorMessage}`);
+      this.context.emitEvent(Actors.PLANNER, ExecutionState.STEP_FAIL, `Planning failed: ${errorMessage}`);
       return {
         id: this.id,
         error: errorMessage,

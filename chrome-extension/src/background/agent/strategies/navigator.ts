@@ -10,7 +10,7 @@ import {
     MaxFailuresReachedError,
     RequestCancelledError,
 } from '../agents/errors';
-import { NavigatorAgent, type NavigatorResult } from '../agents/navigator';
+import type { NavigatorAgent, NavigatorResult } from '../agents/navigator';
 import { URLNotAllowedError } from '../../browser/views';
 import type { AgentContext, AgentOutput } from '../types';
 import type { ExecutionStrategy } from './types';

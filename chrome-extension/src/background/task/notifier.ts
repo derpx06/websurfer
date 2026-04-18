@@ -1,4 +1,4 @@
-import { Executor } from '../agent/executor';
+import type { Executor } from '../agent/executor';
 import { createLogger } from '../log';
 import { ExecutionState } from '../agent/event/types';
 

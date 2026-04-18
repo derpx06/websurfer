@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { type Message, chatHistoryStore, Actors } from '@extension/storage';
+import { type Message, type ChatSessionMetadata, chatHistoryStore } from '@extension/storage';
 
 /**
  * useChatSession manages the state and persistence of a single chat conversation.
@@ -8,7 +8,7 @@ import { type Message, chatHistoryStore, Actors } from '@extension/storage';
 export const useChatSession = () => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-    const [chatSessions, setChatSessions] = useState<any[]>([]);
+    const [chatSessions, setChatSessions] = useState<ChatSessionMetadata[]>([]);
     const [isFollowUpMode, setIsFollowUpMode] = useState(false);
     const [isHistoricalSession, setIsHistoricalSession] = useState(false);
     const sessionIdRef = useRef<string | null>(null);

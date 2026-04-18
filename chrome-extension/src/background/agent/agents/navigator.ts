@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { BaseAgent, type BaseAgentOptions, type ExtraAgentOptions } from './base';
 import { createLogger } from '@src/background/log';
-import { ActionResult, type AgentContext, type AgentOutput } from '../types';
+import { ActionResult, type AgentOutput } from '../types';
 import type { Action } from '../actions/builder';
 import { buildDynamicActionSchema } from '../actions/builder';
 import { agentBrainSchema } from '../types';
@@ -21,10 +21,6 @@ import {
   ResponseParseError,
   LLM_FORBIDDEN_ERROR_MESSAGE,
   RequestCancelledError,
-  ChatModelRateLimitError,
-  isRateLimitError,
-  isPaymentRequiredError,
-  ChatModelPaymentRequiredError,
 } from './errors';
 import { calcBranchPathHashSet } from '@src/background/browser/dom/views';
 import { type BrowserState, BrowserStateHistory, URLNotAllowedError } from '@src/background/browser/views';
@@ -170,15 +166,11 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     let actionResults: ActionResult[] = [];
 
     try {
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_START, 'Processing step...');
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_START, 'Navigating...');
 
       const messageManager = this.context.messageManager;
-      // Get browser state (this will call getState once and cache it)
+      // add the browser state message
       await this.addStateMessageToMemory();
-
-      // Prune history if needed (e.g. summarize older history)
-      await this.context.messageManager.cutMessages(this.chatLLM);
-
       const currentState = await this.context.browserContext.getCachedState();
       browserStateHistory = new BrowserStateHistory(currentState);
 
@@ -201,7 +193,8 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       }
 
       const actions = this.fixActions(modelOutput);
-      modelOutput.action = actions;
+      const preparedActions = this.prepareActionsForStep(actions);
+      modelOutput.action = preparedActions;
       modelOutputString = JSON.stringify(modelOutput);
 
       // remove the last state message from memory before adding the model output
@@ -209,7 +202,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       this.addModelOutputToMemory(modelOutput);
 
       // take the actions
-      actionResults = await this.doMultiAction(actions);
+      actionResults = await this.doMultiAction(preparedActions);
       // logger.info('Action results', JSON.stringify(actionResults, null, 2));
 
       this.context.actionResults = actionResults;
@@ -230,15 +223,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     } catch (error) {
       this.removeLastStateMessageFromMemory();
       const errorMessage = error instanceof Error ? error.message : String(error);
-
-      // Signal step failure to UI before throwing/returning
-      let finalErrorMessage = errorMessage;
-      if (isRateLimitError(error) && !errorMessage.includes('DuckDuckGo')) {
-        finalErrorMessage = 'API Rate Limit Exceeded (429). Please try again in a few moments.';
-      }
-      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, `Execution failed: ${finalErrorMessage}`);
-
-      // Check if this is a specialized error type to throw
+      // Check if this is an authentication error
       if (isAuthenticationError(error)) {
         throw new ChatModelAuthError(errorMessage, error);
       } else if (isBadRequestError(error)) {
@@ -249,15 +234,13 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         throw new ExtensionConflictError(EXTENSION_CONFLICT_ERROR_MESSAGE, error);
       } else if (isForbiddenError(error)) {
         throw new ChatModelForbiddenError(LLM_FORBIDDEN_ERROR_MESSAGE, error);
-      } else if (isRateLimitError(error)) {
-        throw new ChatModelRateLimitError(finalErrorMessage, error);
-      } else if (isPaymentRequiredError(error)) {
-        throw new ChatModelPaymentRequiredError(errorMessage, error);
       } else if (error instanceof URLNotAllowedError) {
         throw error;
       }
 
-      logger.error(`Navigation failed: ${errorMessage}`);
+      const errorString = `Navigation failed: ${errorMessage}`;
+      logger.error(errorString);
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.STEP_FAIL, errorString);
       agentOutput.error = errorMessage;
       return agentOutput;
     } finally {
@@ -291,7 +274,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
    * Add the state message to the memory
    */
   public async addStateMessageToMemory() {
-    if (this.context.stateMessageAdded && this.context.messageManager.getMessages().some(m => m.getType() === 'human' && (m.content as string).includes('Current Page State:'))) {
+    if (this.context.stateMessageAdded) {
       return;
     }
 
@@ -381,34 +364,49 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     return actions;
   }
 
+  /**
+   * Apply step-level action safeguards to reduce loops and accidental over-execution.
+   */
+  private prepareActionsForStep(actions: Record<string, unknown>[]): Record<string, unknown>[] {
+    let currentActions = [...actions];
+
+    const dedupedActions: Record<string, unknown>[] = [];
+    let previousSignature = '';
+    for (const candidate of currentActions) {
+      const signature = JSON.stringify(candidate);
+      if (signature === previousSignature) {
+        logger.info(`Skipping consecutive duplicate action in same step: ${signature.slice(0, 120)}`);
+        continue;
+      }
+      dedupedActions.push(candidate);
+      previousSignature = signature;
+    }
+    currentActions = dedupedActions;
+
+    const maxActions = this.context.options.maxActionsPerStep;
+    if (currentActions.length > maxActions) {
+      logger.info(`Trimming actions from ${currentActions.length} to maxActionsPerStep=${maxActions}`);
+      currentActions = currentActions.slice(0, maxActions);
+    }
+
+    return currentActions;
+  }
+
   private async doMultiAction(actions: Record<string, unknown>[]): Promise<ActionResult[]> {
     const results: ActionResult[] = [];
     let errCount = 0;
     logger.info('Actions', actions);
 
     const browserContext = this.context.browserContext;
-    let browserState = await browserContext.getCachedState();
-
-    // 1. Initial State Sync: If state was cached more than 500ms ago, it might be stale.
-    // Refresh it once before starting the multi-action sequence to account for LLM thinking time.
-    const perceptionTime = browserContext.getLastStateCaptureTime();
-    if (Date.now() - perceptionTime > 500) {
-      logger.info('State might be stale after LLM thinking, refreshing for index recovery...');
-      browserState = await browserContext.getState(this.context.options.useVision);
-    }
-
+    const browserState = await browserContext.getState(this.context.options.useVision);
     const cachedPathHashes = await calcBranchPathHashSet(browserState);
+
     await browserContext.removeHighlight();
 
-    let currentActions = [...actions];
-
-    for (const [i, action] of currentActions.entries()) {
+    for (const [i, action] of actions.entries()) {
       const actionName = Object.keys(action)[0];
-      const actionArgs = action[actionName] as Record<string, unknown>;
+      const actionArgs = action[actionName];
       try {
-        // emit start event
-        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, actionName);
-
         // check if the task is paused or stopped
         if (this.context.paused || this.context.stopped) {
           return results;
@@ -420,69 +418,70 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         }
 
         const indexArg = actionInstance.getIndexArg(actionArgs);
-        if (indexArg !== null) {
-          // 2. Continuous Index Recovery:
-          // Check if the element we want to interact with is still at the same index.
-          // If not, try to find it by its historical properties and update the index.
-          const stepRecord = this.context.history.history[this.context.history.history.length - 1];
-          const historicalElement = stepRecord?.state.state?.selectorMap.get(indexArg);
-
-          if (historicalElement) {
-            const historyElement = HistoryTreeProcessor.convertDomElementToHistoryElement(historicalElement);
-            const refreshState = await browserContext.getCachedState();
-            const updatedAction = await this.updateActionIndices(historyElement, action, refreshState);
-            if (updatedAction) {
-              // Update local action reference for this step
-              currentActions[i] = updatedAction;
-            }
-          }
-
-          // Check for new elements if it's not the first action
-          if (i > 0) {
-            const newState = await browserContext.getCachedState();
-            const newPathHashes = await calcBranchPathHashSet(newState);
-            if (!newPathHashes.isSubsetOf(cachedPathHashes)) {
-              const msg = `Something new appeared after action ${i} / ${currentActions.length}`;
-              logger.info(msg);
-              results.push(new ActionResult({ extractedContent: msg, includeInMemory: true }));
-              break;
-            }
+        if (i > 0 && indexArg !== null) {
+          const newState = await browserContext.getState(this.context.options.useVision);
+          const newPathHashes = await calcBranchPathHashSet(newState);
+          // next action requires index but there are new elements on the page
+          if (!newPathHashes.isSubsetOf(cachedPathHashes)) {
+            const msg = `Something new appeared after action ${i} / ${actions.length}`;
+            logger.info(msg);
+            results.push(
+              new ActionResult({
+                extractedContent: msg,
+                includeInMemory: true,
+              }),
+            );
+            break;
           }
         }
 
-        // Execute the (potentially updated) action
-        const finalAction = currentActions[i];
-        const finalArgs = finalAction[Object.keys(finalAction)[0]];
-        const result = await actionInstance.call(finalArgs);
-
+        const result = await actionInstance.call(actionArgs);
         if (result === undefined) {
           throw new Error(`Action ${actionName} returned undefined`);
         }
 
-        // Record interaction to history
+        // if the action has an index argument, record the interacted element to the result
         if (indexArg !== null) {
           const domElement = browserState.selectorMap.get(indexArg);
           if (domElement) {
             const interactedElement = HistoryTreeProcessor.convertDomElementToHistoryElement(domElement);
             result.interactedElement = interactedElement;
+            logger.info('Interacted element', interactedElement);
+            logger.info('Result', result);
           }
         }
         results.push(result);
 
+        // check if the task is paused or stopped
         if (this.context.paused || this.context.stopped) {
           return results;
         }
-        await waitForDomStability(this.context);
+        // TODO: wait for 1 second for now, need to optimize this to avoid unnecessary waiting
+        await new Promise(resolve => setTimeout(resolve, 1000));
       } catch (error) {
         if (error instanceof URLNotAllowedError) {
           throw error;
         }
         const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('doAction error', actionName, JSON.stringify(actionArgs, null, 2), errorMessage);
+        logger.error(
+          'doAction error',
+          actionName,
+          JSON.stringify(actionArgs, null, 2),
+          JSON.stringify(errorMessage, null, 2),
+        );
+        // unexpected error, emit event
         this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_FAIL, errorMessage);
         errCount++;
-        if (errCount > 3) throw new Error('Too many errors in actions');
-        results.push(new ActionResult({ error: errorMessage, isDone: false, includeInMemory: true }));
+        if (errCount > 3) {
+          throw new Error('Too many errors in actions');
+        }
+        results.push(
+          new ActionResult({
+            error: errorMessage,
+            isDone: false,
+            includeInMemory: true,
+          }),
+        );
       }
     }
     return results;
@@ -704,31 +703,5 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
     }
 
     return action;
-  }
-}
-
-/**
- * Smart DOM stability check that polls for mutations to settle.
- * Saves ~1s per action compared to hardcoded sleeps.
- */
-async function waitForDomStability(context: AgentContext, maxWait = 1000): Promise<void> {
-  const page = await context.browserContext.getCurrentPage();
-  if (!page || !page.attached) {
-    await new Promise(r => setTimeout(r, 150));
-    return;
-  }
-  const start = Date.now();
-  let lastDomHash = '';
-  let stableSince = Date.now();
-  while (Date.now() - start < maxWait) {
-    await new Promise(r => setTimeout(r, 50));
-    // @ts-ignore - Accessing internal lifecycle for raw puppeteer access to avoid redundant state captures
-    const currentHash = await page['_lifecycle'].puppeteerPage?.evaluate(() => String(document.querySelectorAll('*').length)) ?? '';
-    if (currentHash === lastDomHash) {
-      if (Date.now() - stableSince >= 150) break;
-    } else {
-      lastDomHash = currentHash;
-      stableSince = Date.now();
-    }
   }
 }

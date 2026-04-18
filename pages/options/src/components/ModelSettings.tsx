@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars, jsx-a11y/label-has-associated-control */
 /*
  * Changes:
  * - Added a searchable select component with filtering capability for model selection
@@ -728,29 +729,29 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
     return (
       <div className={`group/agent relative overflow-hidden rounded-[2rem] border transition-all duration-500 hover:scale-[1.01] ${isDark ? 'border-white/5 bg-white/[0.02] shadow-2xl' : 'border-slate-200 bg-slate-50 shadow-lg'
-        } p-8 mb-8`}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+        } mb-8 p-8`}>
+        <div className="mb-8 flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
-            <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${isPlanner
+            <div className={`rounded-full px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.2em] shadow-lg ${isPlanner
               ? (isDark ? 'bg-indigo-500/20 text-indigo-400 ring-1 ring-indigo-500/30' : 'bg-indigo-100 text-indigo-700')
               : (isDark ? 'bg-cyan-500/20 text-cyan-400 ring-1 ring-cyan-500/30' : 'bg-cyan-100 text-cyan-700')
               }`}>
               {isPlanner ? 'Strategic Planner' : 'Execution Navigator'}
             </div>
           </div>
-          <div className={`text-[13px] font-medium leading-relaxed max-w-sm ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          <div className={`max-w-sm text-[13px] font-medium leading-relaxed ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             {getAgentDescription(agentName)}
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6">
           {/* Model Selection Field */}
-          <div className={`group/field relative p-6 rounded-2xl border transition-all duration-300 ${isDark ? 'bg-black/20 border-white/5 hover:border-indigo-500/30' : 'bg-white border-slate-200 hover:border-indigo-300 shadow-sm'
+          <div className={`group/field relative rounded-2xl border p-6 transition-all duration-300 ${isDark ? 'border-white/5 bg-black/20 hover:border-indigo-500/30' : 'border-slate-200 bg-white shadow-sm hover:border-indigo-300'
             }`}>
-            <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-3 ml-1">Assigned Neural Model</label>
+            <label className="mb-3 ml-1 block text-[10px] font-black uppercase tracking-widest opacity-40">Assigned Neural Model</label>
             <div className="relative">
               <select
-                className={`w-full appearance-none bg-transparent text-sm font-bold focus:ring-0 outline-none cursor-pointer pr-10 ${isDark ? 'text-white' : 'text-slate-900'
+                className={`w-full cursor-pointer appearance-none bg-transparent pr-10 text-sm font-bold outline-none focus:ring-0 ${isDark ? 'text-white' : 'text-slate-900'
                   }`}
                 disabled={availableModels.length === 0}
                 value={selectedModels[agentName] || ''}
@@ -763,17 +764,17 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   </option>
                 ))}
               </select>
-              <FiChevronDown className="absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 transition-transform group-hover/field:scale-110" />
+              <FiChevronDown className="pointer-events-none absolute right-0 top-1/2 -translate-y-1/2 opacity-40 transition-transform group-hover/field:scale-110" />
             </div>
           </div>
 
           {/* Parameters Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {selectedModels[agentName] && !isOpenAIReasoningModel(selectedModels[agentName]) && (
-              <div className={`p-6 rounded-2xl border ${isDark ? 'bg-black/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
-                <div className="flex items-center justify-between mb-4">
+              <div className={`rounded-2xl border p-6 ${isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white shadow-sm'}`}>
+                <div className="mb-4 flex items-center justify-between">
                   <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Creativity (Temp)</label>
-                  <span className={`text-xs font-black font-mono ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
+                  <span className={`font-mono text-xs font-black ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>
                     {modelParameters[agentName].temperature.toFixed(2)}
                   </span>
                 </div>
@@ -783,7 +784,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   max="2"
                   step="0.01"
                   value={modelParameters[agentName].temperature}
-                  className="w-full h-1.5 rounded-full appearance-none bg-indigo-500/10 cursor-pointer accent-indigo-500"
+                  className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-indigo-500/10 accent-indigo-500"
                   onChange={e => handleParameterChange(agentName, 'temperature', Number.parseFloat(e.target.value))}
                 />
               </div>
@@ -792,10 +793,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             {selectedModels[agentName] &&
               !isOpenAIReasoningModel(selectedModels[agentName]) &&
               !isAnthropicModel(selectedModels[agentName]) && (
-                <div className={`p-6 rounded-2xl border ${isDark ? 'bg-black/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
-                  <div className="flex items-center justify-between mb-4">
+                <div className={`rounded-2xl border p-6 ${isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white shadow-sm'}`}>
+                  <div className="mb-4 flex items-center justify-between">
                     <label className="text-[10px] font-black uppercase tracking-widest opacity-40">Nucleus Sampling (TopP)</label>
-                    <span className={`text-xs font-black font-mono ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
+                    <span className={`font-mono text-xs font-black ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>
                       {modelParameters[agentName].topP.toFixed(3)}
                     </span>
                   </div>
@@ -805,7 +806,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                     max="1"
                     step="0.001"
                     value={modelParameters[agentName].topP}
-                    className="w-full h-1.5 rounded-full appearance-none bg-cyan-500/10 cursor-pointer accent-cyan-500"
+                    className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-cyan-500/10 accent-cyan-500"
                     onChange={e => handleParameterChange(agentName, 'topP', Number.parseFloat(e.target.value))}
                   />
                 </div>
@@ -813,16 +814,16 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
             {/* Reasoning Effort (O-series models) */}
             {selectedModels[agentName] && isOpenAIReasoningModel(selectedModels[agentName]) && (
-              <div className={`col-span-1 md:col-span-2 p-6 rounded-2xl border ${isDark ? 'bg-black/20 border-white/5' : 'bg-white border-slate-200 shadow-sm'}`}>
-                <label className="block text-[10px] font-black uppercase tracking-widest opacity-40 mb-4">Cognitive Effort</label>
+              <div className={`col-span-1 rounded-2xl border p-6 md:col-span-2 ${isDark ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white shadow-sm'}`}>
+                <label className="mb-4 block text-[10px] font-black uppercase tracking-widest opacity-40">Cognitive Effort</label>
                 <div className="flex gap-2">
                   {(['minimal', 'low', 'medium', 'high'] as const).map((level) => (
                     <button
                       key={level}
                       onClick={() => handleReasoningEffortChange(agentName, level)}
-                      className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-tighter transition-all duration-300 ${(reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')) === level
+                      className={`flex-1 rounded-xl py-3 text-xs font-black uppercase tracking-tighter transition-all duration-300 ${(reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')) === level
                         ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/50'
-                        : 'bg-white/5 text-slate-500 hover:text-slate-300 hover:bg-white/10'
+                        : 'bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
                         }`}
                     >
                       {level}
@@ -1115,24 +1116,24 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
   };
 
   return (
-    <div className={`space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+    <div className={`animate-in fade-in slide-in-from-bottom-4 space-y-12 duration-700 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
 
       {/* LLM Providers Section */}
-      <div className="flex items-center justify-between mb-6 px-4">
+      <div className="mb-6 flex items-center justify-between px-4">
         <div>
-          <h2 className="text-3xl font-black font-outfit tracking-tight">Intelligence Nodes</h2>
-          <p className={`text-sm font-medium mt-1 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
+          <h2 className="font-outfit text-3xl font-black tracking-tight">Intelligence Nodes</h2>
+          <p className={`mt-1 text-sm font-medium ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
             Neural endpoint configurations & hardware acceleration
           </p>
         </div>
 
-        <div className="relative group/add provider-selector-container">
+        <div className="group/add provider-selector-container relative">
           <button
             onClick={() => {
               console.log('[ModelSettings] Toggling provider selector. Current state:', !isProviderSelectorOpen);
               setIsProviderSelectorOpen(!isProviderSelectorOpen);
             }}
-            className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl transition-all duration-300 transform hover:scale-105 active:scale-95 ${isDarkMode ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-700'
+            className={`flex items-center gap-3 rounded-2xl px-8 py-4 text-xs font-black uppercase tracking-widest shadow-xl transition-all duration-300 hover:scale-105 active:scale-95${isDarkMode ? 'bg-indigo-600 text-white hover:bg-indigo-500' : 'bg-indigo-600 text-white hover:bg-indigo-700'
               }`}
           >
             Add New Neural Provider
@@ -1140,9 +1141,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
           </button>
 
           {isProviderSelectorOpen && (
-            <div className={`absolute right-0 mt-4 w-72 rounded-[2rem] border shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden z-[999] p-3 backdrop-blur-3xl animate-in fade-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-slate-900/95 border-white/10' : 'bg-white/95 border-slate-200'
+            <div className={`animate-in fade-in zoom-in-95 absolute right-0 z-[999] mt-4 w-72 overflow-hidden rounded-[2rem] border p-3 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-3xl duration-200 ${isDarkMode ? 'border-white/10 bg-slate-900/95' : 'border-slate-200 bg-white/95'
               }`}>
-              <div className="px-4 py-2 mb-2">
+              <div className="mb-2 px-4 py-2">
                 <p className="text-[10px] font-black uppercase tracking-widest opacity-40">Select Architecture</p>
               </div>
               {Object.values(ProviderTypeEnum)
@@ -1157,10 +1158,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         console.log(`[ModelSettings] User selected provider type: ${type}`);
                         handleProviderSelection(type);
                       }}
-                      className={`w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-200 ${isDarkMode
+                      className={`flex w-full items-center justify-between rounded-2xl px-5 py-3.5 text-[14px] font-bold transition-all duration-200 ${isDarkMode
                         ? 'text-slate-300 hover:bg-indigo-500/20 hover:text-white'
                         : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-600'
-                        } ${isAdded && !isAzure ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        } ${isAdded && !isAzure ? 'cursor-not-allowed opacity-40' : ''}`}
                       disabled={isAdded && !isAzure}
                     >
                       <span>{getDefaultDisplayNameFromProviderId(type)}</span>
@@ -1171,7 +1172,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
               <div className="my-2 border-t border-white/5"></div>
               <button
                 onClick={() => handleProviderSelection(ProviderTypeEnum.CustomOpenAI)}
-                className={`w-full text-left px-5 py-3.5 rounded-2xl text-[14px] font-bold transition-all duration-200 ${isDarkMode ? 'text-indigo-400 hover:bg-indigo-500/10' : 'text-indigo-600 hover:bg-indigo-50'
+                className={`w-full rounded-2xl px-5 py-3.5 text-left text-[14px] font-bold transition-all duration-200 ${isDarkMode ? 'text-indigo-400 hover:bg-indigo-500/10' : 'text-indigo-600 hover:bg-indigo-50'
                   }`}
               >
                 Custom OpenAI Compatible
@@ -1181,17 +1182,17 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         </div>
       </div>
 
-      <section className={`group overflow-visible rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-[#1a1c23]/60 border-white/5 shadow-2xl backdrop-blur-3xl' : 'bg-white/80 border-slate-200 shadow-xl'
+      <section className={`group overflow-visible rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'border-white/5 bg-[#1a1c23]/60 shadow-2xl backdrop-blur-3xl' : 'border-slate-200 bg-white/80 shadow-xl'
         }`}>
 
         <div className="divide-y divide-white/[0.03]">
           {getSortedProviders().length === 0 ? (
             <div className="p-20 text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-500/10 text-indigo-500 mb-6">
+              <div className="mb-6 inline-flex size-20 items-center justify-center rounded-full bg-indigo-500/10 text-indigo-500">
                 <FiCpu size={32} />
               </div>
-              <h3 className="text-xl font-bold mb-2">No Active Proccessors</h3>
-              <p className={`text-sm max-w-xs mx-auto ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+              <h3 className="mb-2 text-xl font-bold">No Active Proccessors</h3>
+              <p className={`mx-auto max-w-xs text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
                 Connect an AI provider to enable WebSurfer&#39;s autonomous navigation capabilities.
               </p>
             </div>
@@ -1203,32 +1204,32 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
               return (
                 <div key={providerId} id={`provider-${providerId}`} className="p-10 transition-all duration-300 hover:bg-white/[0.02]">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
+                  <div className="mb-8 flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
                     <div className="flex items-center gap-4">
-                      <div className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm ${isInStorage
+                      <div className={`rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-tighter shadow-sm ${isInStorage
                         ? (isDarkMode ? 'bg-emerald-500/10 text-emerald-400' : 'bg-emerald-100 text-emerald-700')
                         : (isDarkMode ? 'bg-amber-500/10 text-amber-400' : 'bg-amber-100 text-amber-700')
                         }`}>
                         {isInStorage ? 'Live Node' : 'Draft Intake'}
                       </div>
-                      <h3 className="text-xl font-black font-outfit uppercase tracking-tight">{providerConfig.name || providerId}</h3>
+                      <h3 className="font-outfit text-xl font-black uppercase tracking-tight">{providerConfig.name || providerId}</h3>
                       {isModified && !isInStorage && (
-                        <span className="px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 text-[10px] font-black uppercase tracking-widest">Awaiting Sync</span>
+                        <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-400">Awaiting Sync</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
                       {isModified && !isInStorage && (
                         <button
-                          className="px-5 py-2.5 rounded-2xl text-sm font-bold opacity-60 hover:opacity-100 transition-opacity"
+                          className="rounded-2xl px-5 py-2.5 text-sm font-bold opacity-60 transition-opacity hover:opacity-100"
                           onClick={() => handleCancelProvider(providerId)}
                         >
                           Discard
                         </button>
                       )}
                       <button
-                        className={`flex items-center justify-center gap-2 px-8 py-3 rounded-2xl text-[13px] font-black uppercase tracking-widest shadow-2xl transition-all duration-300 transform active:scale-95 disabled:opacity-30 ${getButtonProps(providerId).variant === 'danger'
-                          ? 'bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white ring-1 ring-red-500/20 shadow-red-500/10'
-                          : 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-indigo-500/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5'
+                        className={`flex items-center justify-center gap-2 rounded-2xl px-8 py-3 text-[13px] font-black uppercase tracking-widest shadow-2xl transition-all duration-300 active:scale-95 disabled:opacity-30${getButtonProps(providerId).variant === 'danger'
+                          ? 'bg-red-500/10 text-red-500 shadow-red-500/10 ring-1 ring-red-500/20 hover:bg-red-500 hover:text-white'
+                          : 'bg-gradient-to-br from-indigo-500 to-indigo-700 text-white shadow-indigo-500/20 hover:-translate-y-0.5 hover:shadow-indigo-500/40'
                           }`}
                         disabled={getButtonProps(providerId).disabled}
                         onClick={() => isInStorage && !isModified ? handleDelete(providerId) : handleSave(providerId)}
@@ -1238,13 +1239,13 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
                     {providerConfig.type === ProviderTypeEnum.CustomOpenAI && (
                       <div className="space-y-3">
                         <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Identity Label</label>
                         <input
                           type="text"
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none"
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500"
                           placeholder="e.g. Local Research Engine"
                           value={providerConfig.name || ''}
                           onChange={e => handleNameChange(providerId, e.target.value)}
@@ -1254,16 +1255,16 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
 
                     <div className="space-y-3">
                       <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Encryption Key</label>
-                      <div className="relative group">
+                      <div className="group relative">
                         <input
                           type={visibleApiKeys[providerId] ? 'text' : 'password'}
-                          className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-mono"
+                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 font-mono text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500"
                           placeholder="••••••••••••••••"
                           value={providerConfig.apiKey || ''}
                           onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
                         />
                         <button
-                          className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 hover:opacity-100 transition-opacity"
+                          className="absolute right-4 top-1/2 -translate-y-1/2 opacity-30 transition-opacity hover:opacity-100"
                           onClick={() => toggleApiKeyVisibility(providerId)}
                         >
                           {visibleApiKeys[providerId] ? <FiEyeOff /> : <FiEye />}
@@ -1280,7 +1281,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Networking Endpoint</label>
                           <input
                             type="text"
-                            className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-indigo-500 transition-all outline-none font-mono"
+                            className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 font-mono text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500"
                             placeholder="https://api.openai.com/v1"
                             value={providerConfig.baseUrl || ''}
                             onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
@@ -1289,10 +1290,10 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       )}
 
                     {providerConfig.type === ProviderTypeEnum.Ollama && (
-                      <div className="md:col-span-2 p-5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex gap-4 items-start">
+                      <div className="flex items-start gap-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 p-5 md:col-span-2">
                         <div className="mt-1 text-amber-500"><FiShield /></div>
                         <p className="text-[13px] font-medium leading-relaxed text-amber-500/80">
-                          Critical: Ensure CORS permissions are active. Run Ollama with <code className="bg-black/20 px-1.5 py-0.5 rounded text-amber-500 font-bold">OLLAMA_ORIGINS=chrome-extension://*</code>
+                          Critical: Ensure CORS permissions are active. Run Ollama with <code className="rounded bg-black/20 px-1.5 py-0.5 font-bold text-amber-500">OLLAMA_ORIGINS=chrome-extension://*</code>
                         </p>
                       </div>
                     )}
@@ -1301,18 +1302,18 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   {providerConfig.type !== ProviderTypeEnum.AzureOpenAI && (
                     <div className="mt-8 space-y-4">
                       <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Intelligence Matrix (Models)</label>
-                      <div className="flex flex-wrap gap-2.5 p-6 rounded-[2rem] bg-black/20 border border-white/5 min-h-[80px]">
+                      <div className="flex min-h-[80px] flex-wrap gap-2.5 rounded-[2rem] border border-white/5 bg-black/20 p-6">
                         {(providerConfig.modelNames || llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || []).map(model => (
-                          <div key={model} className="group/tag flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-black uppercase tracking-tight transition-all hover:bg-indigo-500 hover:text-white">
+                          <div key={model} className="group/tag flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-xs font-black uppercase tracking-tight text-indigo-400 transition-all hover:bg-indigo-500 hover:text-white">
                             {model}
-                            <button onClick={() => removeModel(providerId, model)} className="opacity-0 group-hover/tag:opacity-100 transition-opacity">
+                            <button onClick={() => removeModel(providerId, model)} className="opacity-0 transition-opacity group-hover/tag:opacity-100">
                               <FiX size={10} />
                             </button>
                           </div>
                         ))}
                         <input
                           type="text"
-                          className="bg-transparent border-none outline-none text-xs font-bold text-white placeholder-white/20 ml-2"
+                          className="ml-2 border-none bg-transparent text-xs font-bold text-white outline-none placeholder:text-white/20"
                           placeholder="Add Model ID..."
                           value={newModelInputs[providerId] || ''}
                           onChange={e => handleModelsChange(providerId, e.target.value)}
@@ -1334,37 +1335,37 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
       </section>
 
       {/* Agent Calibration Section */}
-      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-indigo-600/5 border-indigo-500/20 shadow-2xl backdrop-blur-3xl' : 'bg-white shadow-xl border-slate-200'
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'border-indigo-500/20 bg-indigo-600/5 shadow-2xl backdrop-blur-3xl' : 'border-slate-200 bg-white shadow-xl'
         }`}>
-        <div className={`border-b px-10 py-8 flex items-center gap-6 ${isDarkMode ? 'border-white/5 bg-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
-          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-100 text-violet-600'
+        <div className={`flex items-center gap-6 border-b px-10 py-8 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'}`}>
+          <div className={`flex size-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-100 text-violet-600'
             }`}>
             <FiShield size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">Agent Calibration</h2>
-            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-violet-400' : 'text-violet-600'}`}>
+            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">Agent Calibration</h2>
+            <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-violet-400' : 'text-violet-600'}`}>
               Assigned cognitive roles and parameter tuning
             </p>
           </div>
         </div>
-        <div className="p-10 space-y-8">
+        <div className="space-y-8 p-10">
           {renderModelSelect(AgentNameEnum.Planner)}
           {renderModelSelect(AgentNameEnum.Navigator)}
         </div>
       </section>
 
       {/* Voice Transcription Section */}
-      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'bg-emerald-500/5 border-emerald-500/20 shadow-2xl backdrop-blur-3xl' : 'bg-white shadow-xl border-slate-200'
+      <section className={`group overflow-hidden rounded-[2.5rem] border transition-all duration-500 hover:shadow-2xl ${isDarkMode ? 'border-emerald-500/20 bg-emerald-500/5 shadow-2xl backdrop-blur-3xl' : 'border-slate-200 bg-white shadow-xl'
         }`}>
-        <div className={`border-b px-10 py-8 flex items-center gap-6 ${isDarkMode ? 'border-white/5 bg-white/5' : 'bg-slate-50/50 border-slate-100'}`}>
-          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'
+        <div className={`flex items-center gap-6 border-b px-10 py-8 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50/50'}`}>
+          <div className={`flex size-14 items-center justify-center rounded-2xl shadow-inner ${isDarkMode ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-100 text-emerald-600'
             }`}>
             <FiTrendingUp size={24} />
           </div>
           <div>
-            <h2 className="text-2xl font-black font-outfit tracking-tight text-white">Vocal Intelligence</h2>
-            <p className={`text-[13px] font-medium mt-1 ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
+            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">Vocal Intelligence</h2>
+            <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
               Real-time speech analysis and transcription
             </p>
           </div>
@@ -1372,9 +1373,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
         <div className="p-10">
           <div className="max-w-md space-y-4">
             <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Primary Audio Processor</label>
-            <div className="relative group/sel">
+            <div className="group/sel relative">
               <select
-                className={`w-full appearance-none bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-sm font-bold focus:ring-2 focus:ring-emerald-500 transition-all outline-none cursor-pointer ${isDarkMode ? 'text-white' : 'text-slate-900'
+                className={`w-full cursor-pointer appearance-none rounded-2xl border border-white/10 bg-white/5 px-6 py-4 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-emerald-500 ${isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}
                 value={selectedSpeechToTextModel}
                 onChange={e => handleSpeechToTextModelChange(e.target.value)}
@@ -1388,7 +1389,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                     </option>
                   ))}
               </select>
-              <FiChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 group-hover/sel:opacity-100 transition-opacity" />
+              <FiChevronDown className="pointer-events-none absolute right-5 top-1/2 -translate-y-1/2 opacity-40 transition-opacity group-hover/sel:opacity-100" />
             </div>
           </div>
         </div>

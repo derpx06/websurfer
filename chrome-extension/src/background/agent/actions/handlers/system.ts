@@ -2,14 +2,16 @@ import { ActionResult, type AgentContext } from '../../types';
 import { t } from '@extension/i18n';
 import { createLogger } from '@src/background/log';
 import { ExecutionState, Actors } from '../../event/types';
-import {
-    doneActionSchema,
+import type {
     waitActionSchema,
     askHumanActionSchema,
     cacheContentActionSchema,
     appendResultActionSchema
 } from '../schemas';
-import { z } from 'zod';
+import {
+    doneActionSchema
+} from '../schemas';
+import type { z } from 'zod';
 import { wrapUntrustedContent } from '../../messages/utils';
 
 const logger = createLogger('Action:System');
@@ -117,10 +119,12 @@ export async function handleAppendResult(
         context.results[input.key] = [];
     }
 
-    if (Array.isArray(context.results[input.key])) {
-        context.results[input.key].push(input.value);
+    const existingValue = context.results[input.key];
+    if (Array.isArray(existingValue)) {
+        (existingValue as unknown[]).push(input.value);
+        context.results[input.key] = existingValue;
     } else {
-        context.results[input.key] = [context.results[input.key], input.value];
+        context.results[input.key] = [existingValue, input.value];
     }
 
     const rawMsg = `Successfully appended result to key: ${input.key}`;

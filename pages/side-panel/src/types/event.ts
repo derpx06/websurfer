@@ -40,6 +40,7 @@ export enum ExecutionState {
   ACT_START = 'act.start',
   ACT_OK = 'act.ok',
   ACT_FAIL = 'act.fail',
+  ACT_ASK_HUMAN = 'act.ask_human',
   SIGHT_UPDATE = 'sight.update',
 }
 
