@@ -4,7 +4,7 @@ import { DEFAULT_INCLUDE_ATTRIBUTES } from '../browser/dom/views';
 import type { DOMHistoryElement } from '../browser/dom/history/view';
 import type MessageManager from './messages/service';
 import type { EventManager } from './event/manager';
-import { type Actors, type ExecutionState, AgentEvent } from './event/types';
+import { Actors, ExecutionState, AgentEvent } from './event/types';
 import { AgentStepHistory } from './history';
 
 export interface AgentOptions {
@@ -90,6 +90,19 @@ export class AgentContext {
       maxSteps: this.options.maxSteps,
       details: eventDetails,
     });
+    await this.eventManager.emit(event);
+  }
+
+  /** Emit a SIGHT_UPDATE event carrying the current tab screenshot (base64 JPEG). */
+  async emitSightUpdate(screenshot: string) {
+    const event = new AgentEvent(
+      Actors.NAVIGATOR,
+      ExecutionState.SIGHT_UPDATE,
+      { taskId: this.taskId, step: this.nSteps, maxSteps: this.options.maxSteps, details: '' },
+      Date.now(),
+      undefined,
+      screenshot,
+    );
     await this.eventManager.emit(event);
   }
 

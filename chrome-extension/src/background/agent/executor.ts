@@ -180,6 +180,17 @@ export class Executor {
         // Execute navigator
         navigatorDone = await this.navigate();
 
+        // Capture and emit screenshot for Live Agent Sight
+        try {
+          const page = await this.context.browserContext.getCurrentPage();
+          const screenshot = await page.takeScreenshot();
+          if (screenshot) {
+            await this.context.emitSightUpdate(screenshot);
+          }
+        } catch (err) {
+          logger.error('Failed to capture/emit AgentSight screenshot:', err);
+        }
+
         // FIX 1: If navigator signals done, immediately run planner to confirm and terminate.
         // This avoids looping back to the top and wasting another full cycle before the planner runs.
         if (navigatorDone && this.planner) {

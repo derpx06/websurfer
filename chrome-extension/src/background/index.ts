@@ -210,32 +210,29 @@ chrome.omnibox.onInputChanged.addListener((text, suggest) => {
   ]);
 });
 
-chrome.omnibox.onInputEntered.addListener(async (text) => {
+chrome.omnibox.onInputEntered.addListener((text) => {
   const prompt = text.trim();
   if (!prompt) return;
 
-  // IMPORTANT: chrome.sidePanel.open() MUST be called before any `await`.
-  // Any async operation (even storage.set) before this call breaks the
-  // user-gesture context and Chrome will silently refuse to open the panel.
-  const tabQuery = chrome.tabs.query({ active: true, currentWindow: true });
-
-  try {
-    // 1. Get current window synchronously-ish — we need windowId for open()
-    const [tab] = await tabQuery;
-    if (tab?.windowId == null) {
-      logger.error('Omnibox: no active window found');
-      return;
+  // 1. Open the side panel IMMEDIATELY.
+  // We must not `await` anything before this call, otherwise the user gesture
+  // is lost and Chrome will silently refuse to open the panel.
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    const tab = tabs[0];
+    if (tab && tab.windowId !== undefined) {
+      chrome.sidePanel.open({ windowId: tab.windowId }).catch(err => {
+        logger.error('Omnibox: failed to open side panel:', err);
+      });
+      logger.info('Omnibox: side panel open requested for window', tab.windowId);
+    } else {
+      logger.error('Omnibox: no active tab/window found');
     }
+  });
 
-    // 2. Open the side panel — this MUST happen as early as possible
-    //    (before any other await) to stay within the user gesture.
-    await chrome.sidePanel.open({ windowId: tab.windowId });
-    logger.info('Omnibox: side panel opened for window', tab.windowId);
-
-    // 3. After the panel is open, persist the prompt for the side panel to pick up.
-    await chrome.storage.session.set({ [PENDING_OMNIBOX_KEY]: prompt });
+  // 2. Persist the prompt. The side panel will pick it up on mount or via onChanged.
+  chrome.storage.session.set({ [PENDING_OMNIBOX_KEY]: prompt }).then(() => {
     logger.info('Omnibox: saved pending prompt to session storage:', prompt);
-  } catch (err) {
-    logger.error('Omnibox: failed:', err);
-  }
+  }).catch(err => {
+    logger.error('Omnibox: failed to save prompt:', err);
+  });
 });

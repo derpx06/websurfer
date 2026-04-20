@@ -46,6 +46,9 @@ export enum ExecutionState {
   ACT_OK = 'act.ok',
   ACT_FAIL = 'act.fail',
   ACT_ASK_HUMAN = 'act.ask_human',
+
+  // Live view update
+  SIGHT_UPDATE = 'sight.update',
 }
 
 export interface EventData {
@@ -60,18 +63,14 @@ export interface EventData {
 }
 
 export class AgentEvent {
-  /**
-   * Represents a state change event in the task execution system.
-   * Each event has a type, a specific state that changed,
-   * the actor that triggered the change, and associated data.
-   */
   constructor(
     public actor: Actors,
     public state: ExecutionState,
     public data: EventData,
     public timestamp: number = Date.now(),
     public type: EventType = EventType.EXECUTION,
-  ) {}
+    public screenshot?: string,
+  ) { }
 }
 
 // The type of callback for event subscribers
