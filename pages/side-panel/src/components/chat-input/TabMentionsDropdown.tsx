@@ -38,7 +38,7 @@ export const TabMentionsDropdown: React.FC<TabMentionsDropdownProps> = ({
             const mockTabs = [
                 { id: 1, title: 'Google', url: 'https://google.com' },
                 { id: 2, title: 'GitHub', url: 'https://github.com' },
-                { id: 3, title: 'WebSurfer Dashboard', url: 'https://websurfer.ai' },
+                { id: 3, title: 'WebGenie Dashboard', url: 'https://webgenie.ai' },
             ];
             setTabs(mockTabs);
             setFilteredTabs(mockTabs);

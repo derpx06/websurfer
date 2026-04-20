@@ -123,7 +123,8 @@ export class InteractionManager {
             const result = await element.evaluate((el: Element) => {
                 const rect = el.getBoundingClientRect();
                 const inViewport =
-                    rect.width > 0 && rect.height > 0 &&
+                    rect.width > 0 &&
+                    rect.height > 0 &&
                     rect.top >= 0 &&
                     rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
 
@@ -131,9 +132,8 @@ export class InteractionManager {
                     el.scrollIntoView({ behavior: 'instant', block: 'center', inline: 'nearest' });
                 }
 
-                // Check for occlusion (is there an element on top?)
                 const style = window.getComputedStyle(el);
-                if (style.visibility === 'hidden' || style.opacity === '0') return 'hidden';
+                if (style.visibility === 'hidden' || style.opacity === '0' || style.display === 'none') return 'hidden';
 
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
@@ -144,12 +144,76 @@ export class InteractionManager {
             });
 
             if (result === 'covered') {
-                logger.warning('Element might be covered by another element at its center point');
+                logger.warning('Element appears covered; attempting overlay dismissal.');
+                await this.dismissPotentialOverlays(element);
             } else if (result === 'hidden') {
-                logger.warning('Element is hidden or has 0 opacity');
+                logger.warning('Element is hidden or has zero opacity.');
             }
         } catch {
-            // If evaluate fails (detached frame, etc.) just proceed
+            // If evaluate fails (detached frame, etc.) just proceed.
+        }
+    }
+
+    private async dismissPotentialOverlays(element: ElementHandle<Element>): Promise<void> {
+        try {
+            await element.evaluate(() => {
+                const closeButtonSelectors = [
+                    '[aria-label*="close" i]',
+                    '[aria-label*="dismiss" i]',
+                    '[aria-label*="accept" i]',
+                    '[aria-label*="agree" i]',
+                    'button[id*="accept" i]',
+                    'button[class*="accept" i]',
+                    'button[id*="close" i]',
+                    'button[class*="close" i]',
+                    '[role="button"][id*="close" i]',
+                    '[role="button"][class*="close" i]',
+                ];
+
+                const normalized = (value: string) => value.trim().toLowerCase();
+                const textCandidates = ['accept', 'agree', 'ok', 'got it', 'continue', 'close', 'dismiss'];
+
+                const tryClick = (candidate: Element | null): boolean => {
+                    if (!candidate || !(candidate instanceof HTMLElement)) return false;
+                    const rect = candidate.getBoundingClientRect();
+                    if (rect.width <= 0 || rect.height <= 0) return false;
+                    candidate.click();
+                    return true;
+                };
+
+                for (const selector of closeButtonSelectors) {
+                    const nodeList = Array.from(document.querySelectorAll(selector));
+                    for (const node of nodeList) {
+                        if (tryClick(node)) return;
+                    }
+                }
+
+                const clickableNodes = Array.from(
+                    document.querySelectorAll('button, [role="button"], a, input[type="button"], input[type="submit"]'),
+                );
+                for (const node of clickableNodes) {
+                    const text = normalized((node.textContent || (node as HTMLInputElement).value || '').slice(0, 80));
+                    if (textCandidates.some(candidate => text === candidate || text.startsWith(`${candidate} `))) {
+                        if (tryClick(node)) return;
+                    }
+                }
+
+                const modalLike = Array.from(
+                    document.querySelectorAll(
+                        '[role="dialog"], [aria-modal="true"], .modal, .popup, .overlay, [id*="cookie" i], [class*="cookie" i]',
+                    ),
+                );
+                for (const node of modalLike) {
+                    if (node instanceof HTMLElement) {
+                        node.style.display = 'none';
+                        node.setAttribute('aria-hidden', 'true');
+                    }
+                }
+
+                document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+            });
+        } catch (error) {
+            logger.debug('Overlay dismissal attempt failed', error);
         }
     }
 

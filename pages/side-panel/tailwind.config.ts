@@ -24,7 +24,7 @@ export default {
           violet: '#8B5CF6',
           surface: '#FFFFFF',
         },
-        websurfer: {
+        webgenie: {
           bg: '#060b16',
           surface: '#0c1525',
           cyan: '#38bdf8',

@@ -1,6 +1,6 @@
-# WebSurfer Modular Architecture Detail
+# WebGenie Modular Architecture Detail
 
-WebSurfer is organized as a modular monorepo. This document provides a granular breakdown of the modules and sub-modules that power the agentic browser experience.
+WebGenie is organized as a modular monorepo. This document provides a granular breakdown of the modules and sub-modules that power the agentic browser experience.
 
 ---
 

@@ -19,7 +19,7 @@ const SidePanelHeader = ({
 
   return (
     <header className={`sticky top-0 z-[60] overflow-hidden px-5 py-4 transition-all duration-700 ${isDarkMode
-      ? 'border-b border-white/[0.04] bg-websurfer-bg/80 shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
+      ? 'border-b border-white/[0.04] bg-webgenie-bg/80 shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
       : 'border-b border-slate-200/60 bg-white/80 shadow-[0_4px_20px_rgba(0,0,0,0.01)]'
       } backdrop-blur-2xl`}>
 
@@ -34,7 +34,7 @@ const SidePanelHeader = ({
           type="button"
           className="group flex items-center gap-3.5 text-left"
           onClick={showHistory ? onBackToChat : undefined}
-          aria-label={showHistory ? 'Back to chat' : 'WebSurfer'}
+          aria-label={showHistory ? 'Back to chat' : 'WebGenie'}
         >
           <div className="relative">
             <div className={`flex size-10 items-center justify-center rounded-[12px] transition-all duration-700 group-hover:scale-105 ${isDarkMode
@@ -58,7 +58,7 @@ const SidePanelHeader = ({
 
           <div className="flex flex-col">
             <span className={`font-outfit text-[19px] font-black leading-none tracking-[-0.03em] ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              WebSurfer
+              WebGenie
             </span>
 
           </div>
@@ -103,7 +103,7 @@ const SidePanelHeader = ({
 
           <div className="flex items-center gap-0.5">
             <a
-              href="https://github.com/derpx06/websurfer"
+              href="https://github.com/derpx06/webgenie"
               target="_blank"
               rel="noopener noreferrer"
               className={`flex items-center justify-center rounded-xl p-2.5 transition-all duration-500 ${isDarkMode ? 'text-slate-400 hover:bg-white/10 hover:text-white' : 'text-slate-500 hover:bg-white hover:shadow-md'

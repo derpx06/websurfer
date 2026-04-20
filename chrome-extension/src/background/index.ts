@@ -14,7 +14,7 @@ import { TaskManager } from './task/manager';
 const logger = createLogger('background');
 
 /**
- * Primary entry point for the WebSurfer Background Service Worker (MV3).
+ * Primary entry point for the WebGenie Background Service Worker (MV3).
  * 
  * This module initializes the core singleton services:
  * - BrowserContext: Manages CDP/Playwright attachments to tabs.
@@ -176,4 +176,66 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep channel open for async response
   }
   return false;
+});
+
+// ---------------------------------------------------------------------------
+// Omnibox (“genie” keyword) integration
+//
+// Typing “genie” + Space in the address bar activates WebGenie.
+// Whatever the user types next becomes the prompt; pressing Enter:
+//   1. Saves the prompt to chrome.storage.session (persistent handoff,
+//      survives side panel load time—no race conditions).
+//   2. Opens the side panel.
+//   3. The side panel reads & clears the pending prompt on mount and
+//      immediately starts the agent.
+//
+// Using storage.session (not local) so the prompt is ephemeral and
+// automatically cleared when the browser session ends.
+// ---------------------------------------------------------------------------
+
+const PENDING_OMNIBOX_KEY = 'pendingOmniboxPrompt';
+
+chrome.omnibox.setDefaultSuggestion({
+  // %s is replaced with the current input text by Chrome
+  description: 'WebGenie — run: %s',
+});
+
+chrome.omnibox.onInputChanged.addListener((text, suggest) => {
+  if (!text.trim()) return;
+  suggest([
+    {
+      content: text,
+      description: `Ask WebGenie to: ${text.trim()}`,
+    },
+  ]);
+});
+
+chrome.omnibox.onInputEntered.addListener(async (text) => {
+  const prompt = text.trim();
+  if (!prompt) return;
+
+  // IMPORTANT: chrome.sidePanel.open() MUST be called before any `await`.
+  // Any async operation (even storage.set) before this call breaks the
+  // user-gesture context and Chrome will silently refuse to open the panel.
+  const tabQuery = chrome.tabs.query({ active: true, currentWindow: true });
+
+  try {
+    // 1. Get current window synchronously-ish — we need windowId for open()
+    const [tab] = await tabQuery;
+    if (tab?.windowId == null) {
+      logger.error('Omnibox: no active window found');
+      return;
+    }
+
+    // 2. Open the side panel — this MUST happen as early as possible
+    //    (before any other await) to stay within the user gesture.
+    await chrome.sidePanel.open({ windowId: tab.windowId });
+    logger.info('Omnibox: side panel opened for window', tab.windowId);
+
+    // 3. After the panel is open, persist the prompt for the side panel to pick up.
+    await chrome.storage.session.set({ [PENDING_OMNIBOX_KEY]: prompt });
+    logger.info('Omnibox: saved pending prompt to session storage:', prompt);
+  } catch (err) {
+    logger.error('Omnibox: failed:', err);
+  }
 });

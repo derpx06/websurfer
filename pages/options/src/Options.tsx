@@ -38,7 +38,7 @@ const Options = () => {
 
   const handleTabClick = (tabId: TabTypes) => {
     if (tabId === 'help') {
-      window.open('https://WebSurfer.ai/docs', '_blank');
+      window.open('https://WebGenie.ai/docs', '_blank');
     } else {
       setActiveTab(tabId);
     }

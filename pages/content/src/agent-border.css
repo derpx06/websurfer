@@ -1,4 +1,4 @@
-#websurfer-agent-border {
+#webgenie-agent-border {
     position: fixed;
     top: 0;
     left: 0;
@@ -12,11 +12,11 @@
     box-sizing: border-box;
 }
 
-#websurfer-agent-border.active {
+#webgenie-agent-border.active {
     opacity: 1;
 }
 
-#websurfer-agent-border::before {
+#webgenie-agent-border::before {
     content: "";
     position: absolute;
     top: 0;
@@ -50,7 +50,7 @@
 }
 
 /* Add a secondary glow layer for more depth */
-#websurfer-agent-border::after {
+#webgenie-agent-border::after {
     content: "";
     position: absolute;
     top: 0;

@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { t } from '@extension/i18n';
 import ChatHistoryList from './components/ChatHistoryList';
 import ChatInput from './components/ChatInput';
@@ -44,6 +45,70 @@ const SidePanel = () => {
     handleSessionDelete,
     handleSessionBookmark,
   } = useSidePanelController();
+
+  // ---------------------------------------------------------------------------
+  // Omnibox handoff
+  //
+  // Two-phase approach to avoid race conditions:
+  //
+  // Phase 1 (this effect): read the pending prompt from chrome.storage.session
+  //   into a ref. This runs on mount AND whenever the panel is already open
+  //   and the background writes a new prompt (via onChanged). The key is
+  //   cleared immediately so it can never fire twice.
+  //
+  // Phase 2 (next effect): watch hasConfiguredModels. The moment it becomes
+  //   `true` (panel is fully initialised, port connected), flush the ref and
+  //   call handleSendMessage. This is the only correct trigger point.
+  // ---------------------------------------------------------------------------
+  const pendingOmniboxPrompt = useRef<string | null>(null);
+
+  useEffect(() => {
+    const PENDING_KEY = 'pendingOmniboxPrompt';
+
+    const storePrompt = (prompt: string) => {
+      if (!prompt.trim()) return;
+      // Clear the key immediately — prevent replay on any future effect run
+      chrome.storage.session.remove(PENDING_KEY);
+      pendingOmniboxPrompt.current = prompt.trim();
+    };
+
+    // Cold open: panel was just opened, check storage now
+    chrome.storage.session.get(PENDING_KEY, (result) => {
+      const pending = result?.[PENDING_KEY];
+      if (typeof pending === 'string') storePrompt(pending);
+    });
+
+    // Hot path: panel was already open when user pressed Enter in omnibox
+    const onStorageChanged = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string,
+    ) => {
+      if (area !== 'session') return;
+      const newValue = changes[PENDING_KEY]?.newValue;
+      if (typeof newValue === 'string') {
+        storePrompt(newValue);
+        // Panel is already open and ready — dispatch immediately
+        if (hasConfiguredModels === true) {
+          const prompt = pendingOmniboxPrompt.current;
+          pendingOmniboxPrompt.current = null;
+          if (prompt) handleSendMessage(prompt);
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(onStorageChanged);
+    return () => chrome.storage.onChanged.removeListener(onStorageChanged);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Phase 2: fire the pending prompt the instant the panel is ready
+  useEffect(() => {
+    if (hasConfiguredModels === true && pendingOmniboxPrompt.current) {
+      const prompt = pendingOmniboxPrompt.current;
+      pendingOmniboxPrompt.current = null;
+      handleSendMessage(prompt);
+    }
+  }, [hasConfiguredModels, handleSendMessage]);
 
   return (
     <div>

@@ -1,8 +1,8 @@
 <h1 align="center">
-    <img src="chrome-extension/public/websurfer_banner.png" width="800" alt="WebSurfer Banner" /><br>
+    <img src="chrome-extension/public/websurfer_banner.png" width="800" alt="WebGenie Banner" /><br>
 </h1>
 
-# WebSurfer Under-the-Hood (Complete Technical Walkthrough)
+# WebGenie Under-the-Hood (Complete Technical Walkthrough)
 
 This document explains how this repository works internally, from build orchestration to runtime behavior in Chrome, including the multi-agent loop, browser automation stack, security controls, storage schema, UI flows, and package-by-package responsibilities.
 
@@ -259,7 +259,7 @@ Result: the system combines transport-level, navigation-level, and prompt-level 
 
 #### L) Practical mental model
 
-WebSurfer behaves like a stateful orchestrator with three parallel concerns:
+WebGenie behaves like a stateful orchestrator with three parallel concerns:
 
 - **Control plane**: side panel <-> background command/event channel.
 - **Execution plane**: planner+navigator loop over live browser state.

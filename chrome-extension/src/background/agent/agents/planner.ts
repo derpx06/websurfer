@@ -20,8 +20,8 @@ const logger = createLogger('PlannerAgent');
 
 // Define Zod schema for planner output
 export const plannerOutputSchema = z.object({
-  observation: z.string(),
-  challenges: z.string(),
+  observation: z.string().optional().default(''),
+  challenges: z.string().optional().default(''),
   done: z.union([
     z.boolean(),
     z.string().transform(val => {
@@ -30,9 +30,9 @@ export const plannerOutputSchema = z.object({
       throw new Error('Invalid boolean string');
     }),
   ]),
-  next_steps: z.string(),
-  final_answer: z.string(),
-  reasoning: z.string(),
+  next_steps: z.string().optional().default(''),
+  final_answer: z.string().optional().default(''),
+  reasoning: z.string().optional().default(''),
   web_task: z.union([
     z.boolean(),
     z.string().transform(val => {

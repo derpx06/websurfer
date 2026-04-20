@@ -26,6 +26,7 @@ import type { AgentStepHistory } from './history';
 import type { GeneralSettingsConfig } from '@extension/storage';
 import { analytics } from '../services/analytics';
 import { AgentStepHistory as AgentStepHistoryModel } from './history';
+import { LoopDetector } from './loopDetector';
 
 const logger = createLogger('Executor');
 
@@ -154,8 +155,19 @@ export class Executor {
           break;
         }
 
-        // Run planner periodically for guidance
-        if (this.planner && (context.nSteps % context.options.planningInterval === 0 || navigatorDone)) {
+        if (LoopDetector.detect(context)) {
+          logger.warning('🔁 Repetitive loop detected; forcing planner re-evaluation this step.');
+          navigatorDone = true;
+        }
+
+        // Run planner periodically for guidance (skip step 0 — no history/state yet)
+        // FIX 6: Only run planner if we have at least one step of context
+        const shouldRunPlanner =
+          this.planner &&
+          context.nSteps > 0 &&
+          (context.nSteps % context.options.planningInterval === 0 || navigatorDone);
+
+        if (shouldRunPlanner) {
           navigatorDone = false;
           latestPlanOutput = await this.runPlanner();
 
@@ -168,9 +180,16 @@ export class Executor {
         // Execute navigator
         navigatorDone = await this.navigate();
 
-        // If navigator indicates completion, the next periodic planner run will validate it
-        if (navigatorDone) {
-          logger.info('🔄 Navigator indicates completion - will be validated by next planner run');
+        // FIX 1: If navigator signals done, immediately run planner to confirm and terminate.
+        // This avoids looping back to the top and wasting another full cycle before the planner runs.
+        if (navigatorDone && this.planner) {
+          logger.info('🏁 Navigator signals completion — running Planner immediately to confirm.');
+          latestPlanOutput = await this.runPlanner();
+          if (this.checkTaskCompletion(latestPlanOutput)) {
+            break;
+          }
+          // Planner disagreed — navigator was wrong, keep going
+          navigatorDone = false;
         }
       }
 
@@ -236,22 +255,25 @@ export class Executor {
   private async runPlanner(): Promise<AgentOutput<PlannerOutput> | null> {
     const context = this.context;
     try {
-      // Add current browser state to memory
-      let positionForPlan = 0;
-      if (this.tasks.length > 1 || this.context.nSteps > 0) {
-        await this.navigator.addStateMessageToMemory();
-        positionForPlan = this.context.messageManager.length() - 1;
-      } else {
-        positionForPlan = this.context.messageManager.length();
-      }
+      // Add current browser state to memory so the Planner has up-to-date context
+      await this.navigator.addStateMessageToMemory();
+      const positionForPlan = this.context.messageManager.length() - 1;
 
       // Execute planner
       const planOutput = await this.planner.execute();
+
+      // FIX 5: Always remove the state message we added for the Planner.
+      // Without this, the Navigator's addStateMessageToMemory guard (stateMessageAdded)
+      // is the only protection — a flag desync causes the state to be doubled in context.
+      await this.navigator.removeLastStateMessageFromMemory();
+
       if (planOutput.result) {
-        this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan);
+        this.context.messageManager.addPlan(JSON.stringify(planOutput.result), positionForPlan - 1);
       }
       return planOutput;
     } catch (error) {
+      // Always clean up state message even on failure
+      await this.navigator.removeLastStateMessageFromMemory();
       logger.error(`Failed to execute planner: ${error}`);
       if (
         error instanceof ChatModelAuthError ||
@@ -264,7 +286,6 @@ export class Executor {
         throw error;
       }
       context.consecutiveFailures++;
-      logger.error(`Failed to execute planner: ${error}`);
       if (context.consecutiveFailures >= context.options.maxFailures) {
         throw new MaxFailuresReachedError(t('exec_errors_maxFailuresReached'));
       }

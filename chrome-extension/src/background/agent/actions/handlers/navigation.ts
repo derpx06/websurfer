@@ -14,6 +14,49 @@ import type { z } from 'zod';
 import { normalizeNavigationUrl } from '../base';
 import { DuckDuckGoService, type SearchResult } from '../../../services/DuckDuckGoService';
 
+function normalizeSearchQuery(rawQuery: string): string {
+    const trimmed = rawQuery.trim();
+    if (!trimmed) return rawQuery;
+
+    const noOuterQuotes = trimmed.replace(/^['"`]+|['"`]+$/g, '');
+    const collapsed = noOuterQuotes.replace(/\s+/g, ' ').trim();
+
+    // Known handler for exact handles "@username twitter"
+    const twitterHandleMatch = collapsed.match(/^@?([a-zA-Z0-9_]{2,20})\s*(twitter|x)?$/i);
+    if (twitterHandleMatch) {
+        const handle = twitterHandleMatch[1];
+        return `site:x.com OR site:twitter.com "${handle}"`;
+    }
+
+    // Extended handler for "NAME twitter profile" or "NAME X profile"
+    const twitterProfileMatch = collapsed.match(/^(.*?)\s+(twitter|x)\s*(profile)?$/i) || 
+                                collapsed.match(/^(twitter|x)\s*(profile)?\s+(.*?)$/i);
+    if (twitterProfileMatch) {
+        const nameOrQuery = twitterProfileMatch[1] === 'twitter' || twitterProfileMatch[1] === 'x' ? twitterProfileMatch[3] : twitterProfileMatch[1];
+        if (nameOrQuery && !nameOrQuery.match(/^(twitter|x|profile)$/i)) {
+            return `site:x.com OR site:twitter.com ${nameOrQuery}`;
+        }
+    }
+
+    return collapsed;
+}
+
+function summarizeResult(result: SearchResult, index: number): string {
+    let host = '';
+    try {
+        host = new URL(result.url).hostname;
+    } catch {
+        host = 'unknown-host';
+    }
+
+    return [
+        `${index + 1}. ${result.title}`,
+        `   URL: ${result.url}`,
+        `   Host: ${host}`,
+        `   Snippet: ${result.description}`,
+    ].join('\n');
+}
+
 /**
  * Navigates the current tab to a specified URL.
  */
@@ -41,12 +84,13 @@ export async function handleSearchGoogle(
     context: AgentContext,
     input: z.infer<typeof searchGoogleActionSchema.schema>
 ): Promise<ActionResult> {
-    const intent = input.intent || t('act_searchGoogle_start', [input.query]);
+    const normalizedQuery = normalizeSearchQuery(input.query);
+    const intent = input.intent || t('act_searchGoogle_start', [normalizedQuery]);
     context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
-    await context.browserContext.navigateTo(`https://www.google.com/search?q=${encodeURIComponent(input.query)}`);
+    await context.browserContext.navigateTo(`https://www.google.com/search?q=${encodeURIComponent(normalizedQuery)}`);
 
-    const msg2 = t('act_searchGoogle_ok', [input.query]);
+    const msg2 = t('act_searchGoogle_ok', [normalizedQuery]);
     context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg2);
     return new ActionResult({
         extractedContent: msg2,
@@ -61,14 +105,16 @@ export async function handleSearchDuckDuckGo(
     context: AgentContext,
     input: z.infer<typeof searchDuckDuckGoActionSchema.schema>
 ): Promise<ActionResult> {
-    const intent = input.intent || t('act_searchDuckDuckGo_start', [input.query]) || `Searching DuckDuckGo for: ${input.query}`;
+    const normalizedQuery = normalizeSearchQuery(input.query);
+    const intent =
+        input.intent || t('act_searchDuckDuckGo_start', [normalizedQuery]) || `Searching DuckDuckGo for: ${normalizedQuery}`;
     context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
 
     try {
-        const results = await DuckDuckGoService.search(input.query);
+        const results = await DuckDuckGoService.search(normalizedQuery);
 
         if (results.length === 0) {
-            const noResultsMsg = `No results found for: ${input.query}`;
+            const noResultsMsg = `No results found for: ${normalizedQuery}`;
             context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, noResultsMsg);
             return new ActionResult({
                 extractedContent: noResultsMsg,
@@ -77,14 +123,14 @@ export async function handleSearchDuckDuckGo(
         }
 
         const formattedResults = results
-            .map((r: SearchResult, i: number) => `${i + 1}. ${r.title}\n   URL: ${r.url}\n   Snippet: ${r.description}`)
+            .map((r: SearchResult, i: number) => summarizeResult(r, i))
             .join('\n\n');
 
-        const successMsg = `Found ${results.length} results for: ${input.query}`;
+        const successMsg = `Found ${results.length} results for: ${normalizedQuery}`;
         context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, successMsg);
 
         return new ActionResult({
-            extractedContent: `Search Results for "${input.query}":\n\n${formattedResults}`,
+            extractedContent: `Search Results for "${normalizedQuery}":\n\n${formattedResults}`,
             includeInMemory: true,
         });
     } catch (error) {

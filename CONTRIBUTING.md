@@ -1,6 +1,6 @@
-# Contributing to WebSurfer
+# Contributing to WebGenie
 
-We deeply appreciate your interest in contributing to WebSurfer! Every contribution helps make WebSurfer more powerful and accessible for everyone.
+We deeply appreciate your interest in contributing to WebGenie! Every contribution helps make WebGenie more powerful and accessible for everyone.
 
 ## Quick Start
 

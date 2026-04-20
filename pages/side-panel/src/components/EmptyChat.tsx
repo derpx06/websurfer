@@ -35,7 +35,7 @@ const EmptyChat: React.FC<EmptyChatProps> = ({ onSelectPrompt, isDarkMode }) => 
                             Your AI <span className="animate-shimmer bg-gradient-to-br from-indigo-500 via-cyan-400 to-indigo-600 bg-[length:200%_auto] bg-clip-text text-transparent">Browser Agent</span>
                         </h1>
                         <p className={`max-w-[280px] text-[15px] font-medium leading-relaxed tracking-tight ${isDarkMode ? 'text-slate-400/90' : 'text-slate-500'} font-outfit`}>
-                            Describe a mission. WebSurfer handles the rest.
+                            Describe a mission. WebGenie handles the rest.
                         </p>
                     </div>
 

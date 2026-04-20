@@ -1,8 +1,8 @@
-const BORDER_ID = 'websurfer-agent-border';
-const BORDER_STYLE_ID = 'websurfer-agent-border-style';
+const BORDER_ID = 'webgenie-agent-border';
+const BORDER_STYLE_ID = 'webgenie-agent-border-style';
 
 const BORDER_CSS = `
-@property --websurfer-gradient-angle {
+@property --webgenie-gradient-angle {
   syntax: "<angle>";
   initial-value: 0deg;
   inherits: false;
@@ -28,7 +28,7 @@ const BORDER_CSS = `
   inset: 0;
   border-radius: 0; /* Full edge hug */
   background: conic-gradient(
-    from var(--websurfer-gradient-angle),
+    from var(--webgenie-gradient-angle),
     #00f2ff, 
     #0062ff, 
     #001aff, 
@@ -37,7 +37,7 @@ const BORDER_CSS = `
     #0062ff, 
     #00f2ff
   );
-  animation: websurfer-rotate 2.5s linear infinite;
+  animation: webgenie-rotate 2.5s linear infinite;
   
   /* The sharp, high-energy border line */
   mask: 
@@ -53,12 +53,12 @@ const BORDER_CSS = `
   z-index: 2;
 }
 
-@keyframes websurfer-rotate {
+@keyframes webgenie-rotate {
   0% {
-    --websurfer-gradient-angle: 0deg;
+    --webgenie-gradient-angle: 0deg;
   }
   100% {
-    --websurfer-gradient-angle: 360deg;
+    --webgenie-gradient-angle: 360deg;
   }
 }
 `;
@@ -102,8 +102,8 @@ function setBorderActive(active: boolean) {
   }
 }
 
-const CAPSULE_ID = 'websurfer-status-capsule';
-const CAPSULE_STYLE_ID = 'websurfer-status-capsule-style';
+const CAPSULE_ID = 'webgenie-status-capsule';
+const CAPSULE_STYLE_ID = 'webgenie-status-capsule-style';
 
 const EXTRA_CSS = `
 #${CAPSULE_ID} {
@@ -137,21 +137,21 @@ const EXTRA_CSS = `
   opacity: 1;
 }
 
-.websurfer-status-dot {
+.webgenie-status-dot {
   width: 8px;
   height: 8px;
   background: #00f2ff;
   border-radius: 50%;
   box-shadow: 0 0 10px #00f2ff;
-  animation: websurfer-status-pulse 2s ease-in-out infinite;
+  animation: webgenie-status-pulse 2s ease-in-out infinite;
 }
 
-.websurfer-status-text {
+.webgenie-status-text {
   letter-spacing: 0.02em;
   text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
-@keyframes websurfer-status-pulse {
+@keyframes webgenie-status-pulse {
   0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 8px #00f2ff; }
   50% { transform: scale(1.2); opacity: 0.6; box-shadow: 0 0 15px #00f2ff; }
 }
@@ -170,8 +170,8 @@ function injectCapsule() {
   const capsule = document.createElement('div');
   capsule.id = CAPSULE_ID;
   capsule.innerHTML = `
-        <div class="websurfer-status-dot"></div>
-        <div class="websurfer-status-text" id="${CAPSULE_ID}-text">Initializing Agent...</div>
+        <div class="webgenie-status-dot"></div>
+        <div class="webgenie-status-text" id="${CAPSULE_ID}-text">Initializing Agent...</div>
     `;
   document.body.appendChild(capsule);
 }

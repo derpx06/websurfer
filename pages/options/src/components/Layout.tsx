@@ -19,7 +19,7 @@ export const OptionsSidebar: React.FC<OptionsSidebarProps> = ({
 }) => {
     return (
         <aside className={`flex w-72 shrink-0 flex-col border-r backdrop-blur-2xl transition-all duration-500 ${isDarkMode ? 'border-white/5 bg-[#0f1117]/70 shadow-2xl' : 'border-slate-200 bg-white/80 shadow-xl'}`}>
-            <div className="group flex cursor-pointer items-center gap-4 p-8 pb-6" onClick={() => window.open('https://websurfer.ai', '_blank')}>
+            <div className="group flex cursor-pointer items-center gap-4 p-8 pb-6" onClick={() => window.open('https://webgenie.ai', '_blank')}>
                 <div className={`flex size-11 items-center justify-center rounded-[14px] shadow-2xl transition-all duration-700 group-hover:scale-110 ${isDarkMode ? 'bg-gradient-to-br from-indigo-600 to-indigo-800' : 'bg-gradient-to-br from-indigo-500 to-indigo-700'}`}>
                     <svg className="size-6 text-white" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="0.5" className="opacity-20" />
@@ -30,7 +30,7 @@ export const OptionsSidebar: React.FC<OptionsSidebarProps> = ({
                     </svg>
                 </div>
                 <div className="flex flex-col">
-                    <span className="font-outfit text-[20px] font-black uppercase tracking-tight">WebSurfer</span>
+                    <span className="font-outfit text-[20px] font-black uppercase tracking-tight">WebGenie</span>
                     <span className={`text-[9px] font-black uppercase tracking-[0.25em] opacity-50 ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>Optimization</span>
                 </div>
             </div>
@@ -89,7 +89,7 @@ export const OptionsHeader: React.FC<{ title: string; isDarkMode: boolean }> = (
         </div>
         <h1 className="font-outfit mb-4 text-5xl font-black leading-tight tracking-tighter">{title}</h1>
         <p className={`max-w-lg text-[15px] font-medium leading-relaxed ${isDarkMode ? 'text-slate-400' : 'text-slate-600'}`}>
-            Customize your WebSurfer instance to prioritize speed, security, and intelligence across your browsing sessions.
+            Customize your WebGenie instance to prioritize speed, security, and intelligence across your browsing sessions.
         </p>
     </header>
 );

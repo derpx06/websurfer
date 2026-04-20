@@ -10,40 +10,80 @@ const logger = createLogger('LoopDetector');
  */
 export class LoopDetector {
     /**
-     * Analyzes the recent history of URL-action pairs to detect infinite loops.
-     * If the agent performs fewer than 3 unique actions over the last 6 steps, 
-     * a loop is triggered to force a planner re-evaluation.
-     * 
+     * Analyzes recent URL-action pairs to detect repetitive loops.
+     *
      * @param context The current agent execution context.
      * @returns True if a loop is detected, false otherwise.
      */
     public static detect(context: AgentContext): boolean {
-        // We only analyze the 6 most recent steps for immediate cyclic patterns
-        const recentHistory = context.history.history.slice(-6);
-        if (recentHistory.length < 6) return false;
+        const recentHistory = context.history.history.slice(-4);
+        if (recentHistory.length < 4) return false;
 
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const recentActions = recentHistory.map((h: any) => {
-            const url = h?.state?.url || 'unknown';
-            const actionPayload = h?.modelOutput?.action?.[0];
-            let actionStr = 'unknown';
-            if (actionPayload) {
-                const actionName = Object.keys(actionPayload)[0];
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const innerPayload = (actionPayload as any)[actionName];
-                // Normalize the action into a comparable string (e.g., "click_element:5")
-                actionStr = `${actionName}:${innerPayload?.index ?? innerPayload?.text ?? ''}`;
-            }
-            return `${url}|${actionStr}`;
+        const signatures = recentHistory.map(item => {
+            const url = item?.state?.url || 'unknown';
+            const action = this.extractPrimaryActionSignature(item?.modelOutput);
+            return `${url}|${action}`;
         });
 
-        const uniqueActions = new Set(recentActions);
-        // High density of repetitive actions (<= 2 unique actions in 6 steps)
-        if (uniqueActions.size <= 2) {
-            logger.warning('Loop detected: Actions are repeating! Forcing planner re-evaluation.');
+        const uniqueSignatures = new Set(signatures);
+        if (uniqueSignatures.size <= 1) {
+            logger.warning('Loop detected: zero action/url diversity in recent steps.');
+            return true;
+        }
+
+        const firstHalf = signatures.slice(0, 2).join('||');
+        const secondHalf = signatures.slice(2, 4).join('||');
+        if (firstHalf === secondHalf) {
+            logger.warning('Loop detected: repeated 2-step pattern.');
             return true;
         }
 
         return false;
+    }
+
+    private static extractPrimaryActionSignature(modelOutput: string | null | undefined): string {
+        if (!modelOutput) return 'unknown';
+
+        try {
+            const parsed = JSON.parse(modelOutput) as {
+                action?: Array<Record<string, unknown>>;
+            };
+            const firstAction = parsed.action?.[0];
+            if (!firstAction) return 'unknown';
+
+            const actionName = Object.keys(firstAction)[0];
+            if (!actionName) return 'unknown';
+
+            const payload = firstAction[actionName];
+            const payloadSignature = this.buildPayloadSignature(payload);
+            return `${actionName}:${payloadSignature}`;
+        } catch {
+            return 'unknown';
+        }
+    }
+
+    private static buildPayloadSignature(payload: unknown): string {
+        if (!payload || typeof payload !== 'object') {
+            return '';
+        }
+
+        const data = payload as Record<string, unknown>;
+        if (typeof data.index === 'number' || typeof data.index === 'string') {
+            return String(data.index);
+        }
+
+        if (typeof data.text === 'string') {
+            return data.text.slice(0, 60).toLowerCase();
+        }
+
+        if (typeof data.url === 'string') {
+            return data.url;
+        }
+
+        if (typeof data.query === 'string') {
+            return data.query.slice(0, 80).toLowerCase();
+        }
+
+        return JSON.stringify(data).slice(0, 120);
     }
 }

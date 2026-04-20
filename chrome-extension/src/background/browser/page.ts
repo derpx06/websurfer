@@ -808,9 +808,9 @@ export default class Page {
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
         // @ts-expect-error injected at runtime by extension page helpers
-        if (window._websurferCursor) {
+        if (window._webgenieCursor) {
           // @ts-expect-error injected at runtime by extension page helpers
-          window._websurferCursor.move(x, y);
+          window._webgenieCursor.move(x, y);
         }
       });
       // Only animate cursor delay when highlights are visible (purely cosmetic)
@@ -903,9 +903,9 @@ export default class Page {
         const x = rect.left + rect.width / 2;
         const y = rect.top + rect.height / 2;
         // @ts-expect-error injected at runtime by extension page helpers
-        if (window._websurferCursor) {
+        if (window._webgenieCursor) {
           // @ts-expect-error injected at runtime by extension page helpers
-          window._websurferCursor.click(x, y);
+          window._webgenieCursor.click(x, y);
         }
       });
       // Only animate cursor delay when highlights are visible (purely cosmetic)

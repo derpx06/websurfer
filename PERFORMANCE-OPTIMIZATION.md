@@ -1,4 +1,4 @@
-# WebSurfer Agent — Performance Optimization Guide
+# WebGenie Agent — Performance Optimization Guide
 
 This document maps every latency source in the agent's execution path to exact source files and line numbers, provides concrete code-level fixes, and estimates the speedup each fix delivers. Fixes are ordered from most impactful to least.
 

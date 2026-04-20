@@ -1,11 +1,11 @@
 {
   "app_metadata_description": {
     "description": "Descrição da extensão",
-    "message": "Automatize tarefas da web com IA! WebSurfer é uma extensão de código aberto para o navegador que permite extrair dados, preencher formulários e muito mais."
+    "message": "Automatize tarefas da web com IA! WebGenie é uma extensão de código aberto para o navegador que permite extrair dados, preencher formulários e muito mais."
   },
   "app_metadata_name": {
     "description": "Nome da extensão",
-    "message": "WebSurfer: Agente Web de IA e Automação"
+    "message": "WebGenie: Agente Web de IA e Automação"
   },
   "errors_unknown": {
     "message": "Ocorreu um erro desconhecido"
@@ -38,7 +38,7 @@
     "message": "Voltar para o chat"
   },
   "welcome_title": {
-    "message": "Bem-vindo ao WebSurfer!"
+    "message": "Bem-vindo ao WebGenie!"
   },
   "welcome_instruction": {
     "message": "Para começar, por favor, configure suas chaves de API na página de configurações."
@@ -167,7 +167,7 @@
     "message": "Ativar Entrada de Voz"
   },
   "permissions_microphone_description": {
-    "message": "O WebSurfer precisa de acesso ao microfone para converter sua fala em texto."
+    "message": "O WebGenie precisa de acesso ao microfone para converter sua fala em texto."
   },
   "permissions_microphone_grantButton": {
     "message": "Conceder Permissão ao Microfone"

@@ -316,7 +316,7 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
   /**
    * Remove the last state message from the memory
    */
-  protected async removeLastStateMessageFromMemory() {
+  public async removeLastStateMessageFromMemory() {
     if (!this.context.stateMessageAdded) return;
     const messageManager = this.context.messageManager;
     messageManager.removeLastStateMessage();
@@ -452,12 +452,17 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
         }
         results.push(result);
 
+        if (result.isDone) {
+          logger.info(`Action ${actionName} marked task done, stopping remaining actions in this step.`);
+          break;
+        }
+
         // check if the task is paused or stopped
         if (this.context.paused || this.context.stopped) {
           return results;
         }
-        // TODO: wait for 1 second for now, need to optimize this to avoid unnecessary waiting
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        const delayMs = this.getPostActionDelayMs(actionName);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
       } catch (error) {
         if (error instanceof URLNotAllowedError) {
           throw error;
@@ -485,6 +490,42 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       }
     }
     return results;
+  }
+
+  /**
+   * Dynamic post-action delay.
+   *
+   * Navigation actions (go_to_url, search_google, go_back, open_tab, etc.) already call
+   * waitForPageAndFramesLoad() inside their handlers, so no extra delay is needed — 0ms.
+   *
+   * DOM-interaction actions (click, input, send_keys, select) need a small settle window
+   * for React/Vue re-renders and event propagation — 100ms.
+   *
+   * Everything else (scroll, wait, cache, done) is nearly instantaneous — 50ms.
+   */
+  private getPostActionDelayMs(actionName: string): number {
+    // Already waited for full page load internally
+    const navigationActions = new Set([
+      'go_to_url',
+      'search_google',
+      'search_duckduckgo',
+      'go_back',
+      'open_tab',
+      'switch_tab',
+      'close_tab',
+    ]);
+
+    // Need a small DOM settle window after interaction
+    const domInteractionActions = new Set([
+      'click_element',
+      'input_text',
+      'send_keys',
+      'select_dropdown_option',
+    ]);
+
+    if (navigationActions.has(actionName)) return 0;
+    if (domInteractionActions.has(actionName)) return 100;
+    return 50;
   }
 
   /**

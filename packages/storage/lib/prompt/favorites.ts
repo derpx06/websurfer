@@ -12,7 +12,7 @@ const defaultFavoritePrompts = [
   {
     title: '🌟 Star us on GitHub!',
     content:
-      "Open the WebSurfer repository at https://github.com/WebSurfer/WebSurfer and check if you've already starred it. If not, please support us by giving us a star!",
+      "Open the WebGenie repository at https://github.com/WebGenie/WebGenie and check if you've already starred it. If not, please support us by giving us a star!",
   },
 ];
 

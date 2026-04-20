@@ -1,11 +1,11 @@
 {
   "app_metadata_description": {
     "description": "Extension description",
-    "message": "Automate web tasks with AI! WebSurfer is an open-source browser extension that lets you extract data, fill forms, and more."
+    "message": "Automate web tasks with AI! WebGenie is an open-source browser extension that lets you extract data, fill forms, and more."
   },
   "app_metadata_name": {
     "description": "Extension name",
-    "message": "WebSurfer: AI Web Agent & Automation"
+    "message": "WebGenie: AI Web Agent & Automation"
   },
   "errors_unknown": {
     "message": "Unknown error occurred"
@@ -38,7 +38,7 @@
     "message": "Back to chat"
   },
   "welcome_title": {
-    "message": "Welcome to WebSurfer!"
+    "message": "Welcome to WebGenie!"
   },
   "welcome_instruction": {
     "message": "To get started, please configure your API keys in the settings page."
@@ -167,7 +167,7 @@
     "message": "Enable Voice Input"
   },
   "permissions_microphone_description": {
-    "message": "WebSurfer needs microphone access to convert your speech to text."
+    "message": "WebGenie needs microphone access to convert your speech to text."
   },
   "permissions_microphone_grantButton": {
     "message": "Grant Microphone Permission"

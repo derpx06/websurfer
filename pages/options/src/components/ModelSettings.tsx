@@ -1193,7 +1193,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
               </div>
               <h3 className="mb-2 text-xl font-bold">No Active Proccessors</h3>
               <p className={`mx-auto max-w-xs text-sm ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-                Connect an AI provider to enable WebSurfer&#39;s autonomous navigation capabilities.
+                Connect an AI provider to enable WebGenie&#39;s autonomous navigation capabilities.
               </p>
             </div>
           ) : (
