@@ -24,6 +24,20 @@ const logger = createLogger('background');
 const browserContext = new BrowserContext({});
 const SIDE_PANEL_URL = chrome.runtime.getURL('side-panel/index.html');
 
+// Track the last focused window to avoid async queries during user-gesture events (like Omnibox).
+let lastFocusedWindowId: number | undefined;
+
+chrome.windows.onFocusChanged.addListener((windowId) => {
+  if (windowId !== chrome.windows.WINDOW_ID_NONE) {
+    lastFocusedWindowId = windowId;
+  }
+});
+
+// Initialize the tracked window ID immediately.
+chrome.windows.getLastFocused({ populate: false }, (window) => {
+  lastFocusedWindowId = window.id;
+});
+
 /**
  * Notify a specific tab or the active tab about the agent's active status.
  */
@@ -214,20 +228,27 @@ chrome.omnibox.onInputEntered.addListener((text) => {
   const prompt = text.trim();
   if (!prompt) return;
 
-  // 1. Open the side panel IMMEDIATELY.
-  // We must not `await` anything before this call, otherwise the user gesture
-  // is lost and Chrome will silently refuse to open the panel.
-  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    const tab = tabs[0];
-    if (tab && tab.windowId !== undefined) {
-      chrome.sidePanel.open({ windowId: tab.windowId }).catch(err => {
-        logger.error('Omnibox: failed to open side panel:', err);
+  // 1. Open the side panel IMMEDIATELY and SYNCHRONOUSLY.
+  // We use the pre-tracked lastFocusedWindowId to avoid the async boundary of tabs.query.
+  // This preserves the user gesture context required by chrome.sidePanel.open().
+  if (lastFocusedWindowId !== undefined) {
+    chrome.sidePanel.open({ windowId: lastFocusedWindowId }).catch(err => {
+      logger.error('Omnibox: failed to open side panel (windowId):', err);
+      // Fallback to a query if the tracked ID failed for some reason
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]?.windowId) {
+          chrome.sidePanel.open({ windowId: tabs[0].windowId });
+        }
       });
-      logger.info('Omnibox: side panel open requested for window', tab.windowId);
-    } else {
-      logger.error('Omnibox: no active tab/window found');
-    }
-  });
+    });
+  } else {
+    // Fallback if for some reason we don't have the ID tracked yet
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      if (tabs[0]?.windowId) {
+        chrome.sidePanel.open({ windowId: tabs[0].windowId });
+      }
+    });
+  }
 
   // 2. Persist the prompt. The side panel will pick it up on mount or via onChanged.
   chrome.storage.session.set({ [PENDING_OMNIBOX_KEY]: prompt }).then(() => {
