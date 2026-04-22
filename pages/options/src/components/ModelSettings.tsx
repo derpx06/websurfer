@@ -823,7 +823,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       onClick={() => handleReasoningEffortChange(agentName, level)}
                       className={`flex-1 rounded-xl py-3 text-xs font-black uppercase tracking-tighter transition-all duration-300 ${(reasoningEffort[agentName] || (agentName === AgentNameEnum.Planner ? 'low' : 'minimal')) === level
                         ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30 ring-1 ring-indigo-400/50'
-                        : 'bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300'
+                        : isDarkMode ? 'bg-white/5 text-slate-500 hover:bg-white/10 hover:text-slate-300' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700'
                         }`}
                     >
                       {level}
@@ -1212,9 +1212,9 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         }`}>
                         {isInStorage ? 'Live Node' : 'Draft Intake'}
                       </div>
-                      <h3 className="font-outfit text-xl font-black uppercase tracking-tight">{providerConfig.name || providerId}</h3>
+                      <h3 className={`font-outfit text-xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{providerConfig.name || providerId}</h3>
                       {isModified && !isInStorage && (
-                        <span className="rounded-full bg-indigo-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-indigo-400">Awaiting Sync</span>
+                        <span className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest ${isDarkMode ? 'bg-indigo-500/10 text-indigo-400' : 'bg-indigo-100 text-indigo-600'}`}>Awaiting Sync</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
@@ -1245,7 +1245,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Identity Label</label>
                         <input
                           type="text"
-                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500"
+                          className={`w-full rounded-2xl border px-5 py-4 text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'border-white/10 bg-white/5 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'}`}
                           placeholder="e.g. Local Research Engine"
                           value={providerConfig.name || ''}
                           onChange={e => handleNameChange(providerId, e.target.value)}
@@ -1258,7 +1258,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                       <div className="group relative">
                         <input
                           type={visibleApiKeys[providerId] ? 'text' : 'password'}
-                          className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 font-mono text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500"
+                          className={`w-full rounded-2xl border px-5 py-4 font-mono text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'border-white/10 bg-white/5 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'}`}
                           placeholder="••••••••••••••••"
                           value={providerConfig.apiKey || ''}
                           onChange={e => handleApiKeyChange(providerId, e.target.value, providerConfig.baseUrl)}
@@ -1281,7 +1281,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                           <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Networking Endpoint</label>
                           <input
                             type="text"
-                            className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 font-mono text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500"
+                            className={`w-full rounded-2xl border px-5 py-4 font-mono text-sm font-bold outline-none transition-all focus:ring-2 focus:ring-indigo-500 ${isDarkMode ? 'border-white/10 bg-white/5 text-white' : 'border-slate-200 bg-slate-50 text-slate-900'}`}
                             placeholder="https://api.openai.com/v1"
                             value={providerConfig.baseUrl || ''}
                             onChange={e => handleApiKeyChange(providerId, providerConfig.apiKey || '', e.target.value)}
@@ -1302,7 +1302,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                   {providerConfig.type !== ProviderTypeEnum.AzureOpenAI && (
                     <div className="mt-8 space-y-4">
                       <label className="text-[11px] font-black uppercase tracking-[0.2em] opacity-40">Intelligence Matrix (Models)</label>
-                      <div className="flex min-h-[80px] flex-wrap gap-2.5 rounded-[2rem] border border-white/5 bg-black/20 p-6">
+                      <div className={`flex min-h-[80px] flex-wrap gap-2.5 rounded-[2rem] border p-6 ${isDarkMode ? 'border-white/5 bg-black/20' : 'border-slate-100 bg-slate-50'}`}>
                         {(providerConfig.modelNames || llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || []).map(model => (
                           <div key={model} className="group/tag flex items-center gap-2 rounded-xl border border-indigo-500/20 bg-indigo-500/10 px-4 py-2 text-xs font-black uppercase tracking-tight text-indigo-400 transition-all hover:bg-indigo-500 hover:text-white">
                             {model}
@@ -1313,7 +1313,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
                         ))}
                         <input
                           type="text"
-                          className="ml-2 border-none bg-transparent text-xs font-bold text-white outline-none placeholder:text-white/20"
+                          className={`ml-2 border-none bg-transparent text-xs font-bold outline-none ${isDarkMode ? 'text-white placeholder:text-white/20' : 'text-slate-900 placeholder:text-slate-400'}`}
                           placeholder="Add Model ID..."
                           value={newModelInputs[providerId] || ''}
                           onChange={e => handleModelsChange(providerId, e.target.value)}
@@ -1343,7 +1343,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             <FiShield size={24} />
           </div>
           <div>
-            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">Agent Calibration</h2>
+            <h2 className={`font-outfit text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Agent Calibration</h2>
             <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-violet-400' : 'text-violet-600'}`}>
               Assigned cognitive roles and parameter tuning
             </p>
@@ -1364,7 +1364,7 @@ export const ModelSettings = ({ isDarkMode = false }: ModelSettingsProps) => {
             <FiTrendingUp size={24} />
           </div>
           <div>
-            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">Vocal Intelligence</h2>
+            <h2 className={`font-outfit text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Vocal Intelligence</h2>
             <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
               Real-time speech analysis and transcription
             </p>

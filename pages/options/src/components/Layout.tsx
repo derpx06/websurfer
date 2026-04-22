@@ -1,6 +1,6 @@
 /* eslint-disable jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */
 import React from 'react';
-import type { TabTypes} from '../Options';
+import type { TabTypes } from '../Options';
 import { TABS } from '../Options';
 import { FiSun, FiMoon } from 'react-icons/fi';
 
@@ -20,14 +20,12 @@ export const OptionsSidebar: React.FC<OptionsSidebarProps> = ({
     return (
         <aside className={`flex w-72 shrink-0 flex-col border-r backdrop-blur-2xl transition-all duration-500 ${isDarkMode ? 'border-white/5 bg-[#0f1117]/70 shadow-2xl' : 'border-slate-200 bg-white/80 shadow-xl'}`}>
             <div className="group flex cursor-pointer items-center gap-4 p-8 pb-6" onClick={() => window.open('https://webgenie.ai', '_blank')}>
-                <div className={`flex size-11 items-center justify-center rounded-[14px] shadow-2xl transition-all duration-700 group-hover:scale-110 ${isDarkMode ? 'bg-gradient-to-br from-indigo-600 to-indigo-800' : 'bg-gradient-to-br from-indigo-500 to-indigo-700'}`}>
-                    <svg className="size-6 text-white" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="0.5" className="opacity-20" />
-                        <circle cx="32" cy="32" r="22" stroke="currentColor" strokeWidth="1" className="opacity-30" />
-                        <ellipse cx="32" cy="32" rx="7" ry="22" stroke="currentColor" strokeWidth="1.2" className="opacity-40" />
-                        <circle cx="32" cy="32" r="4.5" fill="currentColor" />
-                        <path d="M32 4L32 12M32 52L32 60M4 32L12 32M52 32L60 32" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-                    </svg>
+                <div className={`flex size-11 items-center justify-center transition-all duration-700 group-hover:scale-110`}>
+                    <img
+                        src={chrome.runtime.getURL('webgenie-logo.png')}
+                        alt="WebGenie"
+                        className="size-10 object-contain drop-shadow-[0_0_8px_rgba(99,102,241,0.2)]"
+                    />
                 </div>
                 <div className="flex flex-col">
                     <span className="font-outfit text-[20px] font-black uppercase tracking-tight">WebGenie</span>

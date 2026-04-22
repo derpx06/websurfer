@@ -66,7 +66,7 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
               <FiShield size={24} />
             </div>
             <div>
-              <h2 className="font-outfit text-2xl font-black tracking-tight text-white">Domain Sentinel</h2>
+              <h2 className={`font-outfit text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Domain Sentinel</h2>
               <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
                 Hardware-level domain filtering and validation
               </p>
@@ -75,10 +75,10 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
 
           <label className="group relative inline-flex shrink-0 cursor-pointer items-center">
             <input type="checkbox" className="peer sr-only" checked={isEnabled} onChange={handleToggleFirewall} />
-            <div className={`peer h-8 w-14 rounded-full border border-white/10 bg-white/5 transition-all duration-300 after:absolute 
-              after:left-[4px] after:top-[4px] after:size-6 after:rounded-full after:bg-white/20 after:shadow-2xl 
+            <div className={`peer h-8 w-14 rounded-full border transition-all duration-300 after:absolute 
+              after:left-[4px] after:top-[4px] after:size-6 after:rounded-full after:shadow-2xl 
               after:backdrop-blur-md after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none
-              ${isDarkMode ? 'peer-checked:bg-cyan-500/80' : 'peer-checked:bg-cyan-500'} 
+              ${isDarkMode ? 'border-white/10 bg-white/5 after:bg-white/20 peer-checked:bg-cyan-500/80 shadow-cyan-500/20' : 'border-slate-200 bg-slate-200 after:bg-white peer-checked:bg-cyan-500 shadow-sm'} 
               peer-checked:after:bg-white peer-checked:after:after:shadow-cyan-500/50`}>
             </div>
           </label>
@@ -166,7 +166,7 @@ export const FirewallSettings = ({ isDarkMode }: FirewallSettingsProps) => {
             <FiShield size={24} />
           </div>
           <div>
-            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">{t('options_firewall_howItWorks_header')}</h2>
+            <h2 className={`font-outfit text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{t('options_firewall_howItWorks_header')}</h2>
             <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-emerald-400' : 'text-emerald-600'}`}>
               Security protocols and evaluation order
             </p>

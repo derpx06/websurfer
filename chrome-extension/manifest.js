@@ -40,7 +40,7 @@ function withOperaSidebar(manifest) {
     sidebar_action: {
       default_panel: 'side-panel/index.html',
       default_title: 'WebGenie',
-      default_icon: 'icon-32.png',
+      default_icon: 'webgenie-logo.png',
     },
   });
 }
@@ -71,10 +71,13 @@ const manifest = withOperaSidebar(
       type: 'module',
     },
     action: {
-      default_icon: 'icon-32.png',
+      default_icon: 'webgenie-logo.png',
     },
     icons: {
-      128: 'icon-128.png',
+      16: 'webgenie-logo.png',
+      32: 'webgenie-logo.png',
+      48: 'webgenie-logo.png',
+      128: 'webgenie-logo.png',
     },
     content_scripts: [
       {
@@ -89,8 +92,7 @@ const manifest = withOperaSidebar(
           '*.js',
           '*.css',
           '*.svg',
-          'icon-128.png',
-          'icon-32.png',
+          'webgenie-logo.png',
           'permission/index.html',
           'permission/permission.js',
         ],

@@ -95,7 +95,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
         <div className={`h-10 w-48 rounded-2xl ${isDarkMode ? 'bg-white/5' : 'bg-slate-100'}`}></div>
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className={`h-40 rounded-[2rem] ${isDarkMode ? 'border border-white/5 bg-white/5' : 'border border-slate-100 bg-slate-50'}`}></div>
+            <div key={i} className={`h-40 rounded-[2rem] border transition-all duration-300 ${isDarkMode ? 'border-white/5 bg-white/5' : 'border-slate-100 bg-slate-50'}`}></div>
           ))}
         </div>
       </div>
@@ -115,7 +115,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
             <FiActivity size={24} />
           </div>
           <div>
-            <h2 className="font-outfit text-2xl font-black uppercase italic tracking-tight text-white">30-Day Velocity</h2>
+            <h2 className={`font-outfit text-2xl font-black uppercase italic tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>30-Day Velocity</h2>
             <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-cyan-400' : 'text-cyan-600'}`}>
               Dynamic performance metrics from your local terminal
             </p>
@@ -154,7 +154,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
             <FiClock size={24} />
           </div>
           <div>
-            <h2 className="font-outfit text-2xl font-black uppercase italic tracking-tight text-white">Historical Logs</h2>
+            <h2 className={`font-outfit text-2xl font-black uppercase italic tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Historical Logs</h2>
             <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-violet-400' : 'text-violet-600'}`}>
               Total cumulative telemetry since system initialization
             </p>
@@ -214,7 +214,7 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
                 <FiShield size={24} />
               </div>
               <div>
-                <h3 className="font-outfit text-xl font-black uppercase tracking-tight text-white">Anonymous Data Core</h3>
+                <h3 className={`font-outfit text-xl font-black uppercase tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Anonymous Data Core</h3>
                 <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
                   Securely share system-level diagnostics. No personal identifiers or data logs are ever exported.
                 </p>
@@ -223,10 +223,10 @@ export const AnalyticsSettings: React.FC<AnalyticsSettingsProps> = ({ isDarkMode
 
             <label className="group relative inline-flex shrink-0 cursor-pointer items-center">
               <input type="checkbox" className="peer sr-only" checked={settings.enabled} onChange={e => handleToggleAnalytics(e.target.checked)} />
-              <div className={`peer h-8 w-14 rounded-full border border-white/10 bg-white/5 transition-all duration-300 after:absolute 
-                after:left-[4px] after:top-[4px] after:size-6 after:rounded-full after:bg-white/20 after:shadow-2xl 
+              <div className={`peer h-8 w-14 rounded-full border transition-all duration-300 after:absolute 
+                after:left-[4px] after:top-[4px] after:size-6 after:rounded-full after:shadow-2xl 
                 after:backdrop-blur-md after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none
-                ${isDarkMode ? 'shadow-indigo-500/20 peer-checked:bg-indigo-500/80' : 'shadow-indigo-500/10 peer-checked:bg-indigo-600'} 
+                ${isDarkMode ? 'border-white/10 bg-white/5 after:bg-white/20 peer-checked:bg-indigo-500/80 shadow-indigo-500/20' : 'border-slate-200 bg-slate-200 after:bg-white peer-checked:bg-indigo-600 shadow-sm'} 
                 peer-checked:after:bg-white`}>
               </div>
             </label>

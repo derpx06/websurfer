@@ -44,10 +44,10 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
       </div>
       <label className="group relative inline-flex shrink-0 cursor-pointer items-center">
         <input type="checkbox" className="peer sr-only" checked={checked} onChange={e => onChange(e.target.checked)} />
-        <div className={`peer h-8 w-14 rounded-full border border-white/10 bg-white/5 transition-all duration-300 after:absolute 
-          after:left-[4px] after:top-[4px] after:size-6 after:rounded-full after:bg-white/20 after:shadow-2xl 
+        <div className={`peer h-8 w-14 rounded-full border transition-all duration-300 after:absolute 
+          after:left-[4px] after:top-[4px] after:size-6 after:rounded-full after:shadow-2xl 
           after:backdrop-blur-md after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white peer-focus:outline-none
-          ${isDarkMode ? `peer-checked:bg-${accentColor}-500/80` : `peer-checked:bg-${accentColor}-500`} 
+          ${isDarkMode ? 'border-white/10 bg-white/5 after:bg-white/20 peer-checked:bg-indigo-500/80 shadow-indigo-500/20' : 'border-slate-200 bg-slate-200 after:bg-white peer-checked:bg-indigo-600 shadow-sm'} 
           peer-checked:after:bg-white peer-checked:after:after:shadow-indigo-500/50`}>
         </div>
       </label>
@@ -97,7 +97,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
             <FiSettings size={24} />
           </div>
           <div>
-            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">System Runtime</h2>
+            <h2 className={`font-outfit text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>System Runtime</h2>
             <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-amber-400' : 'text-amber-600'}`}>
               Safety thresholds and autonomous limits
             </p>
@@ -123,7 +123,7 @@ export const GeneralSettings = ({ isDarkMode = false }: GeneralSettingsProps) =>
             <FiShield size={24} />
           </div>
           <div>
-            <h2 className="font-outfit text-2xl font-black tracking-tight text-white">Cognitive Bio-Feedback</h2>
+            <h2 className={`font-outfit text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Cognitive Bio-Feedback</h2>
             <p className={`mt-1 text-[13px] font-medium ${isDarkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>
               Neural monitoring and visualization systems
             </p>

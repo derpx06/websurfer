@@ -37,20 +37,18 @@ const SidePanelHeader = ({
           aria-label={showHistory ? 'Back to chat' : 'WebGenie'}
         >
           <div className="relative">
-            <div className={`flex size-10 items-center justify-center rounded-[12px] transition-all duration-700 group-hover:scale-105 ${isDarkMode
-              ? 'bg-gradient-to-br from-indigo-500 via-indigo-600 to-cyan-400 shadow-[0_4px_12px_rgba(99,102,241,0.4),inset_0_0_8px_rgba(255,255,255,0.1)] ring-1 ring-white/20'
-              : 'bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-md shadow-indigo-100 ring-1 ring-indigo-400/20'
-              }`}>
-              <svg className="size-[22px] text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="12" r="7" className="opacity-90" />
-                <circle cx="12" cy="12" r="1.5" className="fill-white" />
-              </svg>
+            <div className={`flex size-10 items-center justify-center transition-all duration-700 group-hover:scale-110`}>
+              <img
+                src={chrome.runtime.getURL('webgenie-logo.png')}
+                alt="WebGenie"
+                className={`size-[32px] object-contain ${isDarkMode ? 'drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]' : 'drop-shadow-[0_0_8px_rgba(99,102,241,0.2)]'}`}
+              />
             </div>
             {/* Live Status Indicator - Premium Glow */}
             <div className="absolute -right-1 -top-1 flex">
-              <span className={`absolute inline-flex size-4 animate-ping rounded-full opacity-60 ${isDarkMode ? 'bg-emerald-400' : 'bg-emerald-300'}`}></span>
-              <span className={`relative inline-flex size-4 rounded-full border-2 shadow-[0_0_8px_rgba(16,185,129,0.5)] ${isDarkMode
-                ? 'border-[#0a0f1e] bg-emerald-500'
+              <span className={`absolute inline-flex size-3 animate-ping rounded-full opacity-60 ${isDarkMode ? 'bg-emerald-400' : 'bg-emerald-300'}`}></span>
+              <span className={`relative inline-flex size-3 rounded-full border-2 shadow-[0_0_8px_rgba(16,185,129,0.5)] ${isDarkMode
+                ? 'border-webgenie-bg bg-emerald-500'
                 : 'border-white bg-emerald-500'
                 }`}></span>
             </div>
