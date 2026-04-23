@@ -34,6 +34,10 @@ export default class BrowserContext {
     this._currentTabId = tabId;
   }
 
+  public getCurrentTabId(): number | null {
+    return this._currentTabId;
+  }
+
   private async _getOrCreatePage(tab: chrome.tabs.Tab, forceUpdate = false): Promise<Page> {
     if (!tab.id) {
       throw new Error('Tab ID is not available');

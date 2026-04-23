@@ -1123,6 +1123,20 @@ export default class Page {
         const isHidden = await element.isHidden();
         if (!isHidden) {
           await this._scrollIntoViewIfNeeded(element, 1500);
+
+          // --- CURSOR ANIMATION BROADCAST ---
+          const box = await element.boundingBox();
+          if (box) {
+            const x = box.x + box.width / 2;
+            const y = box.y + box.height / 2;
+            chrome.tabs.sendMessage(this._tabId, {
+              type: 'AGENT_ACTION',
+              action: 'type',
+              x, y
+            }).catch(() => { });
+            // Give UI human-like timing sequence before typing
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
         }
       } catch (e) {
         // Continue even if these operations fail
@@ -1300,6 +1314,25 @@ export default class Page {
 
       // Scroll element into view if needed
       await this._scrollIntoViewIfNeeded(element);
+
+      // --- CURSOR ANIMATION BROADCAST ---
+      try {
+        const box = await element.boundingBox();
+        if (box) {
+          const x = box.x + box.width / 2;
+          const y = box.y + box.height / 2;
+          chrome.tabs.sendMessage(this._tabId, {
+            type: 'AGENT_ACTION',
+            action: 'click',
+            x, y
+          }).catch(() => { });
+          // Human-like cursor pipeline runs for ~700ms in the UI. We wait 800ms so the click aligns.
+          await new Promise(resolve => setTimeout(resolve, 800));
+        }
+      } catch (e) {
+        logger.debug('Failed to broadcast cursor animation coords', e);
+      }
+      // ----------------------------------
 
       try {
         // First attempt: Use Puppeteer's click method with timeout

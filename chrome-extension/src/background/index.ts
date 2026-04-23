@@ -414,14 +414,14 @@ async function subscribeToExecutorEvents(executor: Executor) {
           event.state !== ExecutionState.TASK_FAIL &&
           event.state !== ExecutionState.TASK_CANCEL;
 
-        const activeTab = tabs.find(t => t.active && t.windowId === lastFocusedWindowId)
-          || tabs.find(t => t.active);
+        // Use the actual tab ID the agent is working on as the source of truth
+        const agentTabId = (executor as any).context.browserContext.getCurrentTabId();
 
         for (const tab of tabs) {
           if (!tab.id) continue;
 
-          if (isActive && tab.id === activeTab?.id) {
-            // Show only on the currently active tab
+          if (isActive && tab.id === agentTabId) {
+            // Show ONLY on the specific tab the agent is working on
             chrome.tabs.sendMessage(tab.id, {
               type: 'AGENT_STATUS',
               active: true,
@@ -430,7 +430,7 @@ async function subscribeToExecutorEvents(executor: Executor) {
               // Ignore errors if the tab is not ready or content script not injected
             });
           } else {
-            // Guarantee all other non-active tabs (or all tabs if task is done) are cleared
+            // Force clear all other tabs (or all tabs if task is finished)
             chrome.tabs.sendMessage(tab.id, {
               type: 'AGENT_STATUS',
               active: false,
