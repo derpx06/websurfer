@@ -2,66 +2,37 @@ const BORDER_ID = 'webgenie-agent-border';
 const BORDER_STYLE_ID = 'webgenie-agent-border-style';
 
 const BORDER_CSS = `
-@property --webgenie-gradient-angle {
-  syntax: "<angle>";
-  initial-value: 0deg;
-  inherits: false;
-}
-
 #${BORDER_ID} {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 2147483646;
-  opacity: 0;
-  transition: opacity 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  box-sizing: border-box;
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2147483646;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
 }
 
 #${BORDER_ID}.active {
-  opacity: 1;
+    opacity: 1;
 }
 
 #${BORDER_ID}::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 0; /* Full edge hug */
-  background: conic-gradient(
-    from var(--webgenie-gradient-angle),
-    #00f2ff, 
-    #0062ff, 
-    #001aff, 
-    #7000ff, 
-    #4e00c2, 
-    #0062ff, 
-    #00f2ff
-  );
-  animation: webgenie-rotate 2.5s linear infinite;
-  
-  /* The sharp, high-energy border line */
-  mask: 
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask: 
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  -webkit-mask-composite: destination-out;
-  padding: 2.5px; /* Slightly thinner, sharper border */
-  filter: drop-shadow(0 0 2px rgba(0, 242, 255, 0.8));
-  z-index: 2;
-}
-
-@keyframes webgenie-rotate {
-  0% {
-    --webgenie-gradient-angle: 0deg;
-  }
-  100% {
-    --webgenie-gradient-angle: 360deg;
-  }
+    content: "";
+    position: absolute;
+    inset: 4px; /* Slightly inside the viewport bounds for a clean outline */
+    border: 4px solid transparent;
+    border-radius: 24px; /* Premium rounded edges */
+    background: linear-gradient(135deg, #00f2ff 0%, #7000ff 50%, #00f2ff 100%) border-box;
+    -webkit-mask:
+        linear-gradient(#fff 0 0) padding-box, 
+        linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.4), inset 0 0 15px rgba(112, 0, 255, 0.4);
+    filter: drop-shadow(0 0 8px rgba(0, 242, 255, 0.5));
 }
 `;
+
 
 function injectBorder() {
   if (document.getElementById(BORDER_ID)) return;
@@ -108,28 +79,30 @@ const CAPSULE_STYLE_ID = 'webgenie-status-capsule-style';
 const EXTRA_CSS = `
 #${CAPSULE_ID} {
   position: fixed;
-  bottom: 30px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: rgba(5, 5, 10, 0.85);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 242, 255, 0.3);
-  border-radius: 20px;
-  padding: 8px 18px;
+  background: rgba(15, 15, 20, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-radius: 9999px;
+  padding: 12px 28px;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
   color: #fff;
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
   z-index: 2147483647;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 242, 255, 0.15);
-  transition: transform 0.6s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.4s ease;
+  box-shadow: 
+    0 10px 40px -10px rgba(0, 0, 0, 0.8), 
+    0 0 20px rgba(0, 242, 255, 0.2), 
+    0 0 40px rgba(112, 0, 255, 0.15);
+  transition: transform 0.7s cubic-bezier(0.2, 1, 0.2, 1), opacity 0.5s ease;
   pointer-events: none;
   opacity: 0;
-  max-width: 85vw;
-  border-bottom: 2px solid rgba(0, 242, 255, 0.2);
+  max-width: 400px; /* Limit the max width */
 }
 
 #${CAPSULE_ID}.active {
@@ -137,23 +110,62 @@ const EXTRA_CSS = `
   opacity: 1;
 }
 
+#${CAPSULE_ID}::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 9999px;
+  padding: 1px;
+  background: linear-gradient(90deg, #00f2ff, #7000ff, #ff00f7, #00f2ff);
+  background-size: 300% 300%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: bg-move 4s linear infinite;
+  opacity: 0.9;
+}
+
+#${CAPSULE_ID}::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.15);
+  pointer-events: none;
+}
+
 .webgenie-status-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   background: #00f2ff;
   border-radius: 50%;
-  box-shadow: 0 0 10px #00f2ff;
-  animation: webgenie-status-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 12px 2px rgba(0, 242, 255, 0.8), inset 0 0 4px #fff;
+  animation: webgenie-status-pulse 1.5s ease-in-out infinite;
+  position: relative;
+  z-index: 2;
 }
 
 .webgenie-status-text {
-  letter-spacing: 0.02em;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  letter-spacing: 0.03em;
+  background: linear-gradient(135deg, #ffffff 0%, #b3b3b3 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
 }
 
 @keyframes webgenie-status-pulse {
-  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 8px #00f2ff; }
-  50% { transform: scale(1.2); opacity: 0.6; box-shadow: 0 0 15px #00f2ff; }
+  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 8px rgba(0, 242, 255, 0.8); }
+  50% { transform: scale(1.3); opacity: 0.7; box-shadow: 0 0 16px rgba(0, 242, 255, 1); }
+}
+
+@keyframes bg-move {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
 `;
 

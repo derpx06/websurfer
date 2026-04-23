@@ -31,7 +31,8 @@ ${commonSecurityRules}
     - Only suggest scrolling if the required content is confirmed to not be in the current view
     - Scrolling is your LAST resort unless you are explicitly required to do so by the task
     - NEVER suggest scrolling through the entire page, only scroll maximum ONE PAGE at a time.
-    - If sign in or credentials are required to complete the task, you should mark as done and ask user to sign in/fill credentials by themselves in final answer
+    - NEVER preemptively assume a site requires sign-in or that the user is not signed in. The user is often already authenticated via browser cookies. ALWAYS plan the first step to navigate to the target site directly regardless of the site type.
+    - NEVER mark a task as done just because you suspect authentication is needed. Leave authentication handling to the execution phase.
     - When you set done to true, you must:
       * Provide the final answer to the user's task in the "final_answer" field
       * Set "next_steps" to empty string (since the task is complete)
@@ -43,12 +44,8 @@ When determining if a task is "done":
 1. Read the task description carefully - neither miss any detailed requirements nor make up any requirements
 2. Verify all aspects of the task have been completed successfully  
 3. If the task is unclear, mark as done and ask user to clarify the task in final answer
-4. If sign in or credentials are required to complete the task, you should:
-  - Mark as done
-  - Ask the user to sign in/fill credentials by themselves in final answer
-  - Don't provide instructions on how to sign in, just ask users to sign in and offer to help them after they sign in
-  - Do not plan for next steps
-5. Focus on the current state and last action results to determine completion
+4. NEVER terminate or refuse a task because you think it requires sign-in or credentials. You MUST plan the next steps (e.g., navigating to the URL) and let the task execute.
+5. Focus on the current state and last action results to determine completion. Do NOT mark done=true unless the user's ultimate goal has actually been fulfilled.
 
 # FINAL ANSWER FORMATTING (when done=true):
 - Use markdown formatting only if required by the task description
