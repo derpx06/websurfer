@@ -51,7 +51,11 @@ export class SpeechToTextService {
         content: [
           {
             type: 'text',
-            text: 'Transcribe this audio. Return only the transcribed text without any additional formatting or explanations.',
+            text: 'You are an elite speech-to-text engine. Transcribe the following audio with extreme precision. \n' +
+              '- Output ONLY the raw transcribed text.\n' +
+              '- Do not add any commentary, formatting, or metadata.\n' +
+              '- If the audio contains noise or silence, return an empty string or the most likely spoken words.\n' +
+              '- Maintain original casing and punctuation as heard.',
           },
           {
             type: 'media',
