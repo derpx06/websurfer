@@ -6,7 +6,7 @@ import { useTheme } from './useTheme';
 import { useConfig } from './useConfig';
 import { useChatSession } from './useChatSession';
 import { useAgentConnection } from './useAgentConnection';
-import { useAudioRecorder } from './useAudioRecorder';
+import { useSpeechRecognition } from './useSpeechRecognition';
 import { useFavoritePrompts } from './useFavoritePrompts';
 import { useTaskExecution } from './useTaskExecution';
 
@@ -80,11 +80,10 @@ export const useSidePanelController = () => {
     setInputTextRef,
   });
 
-  const { isRecording, handleMicClick } = useAudioRecorder({
+  const { isRecording, handleMicClick } = useSpeechRecognition({
     appendMessage,
-    setupConnection,
-    portRef,
     setIsProcessingSpeech,
+    setInputTextRef,
   });
 
   // Keep replaying ref in sync
