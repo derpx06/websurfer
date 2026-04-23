@@ -407,22 +407,35 @@ async function subscribeToExecutorEvents(executor: Executor) {
         currentPort.postMessage(event);
       }
 
-      // Broadcast agent status to the active tab for the Capsule UI
-      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-        const activeTabId = tabs[0]?.id;
-        if (activeTabId) {
-          const isActive =
-            event.state !== ExecutionState.TASK_OK &&
-            event.state !== ExecutionState.TASK_FAIL &&
-            event.state !== ExecutionState.TASK_CANCEL;
+      // Broadcast agent status to ensure Capsule UI doesn't get stuck
+      chrome.tabs.query({}, tabs => {
+        const isActive =
+          event.state !== ExecutionState.TASK_OK &&
+          event.state !== ExecutionState.TASK_FAIL &&
+          event.state !== ExecutionState.TASK_CANCEL;
 
-          chrome.tabs.sendMessage(activeTabId, {
-            type: 'AGENT_STATUS',
-            active: isActive,
-            status: event.data.details,
-          }).catch(() => {
-            // Ignore errors if the tab is not ready or content script not injected
-          });
+        const activeTab = tabs.find(t => t.active && t.windowId === lastFocusedWindowId)
+          || tabs.find(t => t.active);
+
+        for (const tab of tabs) {
+          if (!tab.id) continue;
+
+          if (isActive && tab.id === activeTab?.id) {
+            // Show only on the currently active tab
+            chrome.tabs.sendMessage(tab.id, {
+              type: 'AGENT_STATUS',
+              active: true,
+              status: event.data.details,
+            }).catch(() => {
+              // Ignore errors if the tab is not ready or content script not injected
+            });
+          } else {
+            // Guarantee all other non-active tabs (or all tabs if task is done) are cleared
+            chrome.tabs.sendMessage(tab.id, {
+              type: 'AGENT_STATUS',
+              active: false,
+            }).catch(() => { });
+          }
         }
       });
     } catch (error) {
