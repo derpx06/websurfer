@@ -84,10 +84,10 @@ export class DOMElementNode extends DOMBaseNode {
   viewportInfo?: ViewportInfo;
 
   /*
-  ### State injected by the browser context.
+	### State injected by the browser context.
 
-  The idea is that the clickable elements are sometimes persistent from the previous page -> tells the model which objects are new/_how_ the state has changed
-  */
+	The idea is that the clickable elements are sometimes persistent from the previous page -> tells the model which objects are new/_how_ the state has changed
+	*/
   isNew: boolean | null;
 
   constructor(params: {
@@ -212,9 +212,6 @@ export class DOMElementNode extends DOMBaseNode {
      * Convert the processed DOM content to HTML.
      */
     const formattedText: string[] = [];
-    const MAX_ELEMENTS = 80;
-    let elementCount = 0;
-    let prunedCount = 0;
 
     if (!includeAttributes) {
       includeAttributes = DEFAULT_INCLUDE_ATTRIBUTES;
@@ -227,22 +224,6 @@ export class DOMElementNode extends DOMBaseNode {
       if (node instanceof DOMElementNode) {
         // Add element with highlight_index
         if (node.highlightIndex !== null) {
-          // Pruning logic: only include if visible and in viewport, and under the cap
-          if (!node.isVisible || !node.isInViewport) {
-            prunedCount += 1;
-            // Still process children in case some are visible (unlikely but safe)
-            for (const child of node.children) {
-              processNode(child, nextDepth);
-            }
-            return;
-          }
-
-          if (elementCount >= MAX_ELEMENTS) {
-            prunedCount += 1;
-            return; // Hard stop for this branch
-          }
-
-          elementCount += 1;
           nextDepth += 1;
 
           const text = node.getAllTextTillNextClickableElement();
@@ -357,13 +338,6 @@ export class DOMElementNode extends DOMBaseNode {
     };
 
     processNode(this, 0);
-
-    if (prunedCount > 0) {
-      formattedText.push(
-        `... and ${prunedCount} more interactive elements (mostly off-screen or below fold) pruned for clarity.`,
-      );
-    }
-
     return formattedText.join('\n');
   }
 

@@ -20,8 +20,8 @@ const logger = createLogger('PlannerAgent');
 
 // Define Zod schema for planner output
 export const plannerOutputSchema = z.object({
-  observation: z.string().optional().default(''),
-  challenges: z.string().optional().default(''),
+  observation: z.string(),
+  challenges: z.string(),
   done: z.union([
     z.boolean(),
     z.string().transform(val => {
@@ -30,9 +30,9 @@ export const plannerOutputSchema = z.object({
       throw new Error('Invalid boolean string');
     }),
   ]),
-  next_steps: z.string().optional().default(''),
-  final_answer: z.string().optional().default(''),
-  reasoning: z.string().optional().default(''),
+  next_steps: z.string(),
+  final_answer: z.string(),
+  reasoning: z.string(),
   web_task: z.union([
     z.boolean(),
     z.string().transform(val => {
@@ -83,11 +83,11 @@ export class PlannerAgent extends BaseAgent<typeof plannerOutputSchema, PlannerO
       }
 
       // clean the model output
-      const observation = filterExternalContent(modelOutput.observation);
-      const final_answer = filterExternalContent(modelOutput.final_answer);
-      const next_steps = filterExternalContent(modelOutput.next_steps);
-      const challenges = filterExternalContent(modelOutput.challenges);
-      const reasoning = filterExternalContent(modelOutput.reasoning);
+      const observation = filterExternalContent(modelOutput.observation, false);
+      const final_answer = filterExternalContent(modelOutput.final_answer, false);
+      const next_steps = filterExternalContent(modelOutput.next_steps, false);
+      const challenges = filterExternalContent(modelOutput.challenges, false);
+      const reasoning = filterExternalContent(modelOutput.reasoning, false);
 
       const cleanedPlan: PlannerOutput = {
         ...modelOutput,

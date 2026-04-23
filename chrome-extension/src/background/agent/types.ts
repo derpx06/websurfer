@@ -4,7 +4,7 @@ import { DEFAULT_INCLUDE_ATTRIBUTES } from '../browser/dom/views';
 import type { DOMHistoryElement } from '../browser/dom/history/view';
 import type MessageManager from './messages/service';
 import type { EventManager } from './event/manager';
-import { Actors, ExecutionState, AgentEvent } from './event/types';
+import { type Actors, type ExecutionState, AgentEvent } from './event/types';
 import { AgentStepHistory } from './history';
 
 export interface AgentOptions {
@@ -30,7 +30,7 @@ export const DEFAULT_AGENT_OPTIONS: AgentOptions = {
   useVision: false,
   useVisionForPlanner: true,
   includeAttributes: DEFAULT_INCLUDE_ATTRIBUTES,
-  planningInterval: 7,
+  planningInterval: 3,
 };
 
 export class AgentContext {
@@ -49,10 +49,6 @@ export class AgentContext {
   stateMessageAdded: boolean;
   history: AgentStepHistory;
   finalAnswer: string | null;
-  taskStack: Array<{ goal: string; status: string; result?: string }>;
-  completedSubTasks: Array<{ goal: string; status: string; result?: string }>;
-  results: Record<string, unknown>;
-  scratchpad: string;
 
   constructor(
     taskId: string,
@@ -77,10 +73,6 @@ export class AgentContext {
     this.stateMessageAdded = false;
     this.history = new AgentStepHistory();
     this.finalAnswer = null;
-    this.taskStack = [];
-    this.completedSubTasks = [];
-    this.results = {};
-    this.scratchpad = '(empty)';
   }
 
   async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {
@@ -90,19 +82,6 @@ export class AgentContext {
       maxSteps: this.options.maxSteps,
       details: eventDetails,
     });
-    await this.eventManager.emit(event);
-  }
-
-  /** Emit a SIGHT_UPDATE event carrying the current tab screenshot (base64 JPEG). */
-  async emitSightUpdate(screenshot: string) {
-    const event = new AgentEvent(
-      Actors.NAVIGATOR,
-      ExecutionState.SIGHT_UPDATE,
-      { taskId: this.taskId, step: this.nSteps, maxSteps: this.options.maxSteps, details: '' },
-      Date.now(),
-      undefined,
-      screenshot,
-    );
     await this.eventManager.emit(event);
   }
 

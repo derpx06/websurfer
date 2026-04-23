@@ -17,12 +17,10 @@ export interface JsonSchemaObject {
 }
 
 /**
- * Deeply resolves and dereferences all $ref fields in a JSON schema.
- * MV3 models (like Gemini) often require self-contained, inline schema definitions
- * rather than schemas with internal pointers ($defs).
+ * Dereferences all $ref fields in a JSON schema by replacing them with the actual referenced schema
  *
- * @param schema The JSON schema containing $defs and $ref pointers.
- * @returns A new JSON schema with all references expanded into inline objects.
+ * @param schema The JSON schema to dereference
+ * @returns A new JSON schema with all references resolved
  */
 export function dereferenceJsonSchema(schema: JsonSchemaObject): JsonSchemaObject {
   // Create a deep copy of the schema to avoid modifying the original
@@ -151,16 +149,18 @@ function processSchemaNode(node: JsonSchemaObject, definitions: Record<string, J
 }
 
 /**
- * Transpiles an OpenAI-flavored JSON schema into a Google Gemini compatible format.
- * 
- * Major transformation steps:
- * 1. Dereferencing: Flattens all internal $ref pointers as Gemini only supports inline schemas.
- * 2. Ordering: Optionally adds `propertyOrdering` used by some Gemini model versions to ensure consistent key sequencing.
- * 3. Nullability: Standardizes how optional/nullable fields are represented between providers.
+ * Converts an OpenAI format JSON schema to a Google Gemini compatible schema
  *
- * @param openaiSchema The source schema following OpenAI/JSONSchema standards.
- * @param ensureOrder Whether to inject a strict ordering manifest into the result.
- * @returns A Gemini-compatible schema object.
+ * Key differences handled:
+ * 1. OpenAI accepts $defs and $ref for references, Gemini only accepts inline definitions
+ * 2. Different structure for nullable properties
+ * 3. Gemini has a flatter structure for defining properties
+ * 4. https://ai.google.dev/api/caching#Schema
+ * 5. https://ai.google.dev/gemini-api/docs/structured-output?lang=node#json-schemas
+ *
+ * @param openaiSchema The OpenAI format JSON schema to convert
+ * @param ensureOrder If true, adds the propertyOrdering field for consistent ordering
+ * @returns A Google Gemini compatible JSON schema
  */
 export function convertOpenAISchemaToGemini(openaiSchema: JsonSchemaObject, ensureOrder = false): JsonSchemaObject {
   // First flatten the schema with dereferenceJsonSchema

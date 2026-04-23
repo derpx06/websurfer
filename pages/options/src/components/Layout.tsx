@@ -63,7 +63,7 @@ export const OptionsSidebar: React.FC<OptionsSidebarProps> = ({
 
                 <div className={`rounded-2xl border p-4 backdrop-blur-3xl ${isDarkMode ? 'border-white/5 bg-black/20' : 'border-slate-200 bg-white/50'}`}>
                     <div className="mb-1 text-center text-[10px] font-black uppercase tracking-widest opacity-30">Version 2.1.4</div>
-                    <div className={`text-center text-[9px] font-bold uppercase tracking-tighter opacity-20 ${isDarkMode ? 'text-white' : 'text-black'}`}>© 2026 Nanobrowser Intelligence</div>
+                    <div className={`text-center text-[9px] font-bold uppercase tracking-tighter opacity-20 ${isDarkMode ? 'text-white' : 'text-black'}`}>© 2026 WebGenie Intelligence</div>
                 </div>
             </div>
         </aside>

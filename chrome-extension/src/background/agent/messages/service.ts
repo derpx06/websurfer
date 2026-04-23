@@ -147,7 +147,8 @@ export default class MessageManager {
     const { userText, attachmentsInner } = splitUserTextAndAttachments(task);
 
     // Filter and wrap user text
-    const cleanedTask = filterExternalContent(userText);
+    // Use non-strict filtering so user-provided task details like emails, names, and URLs remain intact.
+    const cleanedTask = filterExternalContent(userText, false);
     const content = `Your ultimate task is: """${cleanedTask}""". If you achieved your ultimate task, stop everything and use the done action in the next step to complete the task. If not, continue as usual.`;
     const wrappedUser = wrapUserRequest(content, false);
 
@@ -176,7 +177,8 @@ export default class MessageManager {
     const { userText, attachmentsInner } = splitUserTextAndAttachments(newTask);
 
     // Filter and wrap user text
-    const cleanedTask = filterExternalContent(userText);
+    // Use non-strict filtering so user-provided task details like emails, names, and URLs remain intact.
+    const cleanedTask = filterExternalContent(userText, false);
     const content = `Your new ultimate task is: """${cleanedTask}""". This is a follow-up of the previous tasks. Make sure to take all of the previous context into account and finish your new ultimate task.`;
     const wrappedUser = wrapUserRequest(content, false);
 

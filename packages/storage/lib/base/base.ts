@@ -94,18 +94,7 @@ export function createStorage<D = string>(key: string, fallback: D, config?: Sto
       return fallback;
     }
 
-    const data = deserialize(value[key]) ?? fallback;
-
-    if (config?.schema) {
-      try {
-        return config.schema.parse(data) as D;
-      } catch (error) {
-        console.error(`Storage validation failed for key "${key}":`, error);
-        return fallback;
-      }
-    }
-
-    return data;
+    return deserialize(value[key]) ?? fallback;
   };
 
   const _emitChange = () => {
@@ -116,18 +105,7 @@ export function createStorage<D = string>(key: string, fallback: D, config?: Sto
     if (!initedCache) {
       cache = await get();
     }
-    let newValue = (await updateCache(valueOrUpdate, cache)) as D;
-
-    if (config?.schema) {
-      try {
-        newValue = config.schema.parse(newValue) as D;
-      } catch (error) {
-        console.error(`Storage validation failed for key "${key}" during set:`, error);
-        throw error;
-      }
-    }
-
-    cache = newValue;
+    cache = await updateCache(valueOrUpdate, cache);
 
     await chrome?.storage[storageEnum].set({ [key]: serialize(cache) });
     _emitChange();

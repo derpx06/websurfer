@@ -234,7 +234,7 @@ export class ActionBuilder {
         }
 
         // Check if element is a file uploader
-        if (await page.isFileUploader(elementNode)) {
+        if (page.isFileUploader(elementNode)) {
           const msg = t('act_click_fileUploader', [input.index.toString()]);
           logger.info(msg);
           return new ActionResult({

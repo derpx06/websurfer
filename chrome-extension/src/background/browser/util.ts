@@ -103,29 +103,3 @@ export function capTextLength(text: string, maxLength: number): string {
   }
   return text;
 }
-
-/**
- * Safely gets a tab's URL, handling cases where the tab might be temporarily 
- * inaccessible (e.g., during a redirect or navigation).
- * @param tabId The ID of the tab
- * @returns The tab's URL or null if inaccessible
- */
-export async function safeGetTabUrl(tabId: number): Promise<string | null> {
-  const tab = await safeGetTab(tabId);
-  return tab?.url || null;
-}
-
-/**
- * Safely gets a tab object, handling cases where the tab might be temporarily 
- * inaccessible.
- * @param tabId The ID of the tab
- * @returns The tab object or null if inaccessible
- */
-export async function safeGetTab(tabId: number): Promise<chrome.tabs.Tab | null> {
-  try {
-    const tab = await chrome.tabs.get(tabId);
-    return tab || null;
-  } catch (error) {
-    return null;
-  }
-}

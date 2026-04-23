@@ -76,12 +76,6 @@ export interface BrowserContextConfig {
    * @default true
    */
   displayHighlights: boolean;
-
-  /**
-   * Use vision capabilities
-   * @default false
-   */
-  useVision: boolean;
 }
 
 export const DEFAULT_BROWSER_CONTEXT_CONFIG: BrowserContextConfig = {
@@ -96,7 +90,6 @@ export const DEFAULT_BROWSER_CONTEXT_CONFIG: BrowserContextConfig = {
   includeDynamicAttributes: true,
   homePageUrl: 'about:blank',
   displayHighlights: true,
-  useVision: false,
 };
 
 export interface PageState extends DOMState {
@@ -125,14 +118,15 @@ export class BrowserStateHistory {
   title: string;
   tabs: TabInfo[];
   interactedElements: (DOMHistoryElement | null)[];
-  state: BrowserState | null;
+  // screenshot is too large to store in the history
+  // screenshot: string | null;
 
-  constructor(state?: BrowserState, interactedElements?: (DOMHistoryElement | null)[]) {
-    this.url = state?.url || '';
-    this.title = state?.title || '';
-    this.tabs = state?.tabs || [];
+  constructor(state: BrowserState, interactedElements?: (DOMHistoryElement | null)[]) {
+    this.url = state.url;
+    this.title = state.title;
+    this.tabs = state.tabs;
     this.interactedElements = interactedElements ?? [];
-    this.state = state || null;
+    // this.screenshot = state.screenshot;
   }
 }
 

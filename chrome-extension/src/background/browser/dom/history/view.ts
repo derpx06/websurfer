@@ -46,7 +46,7 @@ export class DOMHistoryElement {
     public viewportInfo: ViewportInfo | null = null,
   ) {}
 
-  toDict(): Record<string, unknown> {
+  toDict(): Record<string, any> {
     return {
       tagName: this.tagName,
       xpath: this.xpath,

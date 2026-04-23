@@ -1,4 +1,3 @@
-import type { z } from 'zod';
 import type { StorageEnum } from './enums';
 
 export type ValueOrUpdate<D> = D | ((prev: D) => Promise<D> | D);
@@ -43,8 +42,4 @@ export type StorageConfig<D = string> = {
      */
     deserialize: (text: string) => D;
   };
-  /**
-   * Optional Zod schema for data validation and defaults.
-   */
-  schema?: z.ZodType<D, z.ZodTypeDef, unknown>;
 };

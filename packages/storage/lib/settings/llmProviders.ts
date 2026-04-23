@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { StorageEnum } from '../base/enums';
 import { createStorage } from '../base/base';
 import type { BaseStorage } from '../base/types';
@@ -6,32 +5,24 @@ import { type AgentNameEnum, llmProviderModelNames, llmProviderParameters, Provi
 
 const AZURE_API_VERSION = '2025-04-01-preview';
 
-// Zod schemas for validation and defaults
-export const ProviderConfigSchema = z.object({
-  name: z.string().optional(),
-  type: z.string().optional(), // Be lenient with types
-  apiKey: z.string().optional().default(''),
-  baseUrl: z.string().optional(),
-  modelNames: z.array(z.string()).optional(),
-  createdAt: z.any().optional().transform(v => {
-    const n = Number(v);
-    return isNaN(n) ? Date.now() : n;
-  }),
-  azureDeploymentNames: z.array(z.string()).optional(),
-  azureApiVersion: z.string().optional(),
-}).passthrough();
-
-
-
-export const LLMKeyRecordSchema = z.object({
-  providers: z.record(z.string(), ProviderConfigSchema),
-});
-
 // Interface for a single provider configuration
-export type ProviderConfig = z.infer<typeof ProviderConfigSchema>;
+export interface ProviderConfig {
+  name?: string; // Display name in the options
+  type?: ProviderTypeEnum; // Help to decide which LangChain ChatModel package to use
+  apiKey: string; // Must be provided, but may be empty for local models
+  baseUrl?: string; // Optional base URL if provided // For Azure: Endpoint
+  modelNames?: string[]; // Chosen model names (NOT used for Azure OpenAI)
+  createdAt?: number; // Timestamp in milliseconds when the provider was created
+  // Azure Specific Fields:
+  azureDeploymentNames?: string[]; // Azure deployment names array
+  azureApiVersion?: string;
+}
 
 // Interface for storing multiple LLM provider configurations
-export type LLMKeyRecord = z.infer<typeof LLMKeyRecordSchema>;
+// The key is the provider id, which is the same as the provider type for built-in providers, but is custom for custom providers
+export interface LLMKeyRecord {
+  providers: Record<string, ProviderConfig>;
+}
 
 export type LLMProviderStorage = BaseStorage<LLMKeyRecord> & {
   setProvider: (providerId: string, config: ProviderConfig) => Promise<void>;
@@ -49,7 +40,6 @@ const storage = createStorage<LLMKeyRecord>(
   {
     storageEnum: StorageEnum.Local,
     liveUpdate: true,
-    schema: LLMKeyRecordSchema,
   },
 );
 
@@ -180,7 +170,57 @@ export function getDefaultAgentModelParams(providerId: string, agentName: AgentN
   return newParameters;
 }
 
+// Helper function to ensure backward compatibility for provider configs
+function ensureBackwardCompatibility(providerId: string, config: ProviderConfig): ProviderConfig {
+  // Log input config
+  // console.log(`[ensureBackwardCompatibility] Input for ${providerId}:`, JSON.stringify(config));
 
+  const updatedConfig = { ...config };
+
+  // Ensure name exists
+  if (!updatedConfig.name) {
+    updatedConfig.name = getDefaultDisplayNameFromProviderId(providerId);
+  }
+  // Ensure type exists
+  if (!updatedConfig.type) {
+    updatedConfig.type = getProviderTypeByProviderId(providerId);
+  }
+
+  // Handle Azure specifics
+  if (updatedConfig.type === ProviderTypeEnum.AzureOpenAI) {
+    // Ensure Azure fields exist, provide defaults if missing
+    if (updatedConfig.azureApiVersion === undefined) {
+      // console.log(`[ensureBackwardCompatibility] Adding default azureApiVersion for ${providerId}`);
+      updatedConfig.azureApiVersion = AZURE_API_VERSION;
+    }
+
+    // Initialize azureDeploymentNames array if it doesn't exist yet
+    if (!updatedConfig.azureDeploymentNames) {
+      updatedConfig.azureDeploymentNames = [];
+    }
+
+    // CRITICAL: Delete modelNames if it exists for Azure type to clean up old configs
+    if (Object.prototype.hasOwnProperty.call(updatedConfig, 'modelNames')) {
+      // console.log(`[ensureBackwardCompatibility] Deleting modelNames for Azure config ${providerId}`);
+      delete updatedConfig.modelNames;
+    }
+  } else {
+    // Ensure modelNames exists ONLY for non-Azure types
+    if (!updatedConfig.modelNames) {
+      // console.log(`[ensureBackwardCompatibility] Adding default modelNames for non-Azure ${providerId}`);
+      updatedConfig.modelNames = llmProviderModelNames[providerId as keyof typeof llmProviderModelNames] || [];
+    }
+  }
+
+  // Ensure createdAt exists
+  if (!updatedConfig.createdAt) {
+    updatedConfig.createdAt = new Date('03/04/2025').getTime();
+  }
+
+  // Log output config
+  // console.log(`[ensureBackwardCompatibility] Output for ${providerId}:`, JSON.stringify(updatedConfig));
+  return updatedConfig;
+}
 
 export const llmProviderStore: LLMProviderStorage = {
   ...storage,
@@ -189,13 +229,54 @@ export const llmProviderStore: LLMProviderStorage = {
       throw new Error('Provider id cannot be empty');
     }
 
+    if (config.apiKey === undefined) {
+      throw new Error('API key must be provided (can be empty for local models)');
+    }
+
     const providerType = config.type || getProviderTypeByProviderId(providerId);
 
+    if (providerType === ProviderTypeEnum.AzureOpenAI) {
+      if (!config.baseUrl?.trim()) {
+        throw new Error('Azure Endpoint (baseUrl) is required');
+      }
+      if (!config.azureDeploymentNames || config.azureDeploymentNames.length === 0) {
+        throw new Error('At least one Azure Deployment Name is required');
+      }
+      if (!config.azureApiVersion?.trim()) {
+        throw new Error('Azure API Version is required');
+      }
+      if (!config.apiKey?.trim()) {
+        throw new Error('API Key is required for Azure OpenAI');
+      }
+    } else if (providerType !== ProviderTypeEnum.CustomOpenAI && providerType !== ProviderTypeEnum.Ollama) {
+      if (!config.apiKey?.trim()) {
+        throw new Error(`API Key is required for ${getDefaultDisplayNameFromProviderId(providerId)}`);
+      }
+    }
+
+    if (providerType !== ProviderTypeEnum.AzureOpenAI) {
+      if (!config.modelNames || config.modelNames.length === 0) {
+        console.warn(`Provider ${providerId} of type ${providerType} is being saved without model names.`);
+      }
+    }
+
     const completeConfig: ProviderConfig = {
-      ...config,
+      apiKey: config.apiKey || '',
+      baseUrl: config.baseUrl,
       name: config.name || getDefaultDisplayNameFromProviderId(providerId),
       type: providerType,
+      createdAt: config.createdAt || Date.now(),
+      ...(providerType === ProviderTypeEnum.AzureOpenAI
+        ? {
+            azureDeploymentNames: config.azureDeploymentNames || [],
+            azureApiVersion: config.azureApiVersion,
+          }
+        : {
+            modelNames: config.modelNames || [],
+          }),
     };
+
+    console.log(`[llmProviderStore.setProvider] Saving config for ${providerId}:`, JSON.stringify(completeConfig));
 
     const current = (await storage.get()) || { providers: {} };
     await storage.set({
@@ -207,7 +288,8 @@ export const llmProviderStore: LLMProviderStorage = {
   },
   async getProvider(providerId: string) {
     const data = (await storage.get()) || { providers: {} };
-    return data.providers[providerId];
+    const config = data.providers[providerId];
+    return config ? ensureBackwardCompatibility(providerId, config) : undefined;
   },
   async removeProvider(providerId: string) {
     const current = (await storage.get()) || { providers: {} };
@@ -222,6 +304,13 @@ export const llmProviderStore: LLMProviderStorage = {
 
   async getAllProviders() {
     const data = await storage.get();
-    return { ...data.providers };
+    const providers = { ...data.providers };
+
+    // Add backward compatibility for all providers
+    for (const [providerId, config] of Object.entries(providers)) {
+      providers[providerId] = ensureBackwardCompatibility(providerId, config);
+    }
+
+    return providers;
   },
 };

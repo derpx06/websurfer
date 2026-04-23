@@ -4,7 +4,7 @@ export const LLM_FORBIDDEN_ERROR_MESSAGE =
 export const EXTENSION_CONFLICT_ERROR_MESSAGE = `
   Cannot access a chrome-extension:// URL of different extension.
   
-  This is likely due to conflicting extensions. Please use Nanobrowser in a new profile.`;
+  This is likely due to conflicting extensions. Please use WebGenie in a new profile.`;
 
 /**
  * Custom error class for chat model authentication errors
@@ -55,32 +55,6 @@ export class ChatModelForbiddenError extends Error {
    */
   toString(): string {
     return `${this.name}: ${this.message}${this.cause ? ` (Caused by: ${this.cause})` : ''}`;
-  }
-}
-
-export class ChatModelRateLimitError extends Error {
-  constructor(
-    message: string,
-    public readonly cause?: unknown,
-  ) {
-    super(message);
-    this.name = 'ChatModelRateLimitError';
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ChatModelRateLimitError);
-    }
-  }
-}
-
-export class ChatModelPaymentRequiredError extends Error {
-  constructor(
-    message: string,
-    public readonly cause?: unknown,
-  ) {
-    super(message);
-    this.name = 'ChatModelPaymentRequiredError';
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, ChatModelPaymentRequiredError);
-    }
   }
 }
 
