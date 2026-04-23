@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Actors, chatHistoryStore, type Message } from '@extension/storage';
 import { t } from '@extension/i18n';
 
@@ -242,6 +242,26 @@ export const useTaskExecution = ({
         }
         setInputEnabled(true);
     }, [appendMessage, sendMessage, setInputEnabled]);
+
+    /**
+     * Effect that checks for a pending prompt from the omnibox on initialization.
+     * If found, it automatically starts the task.
+     */
+    useEffect(() => {
+        const PENDING_OMNIBOX_KEY = 'pendingOmniboxPrompt';
+        chrome.storage.session.get([PENDING_OMNIBOX_KEY]).then(result => {
+            const prompt = result[PENDING_OMNIBOX_KEY];
+            if (prompt) {
+                console.log('Omnibox: found pending prompt, starting task:', prompt);
+                // Clear the prompt from storage so it doesn't run again on reload
+                chrome.storage.session.remove([PENDING_OMNIBOX_KEY]);
+                // Start the task after a short delay to ensure UI is ready
+                setTimeout(() => {
+                    handleSendMessage(prompt);
+                }, 500);
+            }
+        });
+    }, [handleSendMessage]);
 
     return { handleSendMessage, handleStopTask, handleReplay, handleCommand };
 };

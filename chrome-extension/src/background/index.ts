@@ -25,6 +25,20 @@ const browserContext = new BrowserContext({});
 let currentExecutor: Executor | null = null;
 let currentPort: chrome.runtime.Port | null = null;
 const SIDE_PANEL_URL = chrome.runtime.getURL('side-panel/index.html');
+const PENDING_OMNIBOX_KEY = 'pendingOmniboxPrompt';
+
+// Track the last focused window to avoid async queries during user-gesture events.
+let lastFocusedWindowId: number | undefined;
+
+chrome.windows.onFocusChanged.addListener(windowId => {
+  if (windowId !== chrome.windows.WINDOW_ID_NONE) {
+    lastFocusedWindowId = windowId;
+  }
+});
+
+chrome.windows.getLastFocused({ populate: false }, window => {
+  lastFocusedWindowId = window.id;
+});
 
 // Setup side panel behavior
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(error => console.error(error));
@@ -265,6 +279,52 @@ chrome.runtime.onConnect.addListener(port => {
   }
 });
 
+// Omnibox integration: typing `genie` + space sends prompt to side panel.
+chrome.omnibox.setDefaultSuggestion({
+  description: 'WebGenie — run: %s',
+});
+
+chrome.omnibox.onInputChanged.addListener((text, suggest) => {
+  if (!text.trim()) return;
+  suggest([
+    {
+      content: text,
+      description: `Ask WebGenie to: ${text.trim()}`,
+    },
+  ]);
+});
+
+chrome.omnibox.onInputEntered.addListener(text => {
+  const prompt = text.trim();
+  if (!prompt) return;
+
+  if (lastFocusedWindowId !== undefined) {
+    chrome.sidePanel.open({ windowId: lastFocusedWindowId }).catch(err => {
+      logger.error('Omnibox: failed to open side panel (windowId):', err);
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        if (tabs[0]?.windowId) {
+          chrome.sidePanel.open({ windowId: tabs[0].windowId });
+        }
+      });
+    });
+  } else {
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      if (tabs[0]?.windowId) {
+        chrome.sidePanel.open({ windowId: tabs[0].windowId });
+      }
+    });
+  }
+
+  chrome.storage.session
+    .set({ [PENDING_OMNIBOX_KEY]: prompt })
+    .then(() => {
+      logger.info('Omnibox: saved pending prompt to session storage:', prompt);
+    })
+    .catch(err => {
+      logger.error('Omnibox: failed to save prompt:', err);
+    });
+});
+
 async function setupExecutor(taskId: string, task: string, browserContext: BrowserContext) {
   const providers = await llmProviderStore.getAllProviders();
   // if no providers, need to display the options page
@@ -346,6 +406,25 @@ async function subscribeToExecutorEvents(executor: Executor) {
       if (currentPort) {
         currentPort.postMessage(event);
       }
+
+      // Broadcast agent status to the active tab for the Capsule UI
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        const activeTabId = tabs[0]?.id;
+        if (activeTabId) {
+          const isActive =
+            event.state !== ExecutionState.TASK_OK &&
+            event.state !== ExecutionState.TASK_FAIL &&
+            event.state !== ExecutionState.TASK_CANCEL;
+
+          chrome.tabs.sendMessage(activeTabId, {
+            type: 'AGENT_STATUS',
+            active: isActive,
+            status: event.data.details,
+          }).catch(() => {
+            // Ignore errors if the tab is not ready or content script not injected
+          });
+        }
+      });
     } catch (error) {
       logger.error('Failed to send message to side panel:', error);
     }

@@ -174,6 +174,11 @@ export class NavigatorAgent extends BaseAgent<z.ZodType, NavigatorResult> {
       const currentState = await this.context.browserContext.getCachedState();
       browserStateHistory = new BrowserStateHistory(currentState);
 
+      // Emit sight update event if screenshot is available
+      if (currentState.screenshot) {
+        this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.SIGHT_UPDATE, 'Sight updated', currentState.screenshot);
+      }
+
       // check if the task is paused or stopped
       if (this.context.paused || this.context.stopped) {
         cancelled = true;

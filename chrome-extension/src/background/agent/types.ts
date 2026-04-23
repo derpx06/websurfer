@@ -75,13 +75,13 @@ export class AgentContext {
     this.finalAnswer = null;
   }
 
-  async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string) {
+  async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string, screenshot?: string) {
     const event = new AgentEvent(actor, state, {
       taskId: this.taskId,
       step: this.nSteps,
       maxSteps: this.options.maxSteps,
       details: eventDetails,
-    });
+    }, Date.now(), undefined, screenshot);
     await this.eventManager.emit(event);
   }
 

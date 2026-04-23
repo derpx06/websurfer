@@ -64,7 +64,20 @@ export class SpeechToTextService {
       // Get transcription from Gemini
       const transcriptionResponse = await this.llm.invoke([transcriptionMessage]);
 
-      const transcribedText = transcriptionResponse.content.toString().trim();
+      let transcribedText = '';
+      if (typeof transcriptionResponse.content === 'string') {
+        transcribedText = transcriptionResponse.content;
+      } else if (Array.isArray(transcriptionResponse.content)) {
+        transcribedText = transcriptionResponse.content
+          .map(part => {
+            if (typeof part === 'string') return part;
+            if ('text' in part) return part.text;
+            return '';
+          })
+          .join('');
+      }
+
+      transcribedText = transcribedText.trim();
       logger.info('Audio transcription completed:', transcribedText);
 
       return transcribedText;
