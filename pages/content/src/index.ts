@@ -110,27 +110,27 @@ const EXTRA_CSS = `
     pointer-events: auto; /* Enable hover */
     cursor: default;
     
-    /* Sleek Dark Glass */
-    background: rgba(12, 12, 14, 0.85);
-    backdrop-filter: blur(40px) saturate(200%);
-    -webkit-backdrop-filter: blur(40px) saturate(200%);
+    /* Sleek Dark Glass - Minimal but Premium */
+    background: rgba(18, 18, 20, 0.9);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
     
-    min-width: 140px;
-    height: 48px;
-    padding: 0 24px 0 20px;
-    border-radius: 30px; /* Pill shape */
+    min-width: 120px;
+    height: 36px;
+    padding: 0 16px 0 12px;
+    border-radius: 18px; /* Perfect pill for 36px height */
     
-    /* Clean borders and rich drop shadow */
+    /* Ultra-clean inner rim and solid drop shadow */
     box-shadow: 
-      0 10px 40px rgba(0, 0, 0, 0.5),
-      0 0 0 1px rgba(255, 255, 255, 0.08) inset,
+      0 6px 20px rgba(0, 0, 0, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.1) inset,
       0 1px 1px rgba(255, 255, 255, 0.15) inset;
       
     /* Flexbox for layout */
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 8px; /* Tighter gap */
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     color: white;
     
@@ -148,14 +148,14 @@ const EXTRA_CSS = `
   
   /* Dynamic Island HOVER EXPANSION */
   #webgenie-agent-status-capsule.visible:hover {
-    height: 64px;
-    min-width: 250px;
-    border-radius: 32px;
-    background: rgba(22, 22, 26, 0.95);
+    height: 44px;
+    min-width: 180px;
+    border-radius: 22px;
+    background: rgba(26, 26, 30, 0.95);
     box-shadow: 
-      0 20px 50px rgba(0, 0, 0, 0.6),
-      0 0 60px rgba(0, 229, 255, 0.15),
-      0 0 0 1px rgba(255, 255, 255, 0.15) inset,
+      0 10px 30px rgba(0, 0, 0, 0.5),
+      0 0 40px rgba(0, 229, 255, 0.1),
+      0 0 0 1px rgba(255, 255, 255, 0.2) inset,
       0 1px 2px rgba(255, 255, 255, 0.25) inset;
   }
 
@@ -163,8 +163,8 @@ const EXTRA_CSS = `
   .webgenie-agent-wave {
     display: flex;
     align-items: center;
-    gap: 4px;
-    height: 18px;
+    gap: 3px;
+    height: 14px;
     opacity: 0;
     width: 0;
     transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -172,14 +172,14 @@ const EXTRA_CSS = `
 
   #webgenie-agent-status-capsule:hover .webgenie-agent-wave {
     opacity: 1;
-    width: 28px; /* Reveal space */
-    margin-left: 8px;
+    width: 20px; /* Reveal space */
+    margin-left: 6px;
   }
 
   .webgenie-agent-wave-bar {
-    width: 3px;
+    width: 2px;
     background: #00e5ff;
-    border-radius: 3px;
+    border-radius: 2px;
     animation: webgenie-wave-anim 0.8s ease-in-out infinite alternate;
   }
 
@@ -194,11 +194,11 @@ const EXTRA_CSS = `
 
   /* The glowing dot */
   .webgenie-agent-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background-color: #00e5ff;
-    box-shadow: 0 0 8px #00e5ff, 0 0 12px #00e5ff;
+    box-shadow: 0 0 6px #00e5ff, 0 0 10px #00e5ff;
     animation: webgenie-pulse 2s infinite;
     flex-shrink: 0;
     transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -207,15 +207,15 @@ const EXTRA_CSS = `
   #webgenie-agent-status-capsule:hover .webgenie-agent-dot {
     animation-duration: 0.6s;
     transform: scale(1.3);
-    box-shadow: 0 0 15px #00e5ff, 0 0 30px #00e5ff;
+    box-shadow: 0 0 10px #00e5ff, 0 0 20px #00e5ff;
   }
 
   /* Sleek modern text */
   .webgenie-agent-text {
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
-    letter-spacing: -0.2px;
-    color: #f5f5f7; /* Apple off-white */
+    letter-spacing: -0.1px;
+    color: #e5e5e7; /* Apple off-white */
     text-overflow: ellipsis;
     overflow: hidden;
     margin-top: 1px;
@@ -223,9 +223,9 @@ const EXTRA_CSS = `
   }
   
   #webgenie-agent-status-capsule:hover .webgenie-agent-text {
-    font-size: 15px;
+    font-size: 14px;
     color: #ffffff;
-    text-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
   }
 
   /* Pulse animation for the dot */
