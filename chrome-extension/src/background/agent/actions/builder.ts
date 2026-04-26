@@ -22,6 +22,7 @@ import {
   nextPageActionSchema,
   scrollToTopActionSchema,
   scrollToBottomActionSchema,
+  askHumanActionSchema,
 } from './schemas';
 import { z } from 'zod';
 import { createLogger } from '@src/background/log';
@@ -48,7 +49,7 @@ export class Action {
     public readonly schema: ActionSchema,
     // Whether this action has an index argument
     public readonly hasIndex: boolean = false,
-  ) {}
+  ) { }
 
   async call(input: unknown): Promise<ActionResult> {
     // Validate input before calling the handler
@@ -311,10 +312,14 @@ export class ActionBuilder {
     actions.push(switchTab);
 
     const openTab = new Action(async (input: z.infer<typeof openTabActionSchema.schema>) => {
-      const intent = input.intent || t('act_openTab_start', [input.url]);
+      let url = input.url;
+      if (!url || url.startsWith('chrome://')) {
+        url = 'https://www.google.com';
+      }
+      const intent = input.intent || t('act_openTab_start', [url]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_START, intent);
-      await this.context.browserContext.openTab(input.url);
-      const msg = t('act_openTab_ok', [input.url]);
+      await this.context.browserContext.openTab(url);
+      const msg = t('act_openTab_ok', [url]);
       this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_OK, msg);
       return new ActionResult({ extractedContent: msg, includeInMemory: true });
     }, openTabActionSchema);
@@ -644,7 +649,6 @@ export class ActionBuilder {
     );
     actions.push(getDropdownOptions);
 
-    // Select dropdown option for interactive element index by the text of the option you want to select'
     const selectDropdownOption = new Action(
       async (input: z.infer<typeof selectDropdownOptionActionSchema.schema>) => {
         const intent = input.intent || t('act_selectDropdownOption_start', [input.text, input.index.toString()]);
@@ -701,6 +705,33 @@ export class ActionBuilder {
       true,
     );
     actions.push(selectDropdownOption);
+
+    const askHuman = new Action(async (input: z.infer<typeof askHumanActionSchema.schema>) => {
+      // Check for auto-confirmation if it's a confirmation type
+      if (input.type === 'confirmation' && input.actionType) {
+        const key = `auto_confirm_${input.actionType}`;
+        const storage = await chrome.storage.local.get(key);
+        if (storage[key]) {
+          return new ActionResult({
+            extractedContent: `Automatically approved ${input.actionType} based on user preference.`,
+          });
+        }
+      }
+
+      const details = JSON.stringify({
+        question: input.question,
+        options: input.options,
+        fields: input.fields,
+        type: input.type,
+        actionType: input.actionType,
+      });
+      this.context.emitEvent(Actors.NAVIGATOR, ExecutionState.ACT_ASK_HUMAN, details);
+      return new ActionResult({
+        isWaitingForHuman: true,
+        extractedContent: `Intervention requested (${input.type}): ${input.question}${input.options ? ` Options: ${input.options.join(', ')}` : ''}`,
+      });
+    }, askHumanActionSchema);
+    actions.push(askHuman);
 
     return actions;
   }

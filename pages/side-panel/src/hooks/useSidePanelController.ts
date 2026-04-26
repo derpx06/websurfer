@@ -27,6 +27,7 @@ export const useSidePanelController = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [isProcessingSpeech, setIsProcessingSpeech] = useState(false);
   const [isReplaying, setIsReplaying] = useState(false);
+  const [isWaitingForHuman, setIsWaitingForHuman] = useState(false);
   const [lastScreenshot, setLastScreenshot] = useState<string | null>(null);
 
   // Refs for specific UI components
@@ -76,6 +77,7 @@ export const useSidePanelController = () => {
     setIsReplaying,
     setIsHistoricalSession,
     setIsProcessingSpeech,
+    setIsWaitingForHuman,
     setLastScreenshot,
     setInputTextRef,
   });
@@ -111,6 +113,8 @@ export const useSidePanelController = () => {
     setIsFollowUpMode,
     setIsHistoricalSession,
     setIsReplaying,
+    isWaitingForHuman,
+    setIsWaitingForHuman,
   });
 
   /**

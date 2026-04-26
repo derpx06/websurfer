@@ -165,7 +165,7 @@ const SidePanel = () => {
 
                 {messages.length > 0 && (
                   <div className="ws-body ws-body--floating-input">
-                    <MessageList messages={messages} isDarkMode={isDarkMode} />
+                    <MessageList messages={messages} isDarkMode={isDarkMode} onOptionSelect={handleSendMessage} />
                     <div ref={messagesEndRef} />
                   </div>
                 )}

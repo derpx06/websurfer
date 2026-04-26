@@ -1,5 +1,6 @@
 import type { BaseChatModel } from '@langchain/core/language_models/chat_models';
 import { type ActionResult, AgentContext, type AgentOptions, type AgentOutput } from './types';
+import { HumanMessage } from '@langchain/core/messages';
 import { t } from '@extension/i18n';
 import { NavigatorAgent, NavigatorActionRegistry } from './agents/navigator';
 import { PlannerAgent, type PlannerOutput } from './agents/planner';
@@ -289,6 +290,27 @@ export class Executor {
         throw new Error(navOutput.error);
       }
       context.consecutiveFailures = 0;
+
+      // Check if navigator is waiting for human
+      const results = context.actionResults;
+      if (results.some(r => r.isWaitingForHuman)) {
+        const lastWaitingResult = [...results].reverse().find(r => r.isWaitingForHuman);
+        if (lastWaitingResult) {
+          context.waitingForHuman = true;
+          let questionText = lastWaitingResult.extractedContent || 'The agent needs your input.';
+          try {
+            // Try to parse if it was emitted as a structural event
+            const details = JSON.parse(lastWaitingResult.extractedContent || '{}');
+            if (details.question) questionText = details.question;
+          } catch (e) {
+            // Fallback to legacy string format
+          }
+          context.humanQuestion = questionText;
+          logger.info(`Agent is waiting for human: ${context.humanQuestion}`);
+          return false;
+        }
+      }
+
       if (navOutput.result?.done) {
         return true;
       }
@@ -319,7 +341,7 @@ export class Executor {
       return true;
     }
 
-    while (this.context.paused) {
+    while (this.context.paused || this.context.waitingForHuman) {
       await new Promise(resolve => setTimeout(resolve, 200));
       if (this.context.stopped) {
         return true;
@@ -344,6 +366,16 @@ export class Executor {
 
   async pause(): Promise<void> {
     this.context.pause();
+  }
+
+  async submitHumanResponse(response: string): Promise<void> {
+    logger.info(`Submitting human response: ${response}`);
+    const humanMsg = new HumanMessage(`User response: ${response}`);
+    this.context.messageManager.addMessageWithTokens(humanMsg);
+    this.context.waitingForHuman = false;
+    this.context.humanQuestion = null;
+    // Emit resume event
+    this.context.emitEvent(Actors.SYSTEM, ExecutionState.TASK_RESUME, 'Human response received');
   }
 
   async cleanup(): Promise<void> {

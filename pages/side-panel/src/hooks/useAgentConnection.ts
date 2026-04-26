@@ -13,6 +13,7 @@ interface UseAgentConnectionProps {
     setIsReplaying: (replaying: boolean) => void;
     setIsHistoricalSession: (historical: boolean) => void;
     setIsProcessingSpeech: (processing: boolean) => void;
+    setIsWaitingForHuman: (waiting: boolean) => void;
     setLastScreenshot: (screenshot: string | null) => void;
     setInputTextRef: React.MutableRefObject<((text: string) => void) | null>;
 }
@@ -40,6 +41,7 @@ export const useAgentConnection = ({
     setIsReplaying,
     setIsHistoricalSession,
     setIsProcessingSpeech,
+    setIsWaitingForHuman,
     setLastScreenshot,
     setInputTextRef,
 }: UseAgentConnectionProps) => {
@@ -54,6 +56,7 @@ export const useAgentConnection = ({
         setShowStopButton,
         setIsReplaying,
         setIsHistoricalSession,
+        setIsWaitingForHuman,
         setLastScreenshot,
         isReplayingRef
     });

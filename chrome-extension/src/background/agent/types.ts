@@ -49,6 +49,8 @@ export class AgentContext {
   stateMessageAdded: boolean;
   history: AgentStepHistory;
   finalAnswer: string | null;
+  waitingForHuman: boolean;
+  humanQuestion: string | null;
 
   constructor(
     taskId: string,
@@ -73,6 +75,8 @@ export class AgentContext {
     this.stateMessageAdded = false;
     this.history = new AgentStepHistory();
     this.finalAnswer = null;
+    this.waitingForHuman = false;
+    this.humanQuestion = null;
   }
 
   async emitEvent(actor: Actors, state: ExecutionState, eventDetails: string, screenshot?: string) {
@@ -112,6 +116,7 @@ export class AgentStepInfo {
 export class ActionResult {
   isDone: boolean;
   success: boolean;
+  isWaitingForHuman: boolean;
   extractedContent: string | null;
   error: string | null;
   includeInMemory: boolean;
@@ -120,6 +125,7 @@ export class ActionResult {
   constructor(params: Partial<ActionResult> = {}) {
     this.isDone = params.isDone ?? false;
     this.success = params.success ?? false;
+    this.isWaitingForHuman = params.isWaitingForHuman ?? false;
     this.interactedElement = params.interactedElement ?? null;
     this.extractedContent = params.extractedContent ?? null;
     this.error = params.error ?? null;

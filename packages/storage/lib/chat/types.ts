@@ -4,6 +4,7 @@ export enum Actors {
   PLANNER = 'planner',
   NAVIGATOR = 'navigator',
   VALIDATOR = 'validator',
+  HITL = 'hitl',
 }
 
 export interface Message {

@@ -9,6 +9,7 @@ interface UseAgentEventHandlerProps {
     setShowStopButton: (show: boolean) => void;
     setIsReplaying: (replaying: boolean) => void;
     setIsHistoricalSession: (historical: boolean) => void;
+    setIsWaitingForHuman: (waiting: boolean) => void;
     setLastScreenshot: (screenshot: string | null) => void;
     isReplayingRef: React.MutableRefObject<boolean>;
 }
@@ -28,6 +29,7 @@ export const useAgentEventHandler = ({
     setShowStopButton,
     setIsReplaying,
     setIsHistoricalSession,
+    setIsWaitingForHuman,
     setLastScreenshot,
     isReplayingRef,
 }: UseAgentEventHandlerProps) => {
@@ -59,6 +61,7 @@ export const useAgentEventHandler = ({
                     setInputEnabled(true);
                     setShowStopButton(false);
                     setIsReplaying(false);
+                    setIsWaitingForHuman(false);
                     setLastScreenshot(null); // Clear sight on task completion
                     skip = false;
                 } else if (state === ExecutionState.TASK_CANCEL) {
@@ -66,7 +69,11 @@ export const useAgentEventHandler = ({
                     setInputEnabled(true);
                     setShowStopButton(false);
                     setIsReplaying(false);
+                    setIsWaitingForHuman(false);
                     setLastScreenshot(null); // Clear sight on task cancel
+                    skip = false;
+                } else if (state === ExecutionState.TASK_RESUME) {
+                    setIsWaitingForHuman(false);
                     skip = false;
                 }
                 break;
@@ -86,7 +93,9 @@ export const useAgentEventHandler = ({
                     setIsFollowUpMode(true);
                     setInputEnabled(true);
                     setShowStopButton(false);
-                    skip = false;
+                    setIsWaitingForHuman(true);
+                    appendMessage({ actor: Actors.HITL, content: content || '', timestamp });
+                    return;
                 }
                 else if (state === ExecutionState.ACT_START && content !== 'cache_content') skip = false;
                 else if (state === ExecutionState.ACT_OK) skip = !isReplayingRef.current;
@@ -100,7 +109,7 @@ export const useAgentEventHandler = ({
 
         if (!skip) appendMessage({ actor, content: content || '', timestamp });
         if (displayProgress) appendMessage({ actor, content: progressMessage, timestamp });
-    }, [appendMessage, setIsFollowUpMode, setInputEnabled, setShowStopButton, setIsReplaying, setIsHistoricalSession, setLastScreenshot, isReplayingRef]);
+    }, [appendMessage, setIsFollowUpMode, setInputEnabled, setShowStopButton, setIsReplaying, setIsHistoricalSession, setIsWaitingForHuman, setLastScreenshot, isReplayingRef]);
 
     return { handleTaskState };
 };

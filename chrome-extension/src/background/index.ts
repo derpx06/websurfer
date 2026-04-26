@@ -161,6 +161,12 @@ chrome.runtime.onConnect.addListener(port => {
             return port.postMessage({ type: 'success' });
           }
 
+          case 'human_response': {
+            if (!currentExecutor) return port.postMessage({ type: 'error', error: t('bg_errors_noRunningTask') });
+            await (currentExecutor as any).submitHumanResponse(message.response);
+            return port.postMessage({ type: 'success' });
+          }
+
           case 'screenshot': {
             if (!message.tabId) return port.postMessage({ type: 'error', error: t('bg_errors_noTabId') });
             const page = await browserContext.switchTab(message.tabId);

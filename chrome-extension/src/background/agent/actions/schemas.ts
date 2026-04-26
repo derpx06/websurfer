@@ -76,10 +76,10 @@ export const switchTabActionSchema: ActionSchema = {
 
 export const openTabActionSchema: ActionSchema = {
   name: 'open_tab',
-  description: 'Open URL in new tab',
+  description: 'Open URL in a new tab. Do NOT use chrome:// URLs (like chrome://newtab/). Use a search engine or a specific website URL instead.',
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
-    url: z.string().describe('url to open'),
+    url: z.string().describe('url to open. Use https://www.google.com if you just need a new empty tab to start searching.'),
   }),
 };
 
@@ -211,5 +211,24 @@ export const waitActionSchema: ActionSchema = {
   schema: z.object({
     intent: z.string().default('').describe('purpose of this action'),
     seconds: z.number().int().default(3).describe('amount of seconds'),
+  }),
+};
+
+export const askHumanActionSchema: ActionSchema = {
+  name: 'ask_human',
+  description: 'Ask the human a question or request confirmation for sensitive actions.',
+  schema: z.object({
+    question: z.string().describe('The question or confirmation message to show the human'),
+    options: z.array(z.string()).optional().describe('Optional list of choices (buttons) for the human to pick from'),
+    fields: z.array(z.object({
+      id: z.string().describe('Unique ID for the field'),
+      label: z.string().describe('Label to show for the field'),
+      type: z.enum(['text', 'number', 'date', 'select']).default('text').describe('The type of input field'),
+      required: z.boolean().default(true).describe('Whether the field is required'),
+      options: z.array(z.string()).optional().describe('Options for select type field'),
+      placeholder: z.string().optional().describe('Placeholder text'),
+    })).optional().describe('List of structured input fields for the user to fill'),
+    type: z.enum(['question', 'confirmation']).default('question').describe('The type of intervention requested'),
+    actionType: z.string().optional().describe('The class of action being confirmed (e.g., "send_message", "delete_item") for "don\'t ask again" tracking'),
   }),
 };

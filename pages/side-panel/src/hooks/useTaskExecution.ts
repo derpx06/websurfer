@@ -21,6 +21,8 @@ interface UseTaskExecutionProps {
     setIsFollowUpMode: (mode: boolean) => void;
     setIsHistoricalSession: (historical: boolean) => void;
     setIsReplaying: (replaying: boolean) => void;
+    isWaitingForHuman: boolean;
+    setIsWaitingForHuman: (waiting: boolean) => void;
 }
 
 /**
@@ -46,6 +48,8 @@ export const useTaskExecution = ({
     setIsFollowUpMode,
     setIsHistoricalSession,
     setIsReplaying,
+    isWaitingForHuman,
+    setIsWaitingForHuman,
 }: UseTaskExecutionProps) => {
 
     /**
@@ -198,6 +202,24 @@ export const useTaskExecution = ({
                 setInputEnabled(false);
                 setShowStopButton(true);
 
+                if (isWaitingForHuman) {
+                    const userMessage = {
+                        actor: Actors.USER,
+                        content: displayText || text,
+                        timestamp: Date.now(),
+                    };
+                    appendMessage(userMessage, sessionIdRef.current ?? undefined);
+
+                    if (!portRef.current) setupConnection();
+
+                    await sendMessage({
+                        type: 'human_response',
+                        response: text,
+                    });
+                    setIsWaitingForHuman(false);
+                    return;
+                }
+
                 if (!isFollowUpMode) {
                     const titleText = displayText || text;
                     await createNewSession(titleText.substring(0, 50) + (titleText.length > 50 ? '...' : ''));
@@ -227,7 +249,7 @@ export const useTaskExecution = ({
                 setShowStopButton(false);
             }
         },
-        [appendMessage, handleCommand, isFollowUpMode, isHistoricalSession, sendMessage, setupConnection, createNewSession, sessionIdRef, portRef, setInputEnabled, setShowStopButton],
+        [appendMessage, handleCommand, isFollowUpMode, isHistoricalSession, isWaitingForHuman, sendMessage, setupConnection, createNewSession, sessionIdRef, portRef, setInputEnabled, setShowStopButton, setIsWaitingForHuman],
     );
 
     /**
