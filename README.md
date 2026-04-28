@@ -1,6 +1,6 @@
 # WebGenie
 
-**WebGenie** is an open-source AI web automation tool that runs directly in your browser. It serves as a powerful, free alternative to OpenAI Operator, featuring flexible LLM options and a sophisticated multi-agent system.
+**WebGenie** is an open-source AI web automation tool that runs directly in your browser. It serves as a powerful, it can go each and everyhting on a browser, featuring flexible LLM options and a sophisticated multi-agent system.
 
 
 ## 🚀 Quick Start (Build from Source)
